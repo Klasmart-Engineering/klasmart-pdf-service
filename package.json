@@ -1,0 +1,28 @@
+{
+  "name": "kidsloop-pdf-service",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": {
+    "name": "Mitch Goshorn",
+    "email": "mitch.goshorn@calmid.com"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "@aws-crypto/client-node": "^2.2.1",
+    "@aws-sdk/client-cloudfront": "^3.18.0",
+    "@aws-sdk/client-s3": "^3.18.0",
+    "canvas": "^2.8.0",
+    "express": "^4.17.1",
+    "pdfjs-dist": "^2.7.570",
+    "typeorm": "^0.2.34",
+    "typescript": "^4.3.2"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.12",
+    "@types/pdfjs-dist": "^2.7.2"
+  }
+}
