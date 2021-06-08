@@ -1,10 +1,11 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, PrimaryColumn, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity()
 export class PDFMetadata {
     
-    @PrimaryGeneratedColumn("uuid")
-    id: string;
+    /** S3 Key name of PDF **/
+    @PrimaryColumn()
+    pdfLocation: string;
 
     /* Total pages that the PDF contains */
     @Column({
@@ -21,8 +22,8 @@ export class PDFMetadata {
     })
     pagesGenerated: number;
 
-    constructor(id: string, totalPages: number, pagesGenerated: number) {
-        this.id = id;
+    constructor(pdfLocation: string, totalPages: number, pagesGenerated: number) {
+        this.pdfLocation = pdfLocation;
         this.totalPages = totalPages;
         this.pagesGenerated = pagesGenerated;
     }

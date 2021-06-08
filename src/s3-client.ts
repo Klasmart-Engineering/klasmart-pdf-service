@@ -11,7 +11,7 @@ const s3Client: S3Client = new S3Client({
     }
 });
 
-export const writeObject = async (key: string, stream: Readable): Promise<any> => {
+export const putObject = async (key: string, stream: Readable): Promise<any> => {
     const request: PutObjectRequest = {
         Bucket: process.env.AWS_BUCKET,
         Key: key,

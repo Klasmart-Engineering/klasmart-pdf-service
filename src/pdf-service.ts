@@ -3,17 +3,18 @@ import { PDFMetadata } from './models/PDFMetadata'
 import { createDocumentFromStream, generatePageImage } from './image-converter';
 import { putObject } from './s3-client';
 import NodeCache from 'node-cache';
+import { PDFDocumentProxy } from 'pdfjs-dist/types/display/api';
 
 const pageResolutionCache = new NodeCache({ stdTTL: 100, checkperiod: 60});
 
 export const getPDFPage = async (pageURL: string) => {
-    const { pdfUrl: pdfURL, page } = extractPageUrlProperties(pageURL);
+    const { pdfURL, page } = extractPageUrlProperties(pageURL);
     if (pageResolutionCache.has(pageURL)) {
         return pageResolutionCache.get<Promise<ReadableStream>>(pageURL);
     }
     
     if (! await pagePreRendered(pdfURL, page)) {
-        await renderToPage(pdfURL, page);
+        await renderToPage(pageURL);
     }
 }
 
@@ -34,23 +35,54 @@ const pagePreRendered = async (pdfURL: string, page: number) => {
     return false;
 }
 
-const renderToPage = async (pdfURL: string, page: number) => {
+const renderToPage = async (pageURL: string) => {
+    const { pdfURL, page } = extractPageUrlProperties(pageURL);
+    const pdfName = extractFilenameFromURL(pdfURL);
     const em = getManager();
     const pdfFilename = extractFilenameFromURL(pdfURL);
-    const pdfMetadata = await em.findOne(PDFMetadata, pdfURL);
+    let pdfMetadata: PDFMetadata | undefined = await em.findOne(pdfName, pdfURL);
+    let document: PDFDocumentProxy;
+    
+    /* If this is our first time seeing the PDF, initialize the metadata.
+        Otherwise, just get the document
+    */
+    if (!pdfMetadata) {
+        ({ pdfMetadata, document } = await initializeMetadata(pdfURL, pdfName));
+    } else {
+        document = await createDocumentFromStream(pdfURL);
+    }
+
+    /* Configure page range to render */
     const [start, end] = [pdfMetadata.pagesGenerated, page];
     const range = createRangeInclusive(start, end);
-    const document = await createDocumentFromStream(pdfURL);
 
     const promises = range
         .map(x => x) // TODO - Add cache step
         .map(async x => {
             const imageKey = mapPDFKeyToPageKey(pdfFilename, x);
 
-            const jpegStream = await generatePageImage(document, x);
+            const jpegStreamPromise = generatePageImage(document, x);
+
+            //? Cache promise so simultaneous requests won't attempt
+            //? render the same page
+            pageResolutionCache.set(pdfURL, jpegStreamPromise);
+
+            const jpegStream = await jpegStreamPromise;
             return putObject(imageKey, jpegStream);
         });
     await Promise.all(promises);
+}
+
+/**
+ *  Initializes metadata for the first read of a PDF 
+ *  @returns Object containing metadata and pdfjs document
+**/
+const initializeMetadata = async (pdfURL: string, pdfName: string) => {
+    const document = await createDocumentFromStream(pdfURL);
+    const pages = document.numPages;
+    const pdfMetadata = new PDFMetadata(undefined, pages, 0);
+    await getManager().save(PDFMetadata, pdfMetadata);
+    return { pdfMetadata, document };
 }
 
 const createRangeInclusive = (start: number, end: number) => {
@@ -87,6 +119,6 @@ const extractPageUrlProperties = (pageUrl: string) => {
 
     return {
         page: parseInt(URLParts[pdfPageIndex]),
-        pdfUrl: URLParts[pdfKeyIndex]
+        pdfURL: URLParts[pdfKeyIndex]
     }
 }
