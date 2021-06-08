@@ -1,4 +1,4 @@
-import { Canvas } from 'canvas';
+import { Canvas, JPEGStream } from 'canvas';
 import * as pdf from 'pdfjs-dist/es5/build/pdf';
 import { PDFDocumentProxy } from 'pdfjs-dist/types/display/api';
 import fs from 'fs';
@@ -9,7 +9,7 @@ export const createDocumentFromStream = async (pdfUrl: string) => {
 }
 
 export const generatePageImage = async (document: PDFDocumentProxy, pageNumber: number) => {
-    return new Promise( async (resolve, reject) => {
+    return new Promise<JPEGStream>( async (resolve, reject) => {
         console.log('creating page')
         const pageProxy = await document.getPage(pageNumber);
 
@@ -28,19 +28,21 @@ export const generatePageImage = async (document: PDFDocumentProxy, pageNumber: 
             quality: .99
         });
     
-        console.log('creating file output stream');
-        const outputStream = fs.createWriteStream(`./pdf/${pageNumber}-99.jpeg`);
+        return imageOutputStream;
+
+        // console.log('creating file output stream');
+        // const outputStream = fs.createWriteStream(`./pdf/${pageNumber}-99.jpeg`);
 
 
-        console.log('registering stream listeners');
-        outputStream.on('done', () => resolve(undefined));
-        outputStream.on('error', (error) => {
-            console.log(error);
-            reject(error);
-        })
+        // console.log('registering stream listeners');
+        // outputStream.on('done', () => resolve(undefined));
+        // outputStream.on('error', (error) => {
+        //     console.log(error);
+        //     reject(error);
+        // })
     
-        console.log('piping streams');
-        imageOutputStream.pipe(outputStream);
-        console.log('Stream complete');
+        // console.log('piping streams');
+        // imageOutputStream.pipe(outputStream);
+        // console.log('Stream complete');
     })
 }
