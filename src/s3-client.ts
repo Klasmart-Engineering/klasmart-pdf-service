@@ -1,9 +1,15 @@
 import { PutObjectCommand, PutObjectRequest, S3Client } from '@aws-sdk/client-s3';
 import { Readable } from 'stream';
 
-const s3Client: S3Client = undefined;
+const AWS_SECRET_KEY_NAME = process.env.AWS_SECRET_KEY_NAME ?? '';
+const AWS_SECRET_KEY = process.env.AWS_SECRET_KEY ?? '';
 
-// TODO - Provide s3Client configuration
+const s3Client: S3Client = new S3Client({
+    credentials: {
+        accessKeyId: AWS_SECRET_KEY_NAME,
+        secretAccessKey: AWS_SECRET_KEY
+    }
+});
 
 export const writeObject = async (key: string, stream: Readable): Promise<any> => {
     const request: PutObjectRequest = {
