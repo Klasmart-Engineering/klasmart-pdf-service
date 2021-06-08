@@ -1,8 +1,22 @@
-import CF from '@aws-sdk/client-cloudfront'
-import crypto from 'crypto';
-import awsCrypto from '@aws-sdk/crypto';
+import CloudFront from 'aws-sdk/clients/cloudfront'
 
-/* We don't actually need to communicate with CloudFront here, we just need to write the signatures for requests */
+const AWS_SECRET_KEY_NAME = process.env.AWS_SECRET_KEY_NAME ?? '';
+const AWS_SECRET_KEY = process.env.AWS_SECRET_KEY ?? '';
+const CF_URL = process.env.CF_URL ?? ''
+
+if (!AWS_SECRET_KEY_NAME) {
+    console.warn('Warning: AWS secret key name appears to be missing or invalid!');
+}
+
+if (!AWS_SECRET_KEY) {
+    console.warn('Warning: AWS secret key name appears to be missing or invalid!');
+}
+
+if (!CF_URL) {
+    console.warn('Warning: CloudFront URL does not appear to be defined!');
+}
+
+const signer = new CloudFront.Signer(AWS_SECRET_KEY_NAME, AWS_SECRET_KEY);
 
 
 export const getSignedUrl = async (resource: string, expirationFunction = getExpirationTime) => {
@@ -18,14 +32,9 @@ export const getSignedUrl = async (resource: string, expirationFunction = getExp
                 }
             }],
         }),
-        
     }
 
-    // TODO - what is the actual hash function used by AWS?
-    const hash = crypto.createHash('sha256');
-    hash.write(options.policy);
-    hash.end();
-    const digest = hash.digest().toString();
+    return signer.getSignedUrl(options);
 }
 
 /**
