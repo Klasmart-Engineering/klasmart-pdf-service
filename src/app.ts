@@ -1,5 +1,6 @@
 import express, { NextFunction, Request, Response } from 'express';
 import createError from 'http-errors';
+import { Readable } from 'stream';
 import initTypeorm from './init-typeorm';
 import { getPDFPage, getPDFPages } from './pdf-service';
 
@@ -27,9 +28,15 @@ app.get('/assets/:pdfName/pages', async (request: Request, response: Response, n
     if (!request.query.pdfURL){
         next(createError(400, `Missing query parameters: [pdfURL]`))
     }
-    const pdfURL = decodeURI(request.query.pdfURL as string)
-
-    return getPDFPages(pdfName, pdfURL);
+    console.log(request.query.pdfURL);
+    const pdfURL = new URL(decodeURI(request.query.pdfURL as string))
+    console.log(pdfURL);
+    console.log(pdfURL.toString());
+    const pages = await getPDFPages(pdfName, pdfURL);
+    response
+        .json({pages})
+        .send();
+    next();
 })
 
 app.get('/assets/:pdfName/pages/:page', async (request: Request, response: Response, next: NextFunction) => {
@@ -38,14 +45,15 @@ app.get('/assets/:pdfName/pages/:page', async (request: Request, response: Respo
     if (!request.query.pdfURL){
         next(createError(400, `Missing query parameters: [pdfURL]`))
     }
-    const pdfURL = decodeURI(request.query.pdfURL as string)
+    const pdfURL = new URL(decodeURI(request.query.pdfURL as string));
 
     if (!pdfName || !page) {
         next(createError(400, 'Invalid Request URL'));
         return;
     }
 
-    getPDFPage(pdfName, +page, pdfURL)
+    const stream: Readable= await getPDFPage(pdfName, +page, pdfURL)
+    stream.pipe(response)
 
 })
 /* #endregion middleware */
