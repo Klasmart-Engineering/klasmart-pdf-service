@@ -1,21 +1,34 @@
 import { getManager } from 'typeorm';
 import { PDFMetadata } from './models/PDFMetadata'
 import { createDocumentFromStream, generatePageImage } from './image-converter';
-import { putObject } from './s3-client';
+import { putObject, readObject } from './s3-client';
 import NodeCache from 'node-cache';
-import { PDFDocumentProxy } from 'pdfjs-dist/types/display/api';
+import createError from 'http-errors';
 
 const pageResolutionCache = new NodeCache({ stdTTL: 100, checkperiod: 60});
 
-export const getPDFPage = async (pageURL: string) => {
-    const { pdfURL, page } = extractPageUrlProperties(pageURL);
-    if (pageResolutionCache.has(pageURL)) {
-        return pageResolutionCache.get<Promise<ReadableStream>>(pageURL);
+export const getPDFPages = async (pdfName: string, pdfURL: string) => {
+    const em = getManager();
+    const existingMetadata = await em.findOne(PDFMetadata, pdfName);
+    
+    if (existingMetadata) return existingMetadata.totalPages;
+
+    const { pdfMetadata } = await initializeMetadata(pdfURL, pdfName);
+    return pdfMetadata.totalPages;
+}
+
+export const getPDFPage = async (pdfName: string, page: number, pdfURL: string) => {
+    const pageKey = mapPDFKeyToPageKey(pdfName, page);
+    if (pageResolutionCache.has(pageKey)) {
+        return pageResolutionCache.get<Promise<ReadableStream>>(pageKey);
     }
     
     if (! await pagePreRendered(pdfURL, page)) {
-        await renderToPage(pageURL);
+        await renderToPage(pageKey, pdfURL, page);
     }
+
+    const pdfKey = extractPDFFilenameFromPDFURL(pdfURL)
+    readObject(mapPDFKeyToPageKey(pdfKey, page));
 }
 
 const pagePreRendered = async (pdfURL: string, page: number) => {
@@ -35,29 +48,25 @@ const pagePreRendered = async (pdfURL: string, page: number) => {
     return false;
 }
 
-const renderToPage = async (pageURL: string) => {
-    const { pdfURL, page } = extractPageUrlProperties(pageURL);
-    const pdfName = extractFilenameFromURL(pdfURL);
+const renderToPage = async (pageKey: string, pdfURL: string, page: number) => {
     const em = getManager();
-    const pdfFilename = extractFilenameFromURL(pdfURL);
-    let pdfMetadata: PDFMetadata | undefined = await em.findOne(pdfName, pdfURL);
-    let document: PDFDocumentProxy;
+    const pdfFilename = extractPDFFilenameFromPDFURL(pdfURL);
+    const pdfMetadata: PDFMetadata | undefined = await em.findOne(pdfFilename, pdfURL);
     
-    /* If this is our first time seeing the PDF, initialize the metadata.
-        Otherwise, just get the document
+    /* We should find a PDF - it should exist in the DB before a
+        page is requrested for it, so if we don't find one this is
+        an error case
     */
-    if (!pdfMetadata) {
-        ({ pdfMetadata, document } = await initializeMetadata(pdfURL, pdfName));
-    } else {
-        document = await createDocumentFromStream(pdfURL);
-    }
+    if (!pdfMetadata) throw createError(400, 'Bad PDF name');
+
+    const document = await createDocumentFromStream(pdfURL);
 
     /* Configure page range to render */
     const [start, end] = [pdfMetadata.pagesGenerated, page];
     const range = createRangeInclusive(start, end);
 
     const promises = range
-        .map(x => x) // TODO - Add cache step
+        .map(x => x)
         .map(async x => {
             const imageKey = mapPDFKeyToPageKey(pdfFilename, x);
 
@@ -67,10 +76,15 @@ const renderToPage = async (pageURL: string) => {
             //? render the same page
             pageResolutionCache.set(pdfURL, jpegStreamPromise);
 
+
             const jpegStream = await jpegStreamPromise;
-            return putObject(imageKey, jpegStream);
+            putObject(imageKey, jpegStream);
+            return jpegStream;
         });
-    await Promise.all(promises);
+    
+    // Return the last promise, which will be the actual
+    //  requested page
+    return promises[promises.length - 1]
 }
 
 /**
@@ -80,7 +94,7 @@ const renderToPage = async (pageURL: string) => {
 const initializeMetadata = async (pdfURL: string, pdfName: string) => {
     const document = await createDocumentFromStream(pdfURL);
     const pages = document.numPages;
-    const pdfMetadata = new PDFMetadata(undefined, pages, 0);
+    const pdfMetadata = new PDFMetadata(pdfName, pages, 0);
     await getManager().save(PDFMetadata, pdfMetadata);
     return { pdfMetadata, document };
 }
@@ -89,8 +103,7 @@ const createRangeInclusive = (start: number, end: number) => {
     return Array.from(Array(end - start).keys()).map(x => x + start);
 }
 
-const extractFilenameFromURL = (url: string): string => {
-    // TODO - Implement this once the format is better known
+const extractPDFFilenameFromPDFURL = (url: string): string => {
     return url;
 }
 
@@ -109,13 +122,21 @@ const mapPDFKeyToPageKey = (pdfKey: string, page: number) => {
  */
 const extractPageUrlProperties = (pageUrl: string) => {
     const URLParts = pageUrl.split('/');
-    let pdfKeyIndex: number;
-    let pdfPageIndex: number;
+    let pdfKeyIndex: number = 0;
+    let pdfPageIndex: number = 0;
 
-    for(const [key, value] of URLParts.entries()) {
+    for (const [key, value] of URLParts.entries()) {
         if (value === 'assets') pdfKeyIndex = key + 1;
         if (value === 'page') pdfPageIndex = key + 1;
     }
+
+    if (pdfKeyIndex === 0) {
+        throw new Error(`pageURL did not contain 'assets' part`);
+    } 
+
+    if (pdfPageIndex === 0) {
+        throw new Error(`pageURL did not contain 'page' part`);
+    } 
 
     return {
         page: parseInt(URLParts[pdfPageIndex]),

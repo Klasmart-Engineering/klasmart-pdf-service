@@ -3,7 +3,7 @@ import { Column, Entity, PrimaryColumn, PrimaryGeneratedColumn } from 'typeorm';
 @Entity()
 export class PDFMetadata {
     
-    /** S3 Key name of PDF **/
+    /** Unique S3 Key name of PDF */
     @PrimaryColumn()
     pdfLocation: string;
 

@@ -1,0 +1,23 @@
+https://res-kl2.kidsloop.net/assets/60bf1f5c93ae8882e5215599.jpeg?Expires=1623289896&Signature=l9QYOBY5jivKPoQI9JEaVdwX~pQ2zyFr5rOLJhZeToW9FJvXhSpyg9VwjMejHfFOpFOfq9ZqZNFWcx9kw0gVpIDAN6FGuBEmK99FRzk0zZ--9sZxi4CK8VFfZv-Mvvja3zMPEH5w7NFoKazDMv-rOYj1oYLtTt0KOhEz3nw7C68QqZspiXgl76s2eSzora6tcoKCK0zQpI8Pbc~47ijtIbZumthMjT5VNWP4uQdqpykV5bVaN1xuJHRhz9jU8XvJhcvGqAFUKTjIvdBohnC2tbJmnnW8wDU~4Qx~pwWpMhFKgDQK0~vYks7PPzs0YydKzEOhVkZ27OikdAfl6TrE1w__&Key-Pair-Id=K1GKWE1LJI7KT9
+
+
+--- Resource Request Format Sample ---
+https
+://res-kl2.kidsloop.net
+/assets
+/60bf1f5c93ae8882e5215599.jpeg
+?Expires=1623289896
+&Signature=l9QYOBY5jivKPoQI9JEaVdwX~pQ2zyFr5rOLJhZeToW9FJvXhSpyg9VwjMejHfFOpFOfq9ZqZNFWcx9kw0gVpIDAN6FGuBEmK99FRzk0zZ--9sZxi4CK8VFfZv-Mvvja3zMPEH5w7NFoKazDMv-rOYj1oYLtTt0KOhEz3nw7C68QqZspiXgl76s2eSzora6tcoKCK0zQpI8Pbc~47ijtIbZumthMjT5VNWP4uQdqpykV5bVaN1xuJHRhz9jU8XvJhcvGqAFUKTjIvdBohnC2tbJmnnW8wDU~4Qx~pwWpMhFKgDQK0~vYks7PPzs0YydKzEOhVkZ27OikdAfl6TrE1w__
+&Key-Pair-Id=K1GKWE1LJI7KT9
+
+
+--- Suggested PDF Page Request Format ---
+/assets
+/pdf
+/{pdfName}
+/page
+/{pageNum}.jpeg
+?Expires=1623289896
+&Signature=l9QYOBY5jivKPoQI9JEaVdwX~pQ2zyFr5rOLJhZeToW9FJvXhSpyg9VwjMejHfFOpFOfq9ZqZNFWcx9kw0gVpIDAN6FGuBEmK99FRzk0zZ--9sZxi4CK8VFfZv-Mvvja3zMPEH5w7NFoKazDMv-rOYj1oYLtTt0KOhEz3nw7C68QqZspiXgl76s2eSzora6tcoKCK0zQpI8Pbc~47ijtIbZumthMjT5VNWP4uQdqpykV5bVaN1xuJHRhz9jU8XvJhcvGqAFUKTjIvdBohnC2tbJmnnW8wDU~4Qx~pwWpMhFKgDQK0~vYks7PPzs0YydKzEOhVkZ27OikdAfl6TrE1w__
+&Key-Pair-Id=K1GKWE1LJI7KT9
+

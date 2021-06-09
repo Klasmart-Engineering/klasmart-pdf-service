@@ -17,6 +17,7 @@
     "axios": "^0.21.1",
     "canvas": "^2.8.0",
     "express": "^4.17.1",
+    "http-errors": "^1.8.0",
     "node-cache": "^5.1.2",
     "pdfjs-dist": "^2.7.570",
     "typeorm": "^0.2.34",
@@ -26,6 +27,7 @@
   "devDependencies": {
     "@types/axios": "^0.14.0",
     "@types/express": "^4.17.12",
+    "@types/http-errors": "^1.8.0",
     "@types/node-cache": "^4.2.5",
     "@types/pdfjs-dist": "^2.7.2"
   }
