@@ -5,7 +5,7 @@ import { putObject, readObject } from './s3-client';
 import NodeCache from 'node-cache';
 import createError from 'http-errors';
 import { Readable } from 'stream';
-import fs from 'fs';
+import { PDFPageMetadata } from './models/PDFPageMetadata';
 
 const pageResolutionCache = new NodeCache({ stdTTL: 100, checkperiod: 60});
 
@@ -28,28 +28,55 @@ export const getPDFPage = async (pdfName: string, page: number, pdfURL: URL): Pr
     //     return pageResolutionCache.get<Promise<Readable>>(pageKey);
     // }
     
-    if (! await pagePreRendered(pdfURL, page)) {
-        await renderToPage(pageKey, pdfURL, pdfName, page);
+    if (! await isPagePreRendered(pageKey)) {
+        await renderSinglePage(pageKey, pdfURL, pdfName, page);
     }
 
     return readObject(pageKey);
 }
 
-const pagePreRendered = async (pdfURL: URL, page: number) => {
+const isPagePreRendered = async (pageKey: string) => {
     const em = getManager();
-    const pdfMetadata = await em.findOne(PDFMetadata, pdfURL.pathname);
+    const pageMetadata = await em.findOne(PDFPageMetadata, pageKey);
 
-    if (!pdfMetadata) return false;
 
-    if (pdfMetadata.pagesGenerated >= page) {
+
+    // If there is no page metadata, then we need to load it
+    if (!pageMetadata) return false;
+
+    // If the file is still loading, check if there is a promise in the cache, if so wait
+    // for it to resolve, then resolve to true
+    if (pageResolutionCache.has(pageKey)) {
+        await pageResolutionCache.get(pageKey);
         return true;
     }
 
-    if (pdfMetadata.totalPages < page) {
-        throw new Error(`Invalid page requested. Requested ${page} of document with ${pdfMetadata.totalPages} pages`);
-    }
-
+    // If there is no promise in the cache, then return false, the page will need to be processed
     return false;
+}
+
+const renderSinglePage = async (pageKey: string, pdfURL: URL, pdfName: string, page: number) => {
+    const promise = new Promise(async (resolve, reject) => {
+        const em = getManager();
+        const pdfMetadata = await em.findOne(PDFMetadata, pdfURL.pathname);
+        if (!pdfMetadata) throw createError(400, 'Bad PDF name');
+        
+        if (pdfMetadata.totalPages < page) {
+            throw createError(404, `Document does not contain page: ${page}`)
+        }
+        
+        const document = await createDocumentFromStream(pdfURL.toString());
+        const jpegStream = await generatePageImage(document, page);
+        
+
+        await putObject(pageKey, jpegStream);
+        const pageMetadata = new PDFPageMetadata(pageKey, page, pdfMetadata, true)
+        resolve(undefined);        
+    });
+
+    pageResolutionCache.set(pageKey, promise);
+
+    return promise;
 }
 
 const renderToPage = async (pageKey: string, pdfURL: URL, pdfName: string, page: number) => {
@@ -88,6 +115,7 @@ const renderToPage = async (pageKey: string, pdfURL: URL, pdfName: string, page:
     
 
     pdfMetadata.pagesGenerated = page;
+    await Promise.all(promises);
     await getManager().save(pdfMetadata);
     // Return the last promise, which will be the actual
     //  requested page
@@ -103,7 +131,7 @@ const initializeMetadata = async (pdfURL: URL, pdfName: string) => {
     const document = await createDocumentFromStream(pdfURL.toString());
     const pages = document.numPages;
     console.log(`${pages} detected.`)
-    const pdfMetadata = new PDFMetadata(pdfURL.pathname, pages, 0);
+    const pdfMetadata = new PDFMetadata(pdfURL.pathname, pages, 0, []);
     console.log(`Storing metadata`)
     await getManager().save(PDFMetadata, pdfMetadata);
     console.log(`PDF metadata initialization complete`);

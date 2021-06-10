@@ -1,5 +1,6 @@
 import { Connection, createConnection } from 'typeorm';
 import { PDFMetadata } from './models/PDFMetadata';
+import { PDFPageMetadata } from './models/PDFPageMetadata';
 
 let connection: Connection | undefined;
 
@@ -14,7 +15,8 @@ export default async () => {
         database: process.env.DB_DATABASE || 'h5p',
         password: process.env.DB_PASSWORD,
         entities: [
-            PDFMetadata
+            PDFMetadata,
+            PDFPageMetadata
         ],
         extra: {
           connectionLimit: 5

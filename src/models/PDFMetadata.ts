@@ -1,4 +1,5 @@
-import { Column, Entity, PrimaryColumn, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, OneToMany, PrimaryColumn, PrimaryGeneratedColumn } from 'typeorm';
+import { PDFPageMetadata } from './PDFPageMetadata';
 
 @Entity()
 export class PDFMetadata {
@@ -22,9 +23,13 @@ export class PDFMetadata {
     })
     pagesGenerated: number;
 
-    constructor(pdfLocation: string, totalPages: number, pagesGenerated: number) {
+    @OneToMany(() => PDFPageMetadata, pageMetadata => pageMetadata.PDFMetadata)
+    pages: PDFPageMetadata[];
+
+    constructor(pdfLocation: string, totalPages: number, pagesGenerated: number, pages: PDFPageMetadata[]) {
         this.pdfLocation = pdfLocation;
         this.totalPages = totalPages;
         this.pagesGenerated = pagesGenerated;
+        this.pages = pages;
     }
 }
