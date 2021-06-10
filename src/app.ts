@@ -5,7 +5,7 @@ import initTypeorm from './init-typeorm';
 import { getPDFPage, getPDFPages } from './pdf-service';
 
 const app = express();
-const port = 8080 || process.env.PORT;
+const port = 32891 || process.env.PORT;
 
 /* #region Initialization */
 initTypeorm();
@@ -13,6 +13,11 @@ initTypeorm();
 /* #endregion Initialization */
 
 /* #region middleware */
+
+app.use((_, response: Response, next: NextFunction) => {
+    response.set(`Access-Control-Allow-Origin`, `*`);
+    next();
+});
 
 app.use(express.json());
 
@@ -34,6 +39,7 @@ app.get('/assets/:pdfName/pages', async (request: Request, response: Response, n
     console.log(pdfURL.toString());
     const pages = await getPDFPages(pdfName, pdfURL);
     response
+        .contentType('image/jpeg')
         .json({pages})
         .send();
     next();
