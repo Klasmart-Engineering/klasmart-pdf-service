@@ -4,16 +4,16 @@ import { PDFMetadata } from './PDFMetadata';
 @Entity()
 export class PDFPageMetadata {
     
-    @PrimaryColumn()
+    @PrimaryColumn('string')
     pageLocation: string;
 
-    @Column({ nullable: false })
+    @Column({ type: 'number', nullable: false })
     pageNumber: number;
 
     @ManyToOne(() => PDFMetadata, metadata => metadata.pages, {eager: true})
     PDFMetadata: PDFMetadata;
 
-    @Column({default: false})
+    @Column('boolean', {default: false})
     loaded: boolean;
 
     constructor(pageLocation: string, pageNumber: number, pdfMetadata: PDFMetadata, loaded = false) {

@@ -1,11 +1,11 @@
-import { Column, Entity, OneToMany, PrimaryColumn, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, OneToMany, PrimaryColumn } from 'typeorm';
 import { PDFPageMetadata } from './PDFPageMetadata';
 
 @Entity()
 export class PDFMetadata {
     
     /** Unique S3 Key name of PDF */
-    @PrimaryColumn()
+    @PrimaryColumn('string')
     pdfLocation: string;
 
     /* Total pages that the PDF contains */

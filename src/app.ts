@@ -1,3 +1,6 @@
+import 'reflect-metadata';
+import 'core-js/stable'
+import 'regenerator-runtime/runtime'
 import express, { NextFunction, Request, Response } from 'express';
 import createError from 'http-errors';
 import { Readable } from 'stream';
