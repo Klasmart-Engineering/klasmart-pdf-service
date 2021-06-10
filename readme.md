@@ -3,7 +3,7 @@
 This service stores and serves PDF content in the form of jpeg images for consumption via Kidsloop Live. Requests provide a PDF URL and a page number, which are then generated/stored via pdf.js and served to the users as jpeg images.
 
 ## Environment
-### App Environemnt
+### App Environment
 - PORT - Port that application will listen on. Defaults to 32891.
 
 ### S3 Environment Variables
