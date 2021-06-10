@@ -1,9 +1,9 @@
-FROM node:14.16.1 AS build
+FROM node:lts AS build
 COPY . .
-RUN ["npm", "install"]
+RUN ["npm", "ci" "--no-progress"]
 RUN ["npm", "run", "build"]
 
-FROM node:14.16.1
+FROM node:lts
 RUN mkdir -p /dist/
 RUN mkdir -p /node_modules/
 COPY --from=build /dist ./dist
