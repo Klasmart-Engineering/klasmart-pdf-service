@@ -40,11 +40,10 @@ app.get('/assets/:pdfName/pages', async (request: Request, response: Response, n
     const pdfURL = new URL(decodeURI(request.query.pdfURL as string))
     console.log(pdfURL);
     console.log(pdfURL.toString());
-    const pages = await getPDFPages(pdfName, pdfURL);
+    const pages = await getPDFPages(pdfURL);
     response
         .contentType('image/jpeg')
-        .json({pages})
-        .send();
+        .json({pages});
     next();
 })
 
