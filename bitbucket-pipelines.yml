@@ -17,6 +17,8 @@ pipelines:
         script:
           - npm ci --no-progress --production --only=production
           - npm run build
+          - rm -rf node_modules
+          - npm ci --no-progress --production --only=production
         caches:
           - nodemodules
         artifacts:
