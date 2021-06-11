@@ -5,6 +5,7 @@ This service stores and serves PDF content in the form of jpeg images for consum
 ## Environment
 ### App Environment
 - PORT - Port that application will listen on. Defaults to 32891.
+- LOG_LEVEL (or LEVEL) - Global logging level used by Winston. One of ['silly', 'debug', 'verbose', 'http', 'info', 'warn', 'error']. Defaults to 'debug'.
 
 ### S3 Environment Variables
 - AWS_SECRET_KEY_NAME - Name (ID) of AWS secret key with access to S3 bucket
