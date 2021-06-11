@@ -29,7 +29,8 @@
     "reflect-metadata": "^0.1.13",
     "regenerator-runtime": "^0.13.7",
     "typeorm": "^0.2.34",
-    "uuid": "^8.3.2"
+    "uuid": "^8.3.2",
+    "winston": "^3.3.3"
   },
   "devDependencies": {
     "@babel/cli": "^7.14.5",
