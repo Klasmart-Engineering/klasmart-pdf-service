@@ -4,10 +4,10 @@ import { PDFMetadata } from './PDFMetadata';
 @Entity()
 export class PDFPageMetadata {
     
-    @PrimaryColumn('string')
+    @PrimaryColumn('varchar')
     pageLocation: string;
 
-    @Column({ type: 'number', nullable: false })
+    @Column({ type: 'integer', nullable: false })
     pageNumber: number;
 
     @ManyToOne(() => PDFMetadata, metadata => metadata.pages, {eager: true})
