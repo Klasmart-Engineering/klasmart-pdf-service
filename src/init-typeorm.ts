@@ -4,7 +4,7 @@ import { PDFPageMetadata } from './models/PDFPageMetadata';
 
 let connection: Connection | undefined;
 
-export default async () => {
+export default async (): Promise<Connection> => {
     try {
       connection = await createConnection({
         name: 'default',
