@@ -6,6 +6,9 @@ import createError from 'http-errors';
 import { Readable } from 'stream';
 import initTypeorm from './init-typeorm';
 import { getPDFPage, getPDFPages } from './pdf-service';
+import { withLogger } from './logger';
+
+const log = withLogger('app');
 
 const app = express();
 const port = 32891 || process.env.PORT;
@@ -36,10 +39,10 @@ app.get('/assets/:pdfName/pages', async (request: Request, response: Response, n
     if (!request.query.pdfURL){
         next(createError(400, `Missing query parameters: [pdfURL]`))
     }
-    console.log(request.query.pdfURL);
+    log.silly(request.query.pdfURL);
     const pdfURL = new URL(decodeURI(request.query.pdfURL as string))
-    console.log(pdfURL);
-    console.log(pdfURL.toString());
+    log.silly(pdfURL);
+    log.silly(pdfURL.toString());
     const pages = await getPDFPages(pdfURL);
     response
         .contentType('image/jpeg')
@@ -67,6 +70,6 @@ app.get('/assets/:pdfName/pages/:page', async (request: Request, response: Respo
 /* #endregion middleware */
 
 app.listen(port, () => {
-    console.log(`Application listening on port ${port}`);
+    log.info(`Application listening on port ${port}`);
 });
 

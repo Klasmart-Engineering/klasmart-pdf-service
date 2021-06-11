@@ -1,6 +1,9 @@
 import { Connection, createConnection } from 'typeorm';
+import { withLogger } from './logger';
 import { PDFMetadata } from './models/PDFMetadata';
 import { PDFPageMetadata } from './models/PDFPageMetadata';
+
+const log = withLogger('init-typeorm');
 
 let connection: Connection | undefined;
 
@@ -25,7 +28,7 @@ export default async (): Promise<Connection> => {
       await connection.synchronize();
       return connection;
     } catch (error) {
-      console.error(`Error setting up database connection: ${error.message}`);
+      log.error(`Error setting up database connection: ${error.message}`);
       throw error;
     }
 };
