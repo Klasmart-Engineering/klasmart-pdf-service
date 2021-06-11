@@ -2,10 +2,9 @@ pipelines:
   pull-requests:
     'master':
       - step:
-          image: 'node:lts-alpine'
+          image: 'node:lts'
           name: 'Linter'
-          script:
-            - RUN apk add --update python make g++ && rm -rf /var/cache/apk/*
+          script: 
             - npm config set dev true 
             - npm config set npat true
             - npm i --no-progress
