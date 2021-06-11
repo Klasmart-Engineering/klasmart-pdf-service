@@ -1,0 +1,41 @@
+pipelines:
+  pull-requests:
+    'master':
+      - step:
+          image: 'node:lts-alpine'
+          name: 'Linter'
+          script:
+            - npm config set dev true 
+            - npm config set npat true
+            - npm i --no-progress --production=false --only=dev
+            - npx eslint . --ext .js,.jsx,.ts,.tsx
+  custom:
+    deploy:
+    - step:
+        name: 'Build NPM'
+        image: node:lts
+        script:
+          - npm ci --no-progress --production --only=production
+          - npm run build
+        caches:
+          - nodemodules
+        artifacts:
+         - dist/*
+    - step:
+        name: "Build & Push Docker image"
+        image: python:3.9-alpine
+        script:
+          - pip3 install -U awscli
+          - export BRANCH_TAG=$(echo "$BITBUCKET_BRANCH" | sed -E 's/([^0-9a-zA-Z]+)/-/g' | awk '{print tolower($0)}')
+          - export REPO=$DOCKER_REPO_URL/kidsloop-pdf-service
+          - export COMMIT_TAG=$(echo $BITBUCKET_COMMIT | cut -c1-7)
+          - aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin $DOCKER_REPO_URL
+          - docker build -t pdf-service -f Dockerfile.bitbucket-pipeline .
+          - docker tag pdf-service:latest $REPO:$BRANCH_TAG-$COMMIT_TAG
+          - docker push $REPO:$BRANCH_TAG-$COMMIT_TAG
+        services:
+          - docker
+
+definitions:
+  caches:
+    nodemodules: ./node_modules

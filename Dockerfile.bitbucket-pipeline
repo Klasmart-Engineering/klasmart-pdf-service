@@ -1,0 +1,5 @@
+FROM node:lts
+# Install SFU and dependencies
+COPY ./node_modules ./node_modules
+COPY ./dist ./dist
+ENTRYPOINT ["node", "./dist/app.js"]
