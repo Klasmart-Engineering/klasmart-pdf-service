@@ -22,7 +22,8 @@ pipelines:
         caches:
           - nodemodules
         artifacts:
-         - dist/*
+         - dist/**
+         - node_modules/**
     - step:
         name: "Build & Push Docker image"
         image: python:3.9-alpine
