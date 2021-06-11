@@ -5,10 +5,10 @@ pipelines:
           image: 'node:lts-alpine'
           name: 'Linter'
           script:
+            - RUN apk add --update python make g++ && rm -rf /var/cache/apk/*
             - npm config set dev true 
             - npm config set npat true
             - npm i --no-progress --production=false --only=dev
-            - npm install minimatch --production=false --only=dev
             - npx eslint . --ext .js,.jsx,.ts,.tsx
   custom:
     deploy:
