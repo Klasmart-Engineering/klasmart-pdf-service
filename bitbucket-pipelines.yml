@@ -8,6 +8,7 @@ pipelines:
             - npm config set dev true 
             - npm config set npat true
             - npm i --no-progress --production=false --only=dev
+            - npm i minimatch --save-dev
             - npx eslint . --ext .js,.jsx,.ts,.tsx
   custom:
     deploy:
