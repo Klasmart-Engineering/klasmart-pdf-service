@@ -2,7 +2,7 @@
   "name": "kidsloop-pdf-service",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "app.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start:local": "ts-node -r dotenv/config ./src/app.ts",
@@ -24,7 +24,7 @@
     "express": "^4.17.1",
     "http-errors": "^1.8.0",
     "node-cache": "^5.1.2",
-    "pdfjs-dist": "^2.7.570",
+    "pdfjs-dist": "^2.8.335",
     "pg": "^8.6.0",
     "reflect-metadata": "^0.1.13",
     "regenerator-runtime": "^0.13.7",
@@ -48,7 +48,6 @@
     "dotenv": "^10.0.0",
     "eslint": "^7.28.0",
     "minimatch": "^3.0.4",
-    "ts-loader": "^9.2.3",
     "typescript": "^4.3.2"
   }
 }

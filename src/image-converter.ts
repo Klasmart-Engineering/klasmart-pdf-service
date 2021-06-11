@@ -1,5 +1,5 @@
 import { Canvas, JPEGStream } from 'canvas';
-import * as pdf from 'pdfjs-dist/es5/build/pdf';
+import * as pdf from 'pdfjs-dist/legacy/build/pdf';
 import { PDFDocumentProxy } from 'pdfjs-dist/types/display/api';
 import { withLogger } from './logger';
 
@@ -12,8 +12,13 @@ export const createDocumentFromStream = async (pdfUrl: string): Promise<PDFDocum
 
 export const generatePageImage = async (document: PDFDocumentProxy, pageNumber: number): Promise<JPEGStream> => {
     log.debug(`creating page: ${pageNumber}/${document.numPages}`)
-    const pageProxy = await document.getPage(pageNumber);
-
+    let pageProxy;
+    try {
+        pageProxy = await document.getPage(pageNumber);
+    } catch (err) {
+        log.error(`Error creating document: ${err.message}`)
+        throw err;
+    }
     log.debug('creating viewport/canvas')
     const viewport = pageProxy.getViewport({scale: 3});
     const canvas = new Canvas(viewport.width, viewport.height, "image");
