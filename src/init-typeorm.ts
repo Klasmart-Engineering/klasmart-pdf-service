@@ -12,7 +12,7 @@ export default async () => {
         host: process.env.DB_HOST,
         username: process.env.DB_USER,
         port: +(process.env.DB_PORT || 5432),
-        database: process.env.DB_DATABASE || 'h5p',
+        database: process.env.DB_DATABASE || 'postgres',
         password: process.env.DB_PASSWORD,
         entities: [
             PDFMetadata,
