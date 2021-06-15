@@ -1,5 +1,6 @@
 FROM node:lts
-# Install SFU and dependencies
-COPY ./node_modules ./node_modules
-COPY ./dist ./dist
+WORKDIR /app
+COPY ./node_modules .
+COPY ./dist .
+EXPOSE 32891
 ENTRYPOINT ["node", "./dist/app.js"]
