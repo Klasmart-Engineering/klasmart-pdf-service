@@ -5,7 +5,7 @@ import { PDFPageMetadata } from './PDFPageMetadata';
 export class PDFMetadata {
     
     /** Unique S3 Key name of PDF */
-    @PrimaryColumn('string')
+    @PrimaryColumn('varchar')
     pdfLocation: string;
 
     /* Total pages that the PDF contains */
