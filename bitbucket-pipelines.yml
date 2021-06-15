@@ -15,12 +15,20 @@ pipelines:
         name: 'Build NPM'
         image: node:lts
         script:
-          - npm ci --no-progress --production --only=production
+          - npm ci --no-progress
           - npm run build
+          - rm -rf node_modules
         caches:
           - nodemodules
         artifacts:
-         - dist/*
+         - dist/**
+    - step:
+        name: 'Install Production Dependencies'
+        image: node:lts
+        script:
+          - npm ci --no-progress --production --only=production
+        artifacts:
+        - node_modules/**
     - step:
         name: "Build & Push Docker image"
         image: python:3.9-alpine
