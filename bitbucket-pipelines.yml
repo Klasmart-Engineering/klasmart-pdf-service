@@ -23,6 +23,8 @@ pipelines:
           - docker push $REPO:alpha
         services:
           - docker
+        caches:
+          - docker
     production:
     - step:
         name: "Build & Push Docker image"
