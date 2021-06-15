@@ -1,10 +1,5 @@
-FROM node:lts-alpine AS base
-RUN apk add --no-cache tini
-ENTRYPOINT ["/sbin/tini", "--"]
-WORKDIR /root/app
-
 # ---- Build ----
-FROM base AS build
+FROM node:lts AS build
 WORKDIR /root/app
 COPY ./package*.json ./
 RUN npm ci
@@ -14,7 +9,9 @@ RUN npm run build
 
 #
 # ---- Release ----
-FROM base AS release
+FROM node:lts-alpine AS release
+RUN apk add --no-cache tini
+ENTRYPOINT ["/sbin/tini", "--"]
 WORKDIR /root/app
 # expose port and define CMD
 ENV PORT=8080
