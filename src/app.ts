@@ -13,6 +13,8 @@ const log = withLogger('app');
 const app = express();
 const port = 32891 || process.env.PORT;
 
+const routePrefix = process.env.ROUTE_PREFIX || 'pdf';
+
 /* #region Initialization */
 initTypeorm();
 
@@ -28,7 +30,7 @@ app.use((_, response: Response, next: NextFunction) => {
 app.use(express.json());
 
 /* Retrieves total number of pages */
-app.get('/assets/:pdfName/pages', async (request: Request, response: Response, next: NextFunction) => {
+app.get(`/${routePrefix}/:pdfName/pages`, async (request: Request, response: Response, next: NextFunction) => {
     const { pdfName } = request.params;
 
     if (!pdfName) {
@@ -50,7 +52,7 @@ app.get('/assets/:pdfName/pages', async (request: Request, response: Response, n
     next();
 })
 
-app.get('/assets/:pdfName/pages/:page', async (request: Request, response: Response, next: NextFunction) => {
+app.get(`/${routePrefix}/:pdfName/pages/:page`, async (request: Request, response: Response, next: NextFunction) => {
     const { pdfName, page } = request.params;
     
     if (!request.query.pdfURL){
@@ -63,7 +65,7 @@ app.get('/assets/:pdfName/pages/:page', async (request: Request, response: Respo
         return;
     }
 
-    const stream: Readable= await getPDFPage(pdfName, +page, pdfURL)
+    const stream: Readable = await getPDFPage(pdfName, +page, pdfURL)
     stream.pipe(response)
 
 })
