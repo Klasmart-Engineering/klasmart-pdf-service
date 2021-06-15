@@ -16,7 +16,7 @@ RUN npm audit fix --only=production
 
 #
 # ---- Release ----
-FROM node:lts-alpine AS release
+FROM node:lts AS release
 RUN apk add --no-cache tini
 ENTRYPOINT ["/sbin/tini", "--"]
 WORKDIR /root/app
