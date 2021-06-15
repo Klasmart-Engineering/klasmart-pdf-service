@@ -15,7 +15,7 @@ pipelines:
         name: 'Build NPM'
         image: node:lts
         script:
-          - npm ci
+          - npm ci --no-progress
           - npm run build
           - rm -rf node_modules
         caches:
