@@ -9,7 +9,6 @@ pipelines:
             - npm config set npat true
             - npm i --no-progress
             - npx eslint . --ext .js,.jsx,.ts,.tsx
-  custom:
   branches:
     alpha:
     - step:
@@ -24,7 +23,6 @@ pipelines:
           - docker push $REPO:alpha
         services:
           - docker
-  branches:
     production:
     - step:
         name: "Build & Push Docker image"
