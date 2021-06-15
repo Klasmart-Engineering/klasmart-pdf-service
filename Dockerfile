@@ -26,4 +26,4 @@ EXPOSE 8080
 # copy app sources
 COPY --from=runtime-dependencies /root/app/node_modules ./node_modules
 COPY --from=build /root/app/dist ./dist
-CMD node dist/index.js
+CMD node dist/app.js
