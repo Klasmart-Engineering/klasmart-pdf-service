@@ -9,12 +9,15 @@ const AWS_REGION = process.env.AWS_REGION ?? ''
 
 const log = withLogger('s3-client');
 
-const s3Client: S3Client = new S3Client({
-    region: AWS_REGION,
-    credentials: {
+const credentials = AWS_SECRET_KEY && AWS_SECRET_KEY_NAME
+    ? {
         accessKeyId: AWS_SECRET_KEY_NAME,
         secretAccessKey: AWS_SECRET_KEY
-    },
+    } : undefined;
+
+const s3Client: S3Client = new S3Client({
+    region: AWS_REGION,
+    credentials,
     endpoint: process.env.AWS_S3_HOST || undefined
 });
 
