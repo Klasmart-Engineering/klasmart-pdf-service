@@ -22,9 +22,8 @@ initTypeorm();
 
 /* #region middleware */
 
-app.get(`.well-known/express/server-health`, (_, response: Response) => {
+app.get(`/.well-known/express/server-health`, (_, response: Response) => {
     response.sendStatus(200).end();
-
 });
 
 app.use((request: Request, _, next: NextFunction) => {
