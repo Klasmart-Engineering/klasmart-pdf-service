@@ -21,13 +21,13 @@ const s3Client: S3Client = new S3Client({
     endpoint: process.env.AWS_S3_HOST || undefined
 });
 
-export const putObject = async (key: string, stream: JPEGStream): Promise<void> => {
+export const putObject = async (key: string, stream: JPEGStream, contentLength: number): Promise<void> => {
     
     const request: PutObjectRequest = {
         Bucket: process.env.AWS_BUCKET,
         Key: key,
         ContentType: 'image/jpeg',
-        // ContentLength: stream.readableLength,
+        ContentLength: contentLength,
         Body: Readable.from(stream)
     }
 

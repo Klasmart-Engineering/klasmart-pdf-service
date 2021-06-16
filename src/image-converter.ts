@@ -33,5 +33,6 @@ export const generatePageImage = async (document: PDFDocumentProxy, pageNumber: 
     const imageOutputStream = canvas.createJPEGStream({
         quality: .99
     });
+    
     return imageOutputStream;
 }
