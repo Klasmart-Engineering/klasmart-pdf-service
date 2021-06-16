@@ -13,6 +13,8 @@ const log = withLogger('app');
 const app = express();
 const port = process.env.PORT || 32891;
 
+const routePrefix = process.env.ROUTE_PREFIX || '/pdf';
+
 /* #region Initialization */
 initTypeorm();
 
@@ -28,7 +30,7 @@ app.use((_, response: Response, next: NextFunction) => {
 app.use(express.json());
 
 /* Retrieves total number of pages */
-app.get('/assets/:pdfName/pages', async (request: Request, response: Response, next: NextFunction) => {
+app.get(`${routePrefix}/:pdfName/pages`, async (request: Request, response: Response, next: NextFunction) => {
     const { pdfName } = request.params;
 
     if (!pdfName) {
@@ -45,12 +47,11 @@ app.get('/assets/:pdfName/pages', async (request: Request, response: Response, n
     log.silly(pdfURL.toString());
     const pages = await getPDFPages(pdfURL);
     response
-        .contentType('image/jpeg')
         .json({pages});
     next();
 })
 
-app.get('/assets/:pdfName/pages/:page', async (request: Request, response: Response, next: NextFunction) => {
+app.get(`${routePrefix}/:pdfName/pages/:page`, async (request: Request, response: Response, next: NextFunction) => {
     const { pdfName, page } = request.params;
     
     if (!request.query.pdfURL){
@@ -62,8 +63,11 @@ app.get('/assets/:pdfName/pages/:page', async (request: Request, response: Respo
         next(createError(400, 'Invalid Request URL'));
         return;
     }
+    
+    response.contentType('image/jpeg')
 
-    const stream: Readable= await getPDFPage(pdfName, +page, pdfURL)
+    const stream: Readable = await getPDFPage(pdfName, +page, pdfURL)
+    
     stream.pipe(response)
 
 })

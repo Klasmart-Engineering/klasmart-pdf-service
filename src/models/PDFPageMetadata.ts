@@ -1,7 +1,9 @@
 import { Column, Entity, ManyToOne, PrimaryColumn } from 'typeorm';
 import { PDFMetadata } from './PDFMetadata';
 
-@Entity()
+@Entity({
+    name: 'pdf_page_metadata'
+})
 export class PDFPageMetadata {
     
     @PrimaryColumn('varchar')
