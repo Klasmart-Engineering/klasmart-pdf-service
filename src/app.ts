@@ -11,7 +11,7 @@ import { withLogger } from './logger';
 const log = withLogger('app');
 
 const app = express();
-const port = 32891 || process.env.PORT;
+const port = process.env.PORT || 32891;
 
 const routePrefix = process.env.ROUTE_PREFIX || '/pdf';
 

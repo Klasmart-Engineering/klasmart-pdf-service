@@ -9,26 +9,25 @@ pipelines:
             - npm config set npat true
             - npm i --no-progress
             - npx eslint . --ext .js,.jsx,.ts,.tsx
-  custom:
-    deploy:
+  branches:
+    alpha:
     - step:
-        name: 'Build NPM'
-        image: node:lts
+        name: "Build & Push Docker image"
+        image: python:3.9-alpine
         script:
-          - npm ci --no-progress
-          - npm run build
-          - rm -rf node_modules
+          - pip3 install -U awscli
+          - export REPO=$DOCKER_REPO_URL/kidsloop-pdf-service
+          - aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin $DOCKER_REPO_URL
+          - docker build -f Dockerfile --target build .
+          - docker build -f Dockerfile --target runtime-dependencies .
+          - docker build -t pdf-service -f Dockerfile --target release .
+          - docker tag pdf-service:latest $REPO:alpha
+          - docker push $REPO:alpha
+        services:
+          - docker
         caches:
-          - nodemodules
-        artifacts:
-         - dist/**
-    - step:
-        name: 'Install Production Dependencies'
-        image: node:lts
-        script:
-          - npm ci --no-progress --production --only=production
-        artifacts:
-        - node_modules/**
+          - docker
+    production:
     - step:
         name: "Build & Push Docker image"
         image: python:3.9-alpine
@@ -38,7 +37,7 @@ pipelines:
           - export REPO=$DOCKER_REPO_URL/kidsloop-pdf-service
           - export COMMIT_TAG=$(echo $BITBUCKET_COMMIT | cut -c1-7)
           - aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin $DOCKER_REPO_URL
-          - docker build -t pdf-service -f Dockerfile.bitbucket-pipeline .
+          - docker build -t pdf-service -f Dockerfile --target release .
           - docker tag pdf-service:latest $REPO:$BRANCH_TAG-$COMMIT_TAG
           - docker push $REPO:$BRANCH_TAG-$COMMIT_TAG
         services:
