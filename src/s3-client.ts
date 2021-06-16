@@ -36,6 +36,7 @@ export const putObject = async (key: string, stream: JPEGStream): Promise<void> 
         await s3Client.send(command);
     } catch (err){
         log.error(err.message);
+        if (err.body) log.error(err.body);
         throw err;
     }
     log.debug('s3 upload complete');
