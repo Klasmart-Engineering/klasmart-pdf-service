@@ -5,6 +5,7 @@
   "main": "app.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "ts-node ./src/app.ts",
     "start:local": "ts-node -r dotenv/config ./src/app.ts",
     "start:dist": "node -r dotenv/config ./dist/app.js",
     "build": "babel src --out-dir dist --extensions \".ts\" --source-maps inline",

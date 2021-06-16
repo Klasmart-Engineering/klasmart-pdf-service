@@ -21,7 +21,6 @@ initTypeorm();
 /* #endregion Initialization */
 
 /* #region middleware */
-
 app.get(`/.well-known/express/server-health`, (_, response: Response) => {
     response.sendStatus(200).end();
 });

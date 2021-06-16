@@ -17,11 +17,9 @@ export default async (): Promise<Connection> => {
         port: +(process.env.DB_PORT || 5432),
         database: process.env.DB_DATABASE || 'postgres',
         password: process.env.DB_PASSWORD,
-        entities: [
-            PDFMetadata,
-            PDFPageMetadata
-        ],
-        logging: process.env.TYPEORM_LOGGING?.toUpperCase() === 'TRUE' ? true : false,
+        entities: [PDFMetadata, PDFPageMetadata],
+
+        logging: 'all',
         extra: {
           connectionLimit: 5
         }
