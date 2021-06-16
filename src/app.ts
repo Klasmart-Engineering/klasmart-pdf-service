@@ -47,7 +47,6 @@ app.get(`${routePrefix}/:pdfName/pages`, async (request: Request, response: Resp
     log.silly(pdfURL.toString());
     const pages = await getPDFPages(pdfURL);
     response
-        .contentType('image/jpeg')
         .json({pages});
     next();
 })
@@ -64,8 +63,11 @@ app.get(`${routePrefix}/:pdfName/pages/:page`, async (request: Request, response
         next(createError(400, 'Invalid Request URL'));
         return;
     }
+    
+    response.contentType('image/jpeg')
 
     const stream: Readable = await getPDFPage(pdfName, +page, pdfURL)
+    
     stream.pipe(response)
 
 })
