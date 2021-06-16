@@ -7,7 +7,12 @@ const log = withLogger('image-converter');
 
 export const createDocumentFromStream = async (pdfUrl: string): Promise<PDFDocumentProxy> => {
     log.debug('creating document');
-    return pdf.getDocument(pdfUrl).promise;
+    try {
+        return pdf.getDocument(pdfUrl).promise;
+    } catch (err) {
+        log.error(`Error creating PDF document proxy: ${err.message}`);
+        throw err;
+    }
 }
 
 export const generatePageImage = async (document: PDFDocumentProxy, pageNumber: number): Promise<JPEGStream> => {
