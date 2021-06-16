@@ -69,11 +69,10 @@ app.get(`${routePrefix}/:pdfName/pages/:page`, async (request: Request, response
     const stream: Readable = await getPDFPage(pdfName, +page, pdfURL)
     
     stream.pipe(response)
-
 })
 /* #endregion middleware */
 
 app.listen(port, () => {
-    log.info(`Application listening on port ${port}`);
+    log.info(`Application listening with prefix ${routePrefix} on port ${port}`);
 });
 
