@@ -21,6 +21,7 @@ export default async (): Promise<Connection> => {
             PDFMetadata,
             PDFPageMetadata
         ],
+        logging: process.env.TYPEORM_LOGGING?.toUpperCase() === 'TRUE' ? true : false,
         extra: {
           connectionLimit: 5
         }
