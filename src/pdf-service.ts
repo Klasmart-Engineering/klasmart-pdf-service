@@ -13,16 +13,22 @@ const log = withLogger('pdf-service');
 const pageResolutionCache = new NodeCache({ stdTTL: 100, checkperiod: 60});
 
 export const getPDFPages = async (pdfURL: URL):Promise<number> => {
-    const em = getManager();
-    log.debug('Checking for existing metadata');
-    const existingMetadata = await em.findOne(PDFMetadata, pdfURL.pathname);
-    
-    if (existingMetadata) return existingMetadata.totalPages;
+    let existingMetadata;
+    try {
+        const em = getManager();
+        log.debug('Checking for existing metadata');
+        existingMetadata = await em.findOne(PDFMetadata, pdfURL.pathname);
+    } catch (err) {
+        log.error(`Error while attempting to retrieve metadata from the database: ${err.message}`);
+        throw err;
+    }
+        
+        if (existingMetadata) return existingMetadata.totalPages;
 
-    log.debug('No pre-existing metadata found. Initializing');
-    const { pdfMetadata } = await initializeMetadata(pdfURL);
+        log.debug('No pre-existing metadata found. Initializing');
+        const { pdfMetadata } = await initializeMetadata(pdfURL);
 
-    return pdfMetadata.totalPages;
+        return pdfMetadata.totalPages;
 }
 
 export const getPDFPage = async (pdfName: string, page: number, pdfURL: URL): Promise<Readable> => {

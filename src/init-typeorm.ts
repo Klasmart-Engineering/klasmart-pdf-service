@@ -26,6 +26,7 @@ export default async (): Promise<Connection> => {
         }
       });
       await connection.synchronize();
+      log.info(`TypeORM synchronized and ready`);
       return connection;
     } catch (error) {
       log.error(`Error setting up database connection: ${error.message}`);
