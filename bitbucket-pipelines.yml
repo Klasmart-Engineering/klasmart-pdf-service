@@ -18,7 +18,7 @@ pipelines:
           - pip3 install -U awscli
           - export REPO=$DOCKER_REPO_URL/kidsloop-pdf-service
           - aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin $DOCKER_REPO_URL
-          - docker build -f Dockerfile --target build .
+          - docker build -f Dockerfile -t pdf-service --target build .
           - docker tag pdf-service:latest $REPO:alpha
           - docker push $REPO:alpha
         services:
