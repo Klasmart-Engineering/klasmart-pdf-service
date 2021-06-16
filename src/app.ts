@@ -22,6 +22,11 @@ initTypeorm();
 
 /* #region middleware */
 
+app.get(`.well-known/express/server-health`, (_, response: Response) => {
+    response.sendStatus(200).end();
+
+});
+
 app.use((request: Request, _, next: NextFunction) => {
     log.silly(`Handling request with request path: ${request.path}`)
     next();
@@ -33,6 +38,7 @@ app.use((_, response: Response, next: NextFunction) => {
 });
 
 app.use(express.json());
+
 
 /* Retrieves total number of pages */
 app.get(`${routePrefix}/:pdfName/pages`, async (request: Request, response: Response, next: NextFunction) => {
