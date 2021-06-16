@@ -22,14 +22,13 @@ const s3Client: S3Client = new S3Client({
 });
 
 export const putObject = async (key: string, stream: JPEGStream): Promise<void> => {
-    const readable: Readable = Readable.from(stream);
     
     const request: PutObjectRequest = {
         Bucket: process.env.AWS_BUCKET,
         Key: key,
         ContentType: 'image/jpeg',
-        ContentLength: readable.readableLength,
-        Body: readable
+        // ContentLength: stream.readableLength,
+        Body: Readable.from(stream)
     }
 
     const command = new PutObjectCommand(request);
