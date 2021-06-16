@@ -1,7 +1,9 @@
 import { Column, Entity, OneToMany, PrimaryColumn } from 'typeorm';
 import { PDFPageMetadata } from './PDFPageMetadata';
 
-@Entity()
+@Entity({
+    name: 'pdf_metadata'
+})
 export class PDFMetadata {
     
     /** Unique S3 Key name of PDF */
