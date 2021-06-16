@@ -22,6 +22,11 @@ initTypeorm();
 
 /* #region middleware */
 
+app.use((request: Request, _, next: NextFunction) => {
+    log.silly(`Handling request with request path: ${request.path}`)
+    next();
+});
+
 app.use((_, response: Response, next: NextFunction) => {
     response.set(`Access-Control-Allow-Origin`, `*`);
     next();
