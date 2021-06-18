@@ -45,7 +45,7 @@ export const putObject = async (key: string, stream: JPEGStream, contentLength: 
     return Promise.resolve();
 }
 
-export const readObject = async (key: string): Promise<Readable> => {
+export const readObject = async (key: string): Promise<Readable | undefined> => {
     log.debug(`retrieving S3 object: ${key}`);
     const request: GetObjectRequest = {
         Bucket: process.env.AWS_BUCKET,
@@ -54,6 +54,14 @@ export const readObject = async (key: string): Promise<Readable> => {
 
     const command = new GetObjectCommand(request);
     log.debug('sending object request');
-    const response = await s3Client.send(command);
-    return response.Body as Readable;
+    try {
+        const response = await s3Client.send(command);
+        return response.Body as Readable;
+    } catch (error) {
+        if (error.$metadata?.httpStatusCode === 404) {
+            return undefined;
+        }
+        log.error(`S3 Read Object Failure: ${error.$metadata?.httpStatusCode} ${error.message}`);
+        throw error;
+    }
 }
