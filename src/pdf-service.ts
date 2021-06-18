@@ -5,11 +5,11 @@ import { putObject, readObject } from './s3-client';
 import NodeCache from 'node-cache';
 import createError from 'http-errors';
 import { Readable } from 'stream';
-import { PDFPageMetadata } from './models/PDFPageMetadata';
 import { withLogger } from './logger';
 import fs from 'fs';
 import { JPEGStream } from 'canvas';
 import crypto from 'crypto';
+import createHttpError from 'http-errors';
 
 const log = withLogger('pdf-service');
 
@@ -34,44 +34,33 @@ export const getPDFPages = async (pdfURL: URL):Promise<number> => {
         return pdfMetadata.totalPages;
 }
 
+/* Produces the page key for the pdf, then attempts to load it from s3.
+    If the object is not in S3, then the application will check the page cache. If the pageKey is found in the cache, 
+    then it will await page creation and then read the page image.
+    If the pageKey is not in the cache it will add it to the cache and then load the PDF, generate an image for the page and save it to S3,
+        then return a stream for this image
+*/
 export const getPDFPage = async (pdfName: string, page: number, pdfURL: URL): Promise<Readable> => {
     const pageKey = mapPDFKeyToPageKey(pdfURL, pdfName, page);
     
-    if (! await isPagePreRendered(pageKey)) {
-        await renderSinglePage(pageKey, pdfURL, page);
-    }
-
-    return readObject(pageKey);
-}
-
-const isPagePreRendered = async (pageKey: string) => {
-    const em = getManager();
-    log.debug('Checking if page metadata exists');
-    const pageMetadata = await em.findOne(PDFPageMetadata, pageKey);
-
-    // If the file is still loading, check if there is a promise in the cache, if so wait
-    // for it to resolve, then resolve to true
-    log.debug('Checking if page key is listed in the cache')
+    const pageStream: Readable | undefined = await readObject(pageKey);
+    
     if (pageResolutionCache.has(pageKey)) {
         log.debug('Page key found in cache, awaiting resolution if not already resolved');
         await pageResolutionCache.get(pageKey);
         log.debug('Resolved, page is prerendered');
-        return true;
+        const stream = await readObject(pageKey);
+        if (stream) return stream;
     }
 
-    log.debug('Checking for page metadata');
-    // If there is no page metadata, then we need to load it
-    if (pageMetadata && pageMetadata.loaded) {
-        log.debug('Page metadata lists page as loaded, return true');
-        return true;
-    }
-    
-    
-    log.debug('No page metadata, page is not prerendered.')
+    if (pageStream) return pageStream;
 
-    // If there is no promise in the cache, then return false, the page will need to be processed
-    return false;
+    await renderSinglePage(pageKey, pdfURL, page);
+    const stream = await readObject(pageKey);
+    if (!stream) throw createHttpError(500);
+    return stream;
 }
+
 
 const renderSinglePage = async (pageKey: string, pdfURL: URL, page: number) => {
     // Async code invoked via IIFE to allow immediate access to the promise to cache
@@ -95,8 +84,6 @@ const renderSinglePage = async (pageKey: string, pdfURL: URL, page: number) => {
         const readStream = fs.createReadStream(filename);
 
         await putObject(pageKey, readStream, contentLength);
-        const pageMetadata = new PDFPageMetadata(pageKey, page, pdfMetadata, true);
-        await em.save(pageMetadata);
         await fs.promises.rm(filename);
     })();
 
@@ -139,7 +126,7 @@ const initializeMetadata = async (pdfURL: URL) => {
     const document = await createDocumentFromStream(pdfURL.toString());
     const pages = document.numPages;
     log.debug(`${pages} detected.`)
-    const pdfMetadata = new PDFMetadata(pdfURL.toString().toLowerCase(), pages, 0, []);
+    const pdfMetadata = new PDFMetadata(pdfURL.toString().toLowerCase(), pages, 0);
     log.debug(`Storing metadata`)
     await getManager().save(PDFMetadata, pdfMetadata);
     log.debug(`PDF metadata initialization complete`);

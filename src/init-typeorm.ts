@@ -1,7 +1,6 @@
 import { Connection, createConnection } from 'typeorm';
 import { withLogger } from './logger';
 import { PDFMetadata } from './models/PDFMetadata';
-import { PDFPageMetadata } from './models/PDFPageMetadata';
 
 const log = withLogger('init-typeorm');
 
@@ -17,7 +16,7 @@ export default async (): Promise<Connection> => {
         port: +(process.env.DB_PORT || 5432),
         database: process.env.DB_DATABASE || 'postgres',
         password: process.env.DB_PASSWORD,
-        entities: [PDFMetadata, PDFPageMetadata],
+        entities: [PDFMetadata],
 
         logging: 'all',
         extra: {
