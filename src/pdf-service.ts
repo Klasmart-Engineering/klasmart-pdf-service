@@ -9,6 +9,7 @@ import { PDFPageMetadata } from './models/PDFPageMetadata';
 import { withLogger } from './logger';
 import fs from 'fs';
 import { JPEGStream } from 'canvas';
+import crypto from 'crypto';
 
 const log = withLogger('pdf-service');
 
@@ -19,7 +20,7 @@ export const getPDFPages = async (pdfURL: URL):Promise<number> => {
     try {
         const em = getManager();
         log.debug('Checking for existing metadata');
-        existingMetadata = await em.findOne(PDFMetadata, pdfURL.pathname);
+        existingMetadata = await em.findOne(PDFMetadata, pdfURL.toString().toLowerCase());
     } catch (err) {
         log.error(`Error while attempting to retrieve metadata from the database: ${err.message}`);
         throw err;
@@ -34,7 +35,7 @@ export const getPDFPages = async (pdfURL: URL):Promise<number> => {
 }
 
 export const getPDFPage = async (pdfName: string, page: number, pdfURL: URL): Promise<Readable> => {
-    const pageKey = mapPDFKeyToPageKey(pdfName, page);
+    const pageKey = mapPDFKeyToPageKey(pdfURL, pdfName, page);
     
     if (! await isPagePreRendered(pageKey)) {
         await renderSinglePage(pageKey, pdfURL, page);
@@ -76,7 +77,7 @@ const renderSinglePage = async (pageKey: string, pdfURL: URL, page: number) => {
     // Async code invoked via IIFE to allow immediate access to the promise to cache
     const promise = (async () => {
         const em = getManager();
-        const pdfMetadata = await em.findOne(PDFMetadata, pdfURL.pathname);
+        const pdfMetadata = await em.findOne(PDFMetadata, pdfURL.toString().toLowerCase());
         if (!pdfMetadata) throw createError(400, 'Bad PDF name');
         
         if (pdfMetadata.totalPages < page) {
@@ -84,6 +85,7 @@ const renderSinglePage = async (pageKey: string, pdfURL: URL, page: number) => {
         }
         
         const document = await createDocumentFromStream(pdfURL.toString());
+
         const jpegStream = await generatePageImage(document, page);
 
         // S3 requires a content-length field, to get this we will first write to
@@ -137,13 +139,16 @@ const initializeMetadata = async (pdfURL: URL) => {
     const document = await createDocumentFromStream(pdfURL.toString());
     const pages = document.numPages;
     log.debug(`${pages} detected.`)
-    const pdfMetadata = new PDFMetadata(pdfURL.pathname, pages, 0, []);
+    const pdfMetadata = new PDFMetadata(pdfURL.toString().toLowerCase(), pages, 0, []);
     log.debug(`Storing metadata`)
     await getManager().save(PDFMetadata, pdfMetadata);
     log.debug(`PDF metadata initialization complete`);
     return { pdfMetadata, document };
 }
 
-const mapPDFKeyToPageKey = (pdfKey: string, page: number) => {
-    return `${pdfKey}/${page}.jpeg`
+const mapPDFKeyToPageKey = (pdfURL: URL, pdfName: string, page: number) => {
+    const hash = crypto.createHash('sha512');
+    hash.update(Buffer.from(pdfURL.toString().toUpperCase()));
+    const digest = hash.digest().toString('hex');
+    return `${pdfName.toLowerCase()}-${digest}/${page}.jpeg`;
 }
