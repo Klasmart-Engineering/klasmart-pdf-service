@@ -5,8 +5,9 @@ This service stores and serves PDF content in the form of jpeg images for consum
 ## Environment
 ### App Environment
 - PORT - Port that application will listen on. Defaults to 32891.
-- LOG_LEVEL (or LEVEL) - Global logging level used by Winston. One of ['silly', 'debug', 'verbose', 'http', 'info', 'warn', 'error']. Defaults to 'debug'.
 - ROUTE_PREFIX - Sets the prefix for routing. Defaults to `/pdf`
+- LOG_LEVEL (or LEVEL) - Global logging level used by Winston. One of ['silly', 'debug', 'verbose', 'http', 'info', 'warn', 'error']. Defaults to 'debug'.
+- LOG_STYLE - one of [STRING_COLOR, STRING, JSON]. Configures the output style of logs. String outputs a simple string output. Convenient for human readability. STRING_COLOR uses the same string output as STRING, but allows Winston to embed color metadata which can improve readability when viewed in a terminal. This information is not displayed correctly in some views (Cloudtrail, etc) and so is not recommended for these environments.  JSON style outputs logs in a JSON output, which can be more easily machine parsable and is ideal for higher level log viewers which will need to parse and extract log data.
 
 ### S3 Environment Variables
 - AWS_SECRET_KEY_NAME - Name (ID) of AWS secret key with access to S3 bucket
