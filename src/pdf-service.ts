@@ -23,15 +23,15 @@ export const getPDFPages = async (pdfURL: URL):Promise<number> => {
         existingMetadata = await em.findOne(PDFMetadata, pdfURL.toString().toLowerCase());
     } catch (err) {
         log.error(`Error while attempting to retrieve metadata from the database: ${err.message}`);
-        throw err;
+        throw createHttpError(500, err);
     }
         
-        if (existingMetadata) return existingMetadata.totalPages;
+    if (existingMetadata) return existingMetadata.totalPages;
 
-        log.debug('No pre-existing metadata found. Initializing');
-        const { pdfMetadata } = await initializeMetadata(pdfURL);
+    log.debug('No pre-existing metadata found. Initializing');
+    const { pdfMetadata } = await initializeMetadata(pdfURL);
 
-        return pdfMetadata.totalPages;
+    return pdfMetadata.totalPages;
 }
 
 /* Produces the page key for the pdf, then attempts to load it from s3.

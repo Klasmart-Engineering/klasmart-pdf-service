@@ -88,7 +88,10 @@ const createColorStringLogger = (label: string, level?: NPMLoggingLevels) => {
 const createSilentLogger = (label: string, level?: NPMLoggingLevels) => {
     return winston.loggers.add(label, {
         silent: true,
-        level: level ?? defaultLoggingLevel
+        level: level ?? defaultLoggingLevel,
+        transports: [
+            new winston.transports.Console()
+        ]
     });
 }
 
