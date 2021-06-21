@@ -4,3 +4,4 @@ node_modules
 **/*.pdf
 .env
 dist
+.nyc_output
