@@ -4,9 +4,12 @@ import 'regenerator-runtime/runtime'
 import express, { NextFunction, Request, Response } from 'express';
 import createError from 'http-errors';
 import { Readable } from 'stream';
-import initTypeorm from './init-typeorm';
+import * as typeormConfig from './init-typeorm';
+import * as pdfService from './pdf-service';
 import { getPDFPage, getPDFPages } from './pdf-service';
 import { withLogger } from './logger';
+import * as s3Service from './s3-client';
+
 
 const log = withLogger('app');
 
@@ -16,7 +19,9 @@ const port = process.env.PORT || 32891;
 const routePrefix = process.env.ROUTE_PREFIX || '/pdf';
 
 /* #region Initialization */
-initTypeorm();
+typeormConfig.initialize();
+s3Service.initialize();
+pdfService.initialize();
 
 /* #endregion Initialization */
 

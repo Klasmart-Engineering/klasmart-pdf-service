@@ -11,7 +11,6 @@ const pdf = rewire('pdfjs-dist/legacy/build/pdf');
 const stubGetDocument = sinon.stub();
 pdf.__set__('getDocument', stubGetDocument);
 
-console.log(pdf.getDocument)
 describe('createDocumentFromStream', () => {
     
     // beforeEach(() => {
