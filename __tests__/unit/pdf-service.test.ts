@@ -9,10 +9,11 @@ import { PDFDocumentProxy } from 'pdfjs-dist/types/display/api';
 import NodeCache from 'node-cache';
 import { Readable } from 'stream';
 import { expect } from 'chai';
-import fs, { ReadStream, WriteStream } from 'fs';
+import fs, { WriteStream } from 'fs';
 import { PassThrough } from 'stream';
 import { JPEGStream } from 'canvas';
 import rewire from 'rewire';
+import createError from 'http-errors';
 
 const sandbox = sinon.createSandbox();
 
@@ -129,6 +130,18 @@ describe('pdf-service', () => {
                 .and.be.an.instanceOf(Error)
                 .and.have.property('status', 500);
         });
+
+        it ('should reject with status code of propagated error from createDocumentFromStream try-block when the error is an HttpError', async () => {
+            fakeEntityManager.findOne.resolves(undefined);
+            fakeEntityManager.save.resolvesArg(0);
+            const expectedError = createError(401, 'sample-test-error')
+            fakeImageConverter.createDocumentFromStream.rejects(expectedError);
+
+            await pdfService.getPDFPages(testUrl)
+                .should.eventually.be.rejectedWith(expectedError.message)
+                .and.be.an.instanceOf(Error)
+                .and.have.property('status', expectedError.status);
+        });
         
     });
 
@@ -188,7 +201,57 @@ describe('pdf-service', () => {
             expect(fakeS3Service.readObject.getCalls().length).to.equal(3);
         });
 
+        it('should reject with 500 when readObject returns undefined after renderSinglePage resolves', async () => {
+            const expected = Readable.from(Buffer.from('abc'.repeat(100)));
+            fakeEntityManager.findOne.resolves({totalPages: 7})
+            fakeImageConverter.createDocumentFromStream.resolves({} as PDFDocumentProxy);
+            fakeImageConverter.generatePageImage.resolves(Readable.from(Buffer.from('')))
+            fakeS3Service.readObject.onFirstCall().resolves(undefined);
+            fakeS3Service.readObject.onSecondCall().resolves(undefined)
+            fakeS3Service.readObject.onThirdCall().resolves(undefined);
+            cache.set(pdfService.mapPageKey(testUrl, testPdfName, 1), Promise.resolve());
+
+            await pdfService.getPDFPage(testPdfName, 1, testUrl)
+                .should.eventually.be.rejectedWith('Unable to retrieve object after write')
+                .and.be.an.instanceOf(Error)
+                .and.have.property('status', 500);
+
+        });
+
         it('should reject with 404 when page request is greater than totalPages', async () => {
+            const expected = Readable.from(Buffer.from('abc'.repeat(100)));
+            const page = 10;
+            fakeEntityManager.findOne.resolves({totalPages: 1})
+            fakeImageConverter.createDocumentFromStream.resolves({} as PDFDocumentProxy);
+            fakeImageConverter.generatePageImage.resolves(Readable.from(Buffer.from('')))
+            fakeS3Service.readObject.onFirstCall().resolves(undefined);
+            fakeS3Service.readObject.onSecondCall().resolves(undefined)
+            fakeS3Service.readObject.onThirdCall().resolves(expected);
+            cache.set(pdfService.mapPageKey(testUrl, testPdfName, 10), Promise.resolve());
+
+            await pdfService.getPDFPage(testPdfName, page, testUrl)
+                .should.eventually.be.rejectedWith(`Document does not contain page: ${page}`)
+                .and.be.an.instanceOf(Error)
+                .and.have.property('status', 404);
+        });
+
+        it('should reject with 400 if requested pdf does not have processed metadata', async () => {
+            const expected = Readable.from(Buffer.from('abc'.repeat(100)));
+            const page = 10;
+            fakeEntityManager.findOne.resolves(undefined);
+            fakeImageConverter.createDocumentFromStream.resolves({} as PDFDocumentProxy);
+            fakeImageConverter.generatePageImage.resolves(Readable.from(Buffer.from('')))
+            fakeS3Service.readObject.onFirstCall().resolves(undefined);
+            fakeS3Service.readObject.onSecondCall().resolves(undefined)
+            fakeS3Service.readObject.onThirdCall().resolves(expected);
+            cache.set(pdfService.mapPageKey(testUrl, testPdfName, 10), Promise.resolve());
+
+            await pdfService.getPDFPage(testPdfName, page, testUrl)
+                .should.eventually.be.rejected
+                .and.have.property('status', 400);
+        });
+
+        it('should reject with 400 when page request is greater than totalPages', async () => {
             const expected = Readable.from(Buffer.from('abc'.repeat(100)));
             const page = 10;
             fakeEntityManager.findOne.resolves({totalPages: 1})
@@ -259,8 +322,8 @@ describe('pdf-service', () => {
             const page = 10;
             fakeFs = sandbox.stub(fs);
 
-            const mockReadable = new PassThrough() as unknown;
-            const mockWritable = new PassThrough() as unknown;
+            const mockReadable = new PassThrough();
+            const mockWritable = new PassThrough();
             const expectedError = new Error('write-stream-test-error');
 
             // The PDF has been initialized
@@ -276,7 +339,6 @@ describe('pdf-service', () => {
             // Fake the image data produced by pdf.js
             fakeImageConverter.generatePageImage.resolves(mockReadable as JPEGStream);
             
-            
             // Fake the FS write stream
             fakeFs.createWriteStream.returns(mockWritable as unknown as WriteStream);
             
@@ -286,7 +348,7 @@ describe('pdf-service', () => {
             try {
                 setTimeout(() => {
                     // Force a stream error
-                    (mockWritable as PassThrough).emit('error', expectedError);
+                    mockWritable.emit('error', expectedError);
                 }, 100)
             } catch (error) {
                 console.log(error);
@@ -302,8 +364,8 @@ describe('pdf-service', () => {
             const page = 10;
             fakeFs = sandbox.stub(fs);
 
-            const mockReadable = new PassThrough() as unknown;
-            const mockWritable = new PassThrough() as unknown;
+            const mockReadable = new PassThrough();
+            const mockWritable = new PassThrough();
             const expectedError = new Error('write-stream-test-error');
 
             // The PDF has been initialized
@@ -319,7 +381,6 @@ describe('pdf-service', () => {
             // Fake the image data produced by pdf.js
             fakeImageConverter.generatePageImage.resolves(mockReadable as JPEGStream);
             
-            
             // Fake the FS write stream
             fakeFs.createWriteStream.returns(mockWritable as unknown as WriteStream);
             
@@ -329,7 +390,7 @@ describe('pdf-service', () => {
             try {
                 setTimeout(() => {
                     // Force a stream error
-                    (mockWritable as PassThrough).emit('error', expectedError);
+                    mockWritable.emit('error', expectedError);
                 }, 100)
             } catch (error) {
                 console.log(error);

@@ -76,7 +76,7 @@ export const getPDFPage = async (pdfName: string, page: number, pdfURL: URL): Pr
         if (err instanceof HttpError) throw err;
         throw createError(500, err.message);
     } 
-    if (!stream) throw createHttpError(500);
+    if (!stream) throw createHttpError(500, 'Unable to retrieve object after write.');
     return stream;
 }
 
@@ -86,7 +86,7 @@ const renderSinglePage = async (pageKey: string, pdfURL: URL, page: number) => {
     const promise = (async () => {
         const em = getManager();
         const pdfMetadata = await em.findOne(PDFMetadata, pdfURL.toString().toLowerCase());
-        if (!pdfMetadata) throw createError(400, 'Bad PDF name');
+        if (!pdfMetadata) throw createError(400, `PDF metadata not found. PDF must be processed using '.../pages?...' before pages can be loaded.`);
         
         if (pdfMetadata.totalPages < page) {
             throw createError(404, `Document does not contain page: ${page}`)
