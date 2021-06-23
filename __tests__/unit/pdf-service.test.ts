@@ -9,8 +9,10 @@ import { PDFDocumentProxy } from 'pdfjs-dist/types/display/api';
 import NodeCache from 'node-cache';
 import { Readable } from 'stream';
 import { expect } from 'chai';
-import fs from 'fs';
-import { Stream } from 'winston/lib/winston/transports';
+import fs, { ReadStream, WriteStream } from 'fs';
+import { PassThrough } from 'stream';
+import { JPEGStream } from 'canvas';
+import rewire from 'rewire';
 
 const sandbox = sinon.createSandbox();
 
@@ -51,8 +53,31 @@ describe('pdf-service', () => {
         cache.close();
     })
 
+    describe('initialize', () => {
+        let rewiredPdfService = rewire<typeof pdfService>('../../src/pdf-service');
+        
+        beforeEach(() => {
+            rewiredPdfService = rewire<typeof pdfService>('../../src/pdf-service');
+        });
+
+        it('should not have a cache if initialize was not called', () => {
+            expect(rewiredPdfService.__get__('pageResolutionCache')).to.be.undefined;
+        });
+
+        it('should have a default nodecache when none is provided to initialize', () => {
+            rewiredPdfService.initialize();
+            expect(rewiredPdfService.__get__('pageResolutionCache')).not.to.be.undefined;
+        });
+
+        it('should have NodeCache provided when initialized was called', () => {
+            const expectedCache = new NodeCache({});
+            rewiredPdfService.initialize(expectedCache);
+            expect(rewiredPdfService.__get__('pageResolutionCache')).to.equal(expectedCache);
+        });
+    });
+
     describe('getPDFPages', () => {
-        it('it should reject with 500 if findOne rejects', async () => {
+        it('should reject with 500 if findOne rejects', async () => {
             fakeEntityManager.findOne.rejects();
 
             await pdfService.getPDFPages(testUrl)
@@ -164,34 +189,140 @@ describe('pdf-service', () => {
                 .and.have.property('status', 404);
         });
 
-        // it('Should reject with 500 when write stream emits error while writing temporary file', async () => {
-        //     const expected = Readable.from(Buffer.from('abc'.repeat(100)));
-        //     const page = 10;
-        //     fakeFs = sandbox.stub(fs);
+        /**
+         * Note on this test:
+         * This test is meant to target a high complexity scenario that involves a significant amount of setup.
+         * The particular configuration will force the service to exhaust all efforts to retrieve the image file
+         * from storage causing it to generate the imge using pdf.js. Then the scenario forces a write stream error
+         * to test how the application handles stream errors. 
+         */
+        it('Should reject with 500 when JPEGStream emits error while writing temporary file', async () => {
+            const page = 10;
+            fakeFs = sandbox.stub(fs);
 
-        //     fakeEntityManager.findOne.resolves({totalPages: 12})
-        //     fakeImageConverter.createDocumentFromStream.resolves({} as PDFDocumentProxy);
-        //     fakeImageConverter.generatePageImage.resolves(Readable.from(Buffer.from('abc'.repeat(10000))));
-        //     fakeS3Service.readObject.onFirstCall().resolves(undefined);
-        //     fakeS3Service.readObject.onSecondCall().resolves(undefined)
-        //     fakeS3Service.readObject.onThirdCall().resolves(expected);
-        //     cache.set(pdfService.mapPageKey(testUrl, testPdfName, 10), Promise.resolve());
-        //     const rs = new ReadableStream();
-        //     rs.
-            
-        //     const stream = new fs.WriteStream();
-        //     stream.cork();
-        //     fakeFs.createWriteStream.returns(stream);
-        //     fakeFs.createReadStream.returns(new fs.ReadStream)))
-            
-        //     try {
-        //         // stream.emit('error', new Error('forced error'));
-        //     } catch (err) {}
-        //     await pdfService.getPDFPage(testPdfName, page, testUrl)
-        //         .should.eventually.be.rejectedWith(`Document does not contain page: ${page}`)
-        //         .and.be.an.instanceOf(Error)
-        //         .and.have.property('status', 500);
-        // });
+            const mockReadable = new PassThrough() as unknown;
+            const mockWritable = new PassThrough() as unknown;
+            const expectedError = new Error('read-stream-test-error');
 
+            // The PDF has been initialized
+            fakeEntityManager.findOne.resolves({totalPages: 12})
+            fakeImageConverter.createDocumentFromStream.resolves({} as PDFDocumentProxy);
+            
+            // Force all shortcuts to fail, forcing the service to render the page
+            fakeS3Service.readObject.onFirstCall().resolves(undefined);
+            fakeS3Service.readObject.onSecondCall().resolves(undefined)
+            fakeS3Service.putObject.onFirstCall().resolves();
+            cache.set(pdfService.mapPageKey(testUrl, testPdfName, 10), Promise.resolve());
+            
+            // Fake the image data produced by pdf.js
+            fakeImageConverter.generatePageImage.resolves(mockReadable as JPEGStream);
+            
+            
+            // Fake the FS write stream
+            fakeFs.createWriteStream.returns(mockWritable as unknown as WriteStream);
+            
+            const resultPromise = pdfService.getPDFPage(testPdfName, page, testUrl);
+            await new Promise<void>((resolve, _) => resolve());
+            
+            try {
+                setTimeout(() => {
+                    // Force a stream error
+                    (mockReadable as PassThrough).emit('error', expectedError);
+                }, 100)
+            } catch (error) {
+                console.log(error);
+            }
+
+            await resultPromise
+                .should.eventually.be.rejectedWith(expectedError.message)
+                .and.be.an.instanceOf(Error)
+                .and.have.property('status', 500);
+        });
+
+        it('Should reject with 500 when write stream emits error while writing temporary file', async () => {
+            const page = 10;
+            fakeFs = sandbox.stub(fs);
+
+            const mockReadable = new PassThrough() as unknown;
+            const mockWritable = new PassThrough() as unknown;
+            const expectedError = new Error('write-stream-test-error');
+
+            // The PDF has been initialized
+            fakeEntityManager.findOne.resolves({totalPages: 12})
+            fakeImageConverter.createDocumentFromStream.resolves({} as PDFDocumentProxy);
+            
+            // Force all shortcuts to fail, forcing the service to render the page
+            fakeS3Service.readObject.onFirstCall().resolves(undefined);
+            fakeS3Service.readObject.onSecondCall().resolves(undefined)
+            fakeS3Service.putObject.onFirstCall().resolves();
+            cache.set(pdfService.mapPageKey(testUrl, testPdfName, 10), Promise.resolve());
+            
+            // Fake the image data produced by pdf.js
+            fakeImageConverter.generatePageImage.resolves(mockReadable as JPEGStream);
+            
+            
+            // Fake the FS write stream
+            fakeFs.createWriteStream.returns(mockWritable as unknown as WriteStream);
+            
+            const resultPromise = pdfService.getPDFPage(testPdfName, page, testUrl);
+            await new Promise<void>((resolve, _) => resolve());
+            
+            try {
+                setTimeout(() => {
+                    // Force a stream error
+                    (mockWritable as PassThrough).emit('error', expectedError);
+                }, 100)
+            } catch (error) {
+                console.log(error);
+            }
+
+            await resultPromise
+                .should.eventually.be.rejectedWith(expectedError.message)
+                .and.be.an.instanceOf(Error)
+                .and.have.property('status', 500);
+        });
+
+        it('Should reject with 500 when write stream emits error while writing temporary file', async () => {
+            const page = 10;
+            fakeFs = sandbox.stub(fs);
+
+            const mockReadable = new PassThrough() as unknown;
+            const mockWritable = new PassThrough() as unknown;
+            const expectedError = new Error('write-stream-test-error');
+
+            // The PDF has been initialized
+            fakeEntityManager.findOne.resolves({totalPages: 12})
+            fakeImageConverter.createDocumentFromStream.resolves({} as PDFDocumentProxy);
+            
+            // Force all shortcuts to fail, forcing the service to render the page
+            fakeS3Service.readObject.onFirstCall().resolves(undefined);
+            fakeS3Service.readObject.onSecondCall().resolves(undefined)
+            fakeS3Service.putObject.onFirstCall().resolves();
+            cache.set(pdfService.mapPageKey(testUrl, testPdfName, 10), Promise.resolve());
+            
+            // Fake the image data produced by pdf.js
+            fakeImageConverter.generatePageImage.resolves(mockReadable as JPEGStream);
+            
+            
+            // Fake the FS write stream
+            fakeFs.createWriteStream.returns(mockWritable as unknown as WriteStream);
+            
+            const resultPromise = pdfService.getPDFPage(testPdfName, page, testUrl);
+            await new Promise<void>((resolve, _) => resolve());
+            
+            try {
+                setTimeout(() => {
+                    // Force a stream error
+                    (mockWritable as PassThrough).emit('error', expectedError);
+                }, 100)
+            } catch (error) {
+                console.log(error);
+            }
+
+            await resultPromise
+                .should.eventually.be.rejectedWith(expectedError.message)
+                .and.be.an.instanceOf(Error)
+                .and.have.property('status', 500);
+        });
     });
 })

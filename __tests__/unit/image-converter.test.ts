@@ -1,7 +1,6 @@
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
-import { createDocumentFromStream } from '../../src/image-converter';
 import rewire from 'rewire';
 
 chai.use(chaiAsPromised);
