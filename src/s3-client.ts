@@ -27,7 +27,6 @@ export const initialize = (providedS3Client?: S3Client): void => {
 
 
 export const putObject = async (key: string, stream: JPEGStream, contentLength: number): Promise<void> => {
-    log.debug('a');
     const request: PutObjectRequest = {
         Bucket: process.env.AWS_BUCKET,
         Key: key,
@@ -35,7 +34,6 @@ export const putObject = async (key: string, stream: JPEGStream, contentLength: 
         ContentLength: contentLength,
         Body: Readable.from(stream)
     }
-    log.debug('b');
 
     const command = new PutObjectCommand(request);
 

@@ -156,6 +156,22 @@ describe('pdf-service', () => {
             expect(fakeS3Service.readObject.getCalls().length).to.equal(2);
         });
 
+        it('should resolve to second call of readObject if the first is undefined and the key is unregistered in the cache and second call is truthy', async () => {
+            const expected = Readable.from(Buffer.from('abc'.repeat(100)));
+            const unexpected = Readable.from(Buffer.from('nono'.repeat(100)));
+            fakeS3Service.readObject.onFirstCall().resolves(undefined);
+            fakeS3Service.readObject.onSecondCall().resolves(expected)
+            fakeS3Service.readObject.onThirdCall().resolves(unexpected);
+            fakeEntityManager.findOne.resolves({totalPages: 7})
+            fakeImageConverter.generatePageImage.resolves(Readable.from(Buffer.from('')))
+            
+            
+            await pdfService.getPDFPage(testPdfName, 1, testUrl)
+                .should.eventually.equal(expected);
+
+            expect(fakeS3Service.readObject.getCalls().length).to.equal(2);
+        });
+
         it('should resolve to third call of readObject if the first two are undefined', async () => {
             const expected = Readable.from(Buffer.from('abc'.repeat(100)));
             fakeEntityManager.findOne.resolves({totalPages: 7})

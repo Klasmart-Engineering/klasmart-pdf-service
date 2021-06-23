@@ -114,8 +114,6 @@ const renderSinglePage = async (pageKey: string, pdfURL: URL, page: number) => {
         
         await s3Service.putObject(pageKey, readStream, contentLength);
 
-
-        log.info('z');
         await fs.promises.rm(filename);
     })();
 
