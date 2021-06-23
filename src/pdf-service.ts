@@ -1,9 +1,9 @@
 import { getManager } from 'typeorm';
 import { PDFMetadata } from './models/PDFMetadata'
-import { createDocumentFromStream, generatePageImage } from './image-converter';
-import { putObject, readObject } from './s3-client';
+import * as imageConverter from './image-converter';
+import * as s3Service from './s3-client';
 import NodeCache from 'node-cache';
-import createError from 'http-errors';
+import createError, { HttpError } from 'http-errors';
 import { Readable } from 'stream';
 import { withLogger } from './logger';
 import fs from 'fs';
@@ -13,7 +13,19 @@ import createHttpError from 'http-errors';
 
 const log = withLogger('pdf-service');
 
-const pageResolutionCache = new NodeCache({ stdTTL: 100, checkperiod: 60});
+let pageResolutionCache: NodeCache;
+const defaultCacheProps = {
+    stdTTL: 100,
+    checkperiod: 60
+}
+
+/**
+ * Provides configuration for the PDF service
+ * @param cache - Provided NodeCache. Will use a default configuration if not provided
+ */
+export const initialize = (cache: NodeCache = new NodeCache(defaultCacheProps)): void => {
+    pageResolutionCache = cache;
+}
 
 export const getPDFPages = async (pdfURL: URL):Promise<number> => {
     let existingMetadata;
@@ -23,16 +35,16 @@ export const getPDFPages = async (pdfURL: URL):Promise<number> => {
         existingMetadata = await em.findOne(PDFMetadata, pdfURL.toString().toLowerCase());
     } catch (err) {
         log.error(`Error while attempting to retrieve metadata from the database: ${err.message}`);
-        throw err;
+        throw createError(500, err.message, err);
     }
         
-        if (existingMetadata) return existingMetadata.totalPages;
+    if (existingMetadata) return existingMetadata.totalPages;
 
-        log.debug('No pre-existing metadata found. Initializing');
-        const { pdfMetadata } = await initializeMetadata(pdfURL);
+    log.debug('No pre-existing metadata found. Initializing');
+    const { pdfMetadata } = await initializeMetadata(pdfURL);
 
-        return pdfMetadata.totalPages;
-}
+    return pdfMetadata.totalPages;
+}   
 
 /* Produces the page key for the pdf, then attempts to load it from s3.
     If the object is not in S3, then the application will check the page cache. If the pageKey is found in the cache, 
@@ -41,23 +53,30 @@ export const getPDFPages = async (pdfURL: URL):Promise<number> => {
         then return a stream for this image
 */
 export const getPDFPage = async (pdfName: string, page: number, pdfURL: URL): Promise<Readable> => {
-    const pageKey = mapPDFKeyToPageKey(pdfURL, pdfName, page);
+    const pageKey = mapPageKey(pdfURL, pdfName, page);
     
-    const pageStream: Readable | undefined = await readObject(pageKey);
+    const pageStream: Readable | undefined = await s3Service.readObject(pageKey);
+
+    if (pageStream) return pageStream;
     
     if (pageResolutionCache.has(pageKey)) {
         log.debug('Page key found in cache, awaiting resolution if not already resolved');
         await pageResolutionCache.get(pageKey);
         log.debug('Resolved, page is prerendered');
-        const stream = await readObject(pageKey);
+        const stream = await s3Service.readObject(pageKey);
         if (stream) return stream;
     }
 
-    if (pageStream) return pageStream;
-
-    await renderSinglePage(pageKey, pdfURL, page);
-    const stream = await readObject(pageKey);
-    if (!stream) throw createHttpError(500);
+    let stream;
+    try {
+        await renderSinglePage(pageKey, pdfURL, page);
+        stream = await s3Service.readObject(pageKey);
+    } catch (err) {
+        log.error(`Error rendering PDF page: ${err.message}`)
+        if (err instanceof HttpError) throw err;
+        throw createError(500, err.message);
+    } 
+    if (!stream) throw createHttpError(500, 'Unable to retrieve object after write.');
     return stream;
 }
 
@@ -67,23 +86,34 @@ const renderSinglePage = async (pageKey: string, pdfURL: URL, page: number) => {
     const promise = (async () => {
         const em = getManager();
         const pdfMetadata = await em.findOne(PDFMetadata, pdfURL.toString().toLowerCase());
-        if (!pdfMetadata) throw createError(400, 'Bad PDF name');
+        if (!pdfMetadata) throw createError(400, `PDF metadata not found. PDF must be processed using '.../pages?...' before pages can be loaded.`);
         
         if (pdfMetadata.totalPages < page) {
             throw createError(404, `Document does not contain page: ${page}`)
         }
         
-        const document = await createDocumentFromStream(pdfURL.toString());
+        const document = await imageConverter.createDocumentFromStream(pdfURL.toString());
 
-        const jpegStream = await generatePageImage(document, page);
+        const jpegStream = await imageConverter.generatePageImage(document, page);
 
         // S3 requires a content-length field, to get this we will first write to
         // a temp file
         const filename = `./${pageKey.replace('/', '-')}`;
-        const contentLength = await writeStreamToTempFile(filename, jpegStream)
+        let contentLength: number;
+        try {
+            contentLength = await writeStreamToTempFile(filename, jpegStream)
+        } catch (err) {
+            log.error(`Error writing image to temporary file: ${err.message}`);
+            throw createError(500, err);
+        }
+
+        log.info('Reading temp file from file system');
         const readStream = fs.createReadStream(filename);
 
-        await putObject(pageKey, readStream, contentLength);
+        log.info('Sending data to S3');
+        
+        await s3Service.putObject(pageKey, readStream, contentLength);
+
         await fs.promises.rm(filename);
     })();
 
@@ -93,27 +123,25 @@ const renderSinglePage = async (pageKey: string, pdfURL: URL, page: number) => {
 }
 
 const writeStreamToTempFile = (filename: string, stream: JPEGStream): Promise<number> => {
-    
     return new Promise((resolve, reject) => {
         const fileStream = fs.createWriteStream(filename);
-        
-        stream.on('end', () => {
-            log.info(`stream end`);
-            const contentLength = fileStream.bytesWritten;
-            log.info(`contentLength: ${contentLength}`)
-            resolve(contentLength);
-        })
+        stream
+            .on('end', () => {
+                log.debug(`stream end`);
+                const contentLength = fileStream.bytesWritten;
+                log.silly(`contentLength: ${contentLength}`)
+                resolve(contentLength);
+            }).on('error', (err) => {
+                log.error(`Error reading from JPEGStream while streaming to temporary file: ${err.message}`)
+                reject(err);
+            })
+            .pipe(fileStream)
+            .on('error', (err) => {
+                log.error(`Error raised by WriteFileStream while streaming to temporary file: ${err.message}`)
+                reject(err);
+            });
 
-        fileStream.on('error', (err) => {
-            log.error(`Error streaming to temporary file: ${err.message}`)
-            reject(err);
-        });
-
-        stream.on('error', (err) => {
-            log.error(`Error in JPEG stream: ${err.message}`)
-        })
-        log.info('Piping file');
-        stream.pipe(fileStream);
+        log.debug('Piping file');
     });
 }
 
@@ -123,17 +151,23 @@ const writeStreamToTempFile = (filename: string, stream: JPEGStream): Promise<nu
 **/
 const initializeMetadata = async (pdfURL: URL) => {
     log.debug(`Creating document for pdf located at ${pdfURL.toString()}`); 
-    const document = await createDocumentFromStream(pdfURL.toString());
-    const pages = document.numPages;
-    log.debug(`${pages} detected.`)
-    const pdfMetadata = new PDFMetadata(pdfURL.toString().toLowerCase(), pages, 0);
-    log.debug(`Storing metadata`)
-    await getManager().save(PDFMetadata, pdfMetadata);
-    log.debug(`PDF metadata initialization complete`);
-    return { pdfMetadata, document };
+    try {
+        const document = await imageConverter.createDocumentFromStream(pdfURL.toString());
+        const pages = document.numPages;
+        log.debug(`${pages} detected.`)
+        const pdfMetadata = new PDFMetadata(pdfURL.toString().toLowerCase(), pages, 0);
+        log.debug(`Storing metadata`)
+        await getManager().save(PDFMetadata, pdfMetadata);
+        log.debug(`PDF metadata initialization complete`);
+        return { pdfMetadata, document };
+    } catch (err) {
+        log.error(`Error initializing page metadata: ${err.message}`, err);
+        if (err instanceof HttpError) throw err;
+        throw createHttpError(500, err);
+    }
 }
 
-const mapPDFKeyToPageKey = (pdfURL: URL, pdfName: string, page: number) => {
+export const mapPageKey = (pdfURL: URL, pdfName: string, page: number): string => {
     const hash = crypto.createHash('sha512');
     hash.update(Buffer.from(pdfURL.toString().toUpperCase()));
     const digest = hash.digest().toString('hex');

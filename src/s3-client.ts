@@ -15,14 +15,18 @@ const credentials = AWS_SECRET_KEY && AWS_SECRET_KEY_NAME
         secretAccessKey: AWS_SECRET_KEY
     } : undefined;
 
-const s3Client: S3Client = new S3Client({
-    region: AWS_REGION,
-    credentials,
-    endpoint: process.env.AWS_S3_HOST || undefined
-});
+let s3Client: S3Client;
+
+export const initialize = (providedS3Client?: S3Client): void => {
+    s3Client = providedS3Client || new S3Client({
+        region: AWS_REGION,
+        credentials,
+        endpoint: process.env.AWS_S3_HOST || undefined
+    });
+}
+
 
 export const putObject = async (key: string, stream: JPEGStream, contentLength: number): Promise<void> => {
-    
     const request: PutObjectRequest = {
         Bucket: process.env.AWS_BUCKET,
         Key: key,

@@ -1,4 +1,5 @@
 import { Canvas, JPEGStream } from 'canvas';
+import createHttpError from 'http-errors';
 import * as pdf from 'pdfjs-dist/legacy/build/pdf';
 import { PDFDocumentProxy } from 'pdfjs-dist/types/display/api';
 import { withLogger } from './logger';
@@ -11,7 +12,8 @@ export const createDocumentFromStream = async (pdfUrl: string): Promise<PDFDocum
         return pdf.getDocument(pdfUrl).promise;
     } catch (err) {
         log.error(`Error creating PDF document proxy: ${err.message}`);
-        throw err;
+        log.error(err);
+        throw createHttpError(500, 'Error encountered creating PDF document');
     }
 }
 
