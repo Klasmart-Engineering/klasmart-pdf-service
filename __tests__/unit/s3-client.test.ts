@@ -65,6 +65,10 @@ describe('s3-client', () => {
         s3Service.initialize(mockS3Client);
         const s3ClientSendStub = sinon.stub(mockS3Client, 'send');
 
+        afterEach(() => {
+            s3ClientSendStub.reset();
+        })
+
         it('should reject bubbling error when send throws with a non-404 error', async () => {
             const expectedError = new Error('rejected-standard-testing-error');
             s3ClientSendStub.rejects(expectedError);
@@ -87,7 +91,7 @@ describe('s3-client', () => {
         
         it('should resolve with a stream stored in body of response when send resolves', async () => {
             const expected = new PassThrough();
-            s3ClientSendStub.resolves(expected);
+            s3ClientSendStub.resolves({ Body: expected });
             await s3Service.readObject(testKey)
                 .should.eventually.equal(expected);
         });
