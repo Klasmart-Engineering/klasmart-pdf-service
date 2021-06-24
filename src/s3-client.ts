@@ -5,8 +5,8 @@ import { withLogger } from './logger';
 
 const AWS_SECRET_KEY_NAME = process.env.AWS_SECRET_KEY_NAME ?? '';
 const AWS_SECRET_KEY = process.env.AWS_SECRET_KEY ?? '';
-const AWS_REGION = process.env.AWS_REGION ?? ''
-
+const AWS_REGION = process.env.AWS_REGION ?? '';
+const defaultRegion = 'ap-northeast-2';
 const log = withLogger('s3-client');
 
 const credentials = AWS_SECRET_KEY && AWS_SECRET_KEY_NAME
@@ -18,8 +18,9 @@ const credentials = AWS_SECRET_KEY && AWS_SECRET_KEY_NAME
 let s3Client: S3Client;
 
 export const initialize = (providedS3Client?: S3Client): void => {
+    log.warn(`Region not provided. Using default: ${defaultRegion}`);
     s3Client = providedS3Client || new S3Client({
-        region: AWS_REGION,
+        region: AWS_REGION || defaultRegion,
         credentials,
         endpoint: process.env.AWS_S3_HOST || undefined
     });
