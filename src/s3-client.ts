@@ -37,6 +37,11 @@ export const initialize = (providedS3Client?: S3Client): void => {
         credentials,
         endpoint: process.env.AWS_S3_HOST || undefined
     });
+
+    if (!process.env.AWS_BUCKET) {
+        log.error(`Fatal: No AWS Bucket defined! Provide a bucketname using the AWS_BUCKET environment variable.`)
+        process.exit(1);
+    }
 }
 
 
