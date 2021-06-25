@@ -18,7 +18,20 @@ const credentials = AWS_SECRET_KEY && AWS_SECRET_KEY_NAME
 let s3Client: S3Client;
 
 export const initialize = (providedS3Client?: S3Client): void => {
-    log.warn(`Region not provided. Using default: ${defaultRegion}`);
+    log.info('Initializing S3 Service');
+    
+    if (!AWS_REGION) {
+        log.warn(`Region not explicitly provided. Using default: ${defaultRegion}`);
+    }
+
+    if (process.env.AWS_S3_HOST) {
+        log.warn(`The current configuration provides S3 hostname override: ${process.env.AWS_S3_HOST}.`)
+    }
+
+    if (!credentials) {
+        log.info(`Explicit environment credentials not provided - relying service role for authorization`);
+    }
+
     s3Client = providedS3Client || new S3Client({
         region: AWS_REGION || defaultRegion,
         credentials,
