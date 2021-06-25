@@ -2,6 +2,8 @@ import { GetObjectCommand, GetObjectRequest, PutObjectCommand, PutObjectRequest,
 import { Readable } from 'stream';
 import { JPEGStream } from 'canvas';
 import { withLogger } from './logger';
+import { CredentialProviderChain, Credentials, ECSCredentials, EnvironmentCredentials } from 'aws-sdk';
+import { Provider } from 'aws-sdk/clients/eks';
 
 const AWS_SECRET_KEY_NAME = process.env.AWS_SECRET_KEY_NAME ?? '';
 const AWS_SECRET_KEY = process.env.AWS_SECRET_KEY ?? '';
@@ -9,7 +11,9 @@ const AWS_REGION = process.env.AWS_REGION ?? '';
 const defaultRegion = 'ap-northeast-2';
 const log = withLogger('s3-client');
 
-const credentials = AWS_SECRET_KEY && AWS_SECRET_KEY_NAME
+let credentialsReady: Promise<void>;
+
+const envCredentials = AWS_SECRET_KEY && AWS_SECRET_KEY_NAME
     ? {
         accessKeyId: AWS_SECRET_KEY_NAME,
         secretAccessKey: AWS_SECRET_KEY
@@ -17,8 +21,27 @@ const credentials = AWS_SECRET_KEY && AWS_SECRET_KEY_NAME
 
 let s3Client: S3Client;
 
-export const initialize = (providedS3Client?: S3Client): void => {
+let ecsCredentials: ECSCredentials | undefined;
+
+export const initialize = async (providedS3Client?: S3Client): Promise<void> => {
     log.info('Initializing S3 Service');
+    
+    const ecsCredentials = new ECSCredentials();
+    let credentials;
+    try {
+        await ecsCredentials.getPromise();
+        credentials = ecsCredentials;
+    } catch(err) {
+        log.warn(err);
+        log.warn(`Falling back to environment credentials if available`);
+        credentials = envCredentials
+    }
+
+    if (!credentials) {
+        log.error(`No credentials available!`)
+    }
+
+
     
     if (!AWS_REGION) {
         log.warn(`Region not explicitly provided. Using default: ${defaultRegion}`);
@@ -28,13 +51,9 @@ export const initialize = (providedS3Client?: S3Client): void => {
         log.warn(`The current configuration provides S3 hostname override: ${process.env.AWS_S3_HOST}.`)
     }
 
-    if (!credentials) {
-        log.info(`Explicit environment credentials not provided - relying service role for authorization`);
-    }
-
     s3Client = providedS3Client || new S3Client({
         region: AWS_REGION || defaultRegion,
-        credentials,
+        credentials, 
         endpoint: process.env.AWS_S3_HOST || undefined
     });
 
