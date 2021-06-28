@@ -59,11 +59,11 @@ export const getPDFPage = async (pdfName: string, page: number, pdfURL: URL): Pr
     try {
         pageStream = await s3Service.readObject(pageKey);
     } catch (err) {
-        // 404 errors are expected here, so don't rethrow if it is 404
+        // 404/403 errors are expected here, so don't rethrow these
         if (!(err instanceof HttpError)) {
             throw createError(500, err);
         }
-        if (err.status !== 404) throw err;
+        if (![403, 404].includes(err.status)) throw err;
     }
 
     if (pageStream) return pageStream;
