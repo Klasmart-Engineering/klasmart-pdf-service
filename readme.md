@@ -10,9 +10,9 @@ This service stores and serves PDF content in the form of jpeg images for consum
 - LOG_STYLE - one of [STRING_COLOR, STRING, JSON, SILENT]. Configures the output style of logs. String outputs a simple string output. Convenient for human readability. STRING_COLOR uses the same string output as STRING, but allows Winston to embed color metadata which can improve readability when viewed in a terminal. This information is not displayed correctly in some views (Cloudtrail, etc) and so is not recommended for these environments.  JSON style outputs logs in a JSON output, which can be more easily machine parsable and is ideal for higher level log viewers which will need to parse and extract log data. SILENT silences Winston loggers, primarily use for testing.
 
 ### S3 Environment Variables
-- AWS_SECRET_KEY_NAME - Name (ID) of AWS secret key with access to S3 bucket
-- AWS_SECRET_KEY - Secret key value with access to S3 bucket
-- AWS_REGION - Bucket region
+- AWS_SECRET_KEY_NAME - Name (ID) of AWS secret key with access to S3 bucket - Not needed for deployed services
+- AWS_SECRET_KEY - Secret key value with access to S3 bucket - Not needed for deployed services
+- AWS_REGION - Bucket region - Not needed for deployed services
 - AWS_BUCKET - Bucket name
 - AWS_S3_HOST - S3 host address - Used to connect to alternative S3 interface (S3Ninja, min.io, etc). Can be left unconfigured for native AWS S3.
 

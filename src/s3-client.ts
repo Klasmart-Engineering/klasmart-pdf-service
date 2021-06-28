@@ -2,16 +2,18 @@ import { GetObjectCommand, GetObjectRequest, PutObjectCommand, PutObjectRequest,
 import { Readable } from 'stream';
 import { JPEGStream } from 'canvas';
 import { withLogger } from './logger';
-import { ECSCredentials } from 'aws-sdk';
 import createError from 'http-errors';
 
+// ? Note: This environment configuration should only be necessary for testing. For deployed applications, permissions should be automatically configured through the task role.
 const AWS_SECRET_KEY_NAME = process.env.AWS_SECRET_KEY_NAME ?? '';
 const AWS_SECRET_KEY = process.env.AWS_SECRET_KEY ?? '';
+
+// ? Note: Region will be autoconfigurable in the ECS environment. You may need to supply this when connecting to S3 from a local machine.
 const AWS_REGION = process.env.AWS_REGION ?? '';
-const defaultRegion = 'ap-northeast-2';
+
 const log = withLogger('s3-client');
 
-const envCredentials = AWS_SECRET_KEY && AWS_SECRET_KEY_NAME
+const credentials = AWS_SECRET_KEY && AWS_SECRET_KEY_NAME
     ? {
         accessKeyId: AWS_SECRET_KEY_NAME,
         secretAccessKey: AWS_SECRET_KEY
@@ -19,71 +21,35 @@ const envCredentials = AWS_SECRET_KEY && AWS_SECRET_KEY_NAME
 
 let s3Client: S3Client;
 
-let ecsCredentials: ECSCredentials | undefined;
-
-// export const checkEcsCredentialsRefresh = async (): Promise<void> => {
-//     // Resolve immediately in these two cases - no need to do anything asynchronous
-//     if (!ecsCredentials || !ecsCredentials.needsRefresh()) return Promise.resolve();
-
-//     log.info(`Refreshing ECS credentials`);
-//     return ecsCredentials.refreshPromise();
-// }
-
 export const initialize = async (providedS3Client?: S3Client): Promise<void> => {
     log.info('Initializing S3 Service');
-    
-    // const ecsCredentials = new ECSCredentials();
-    // let credentials;
-    // try {
-    //     await ecsCredentials.getPromise();
-    //     log.info('ECS credentials resolved');
-    //     credentials = ecsCredentials;
-    // } catch(err) {
-    //     log.warn(err);
-    //     log.warn(`Falling back to environment credentials if available`);
-    //     credentials = envCredentials
-    // }
 
-    // if (!credentials) {
-    //     log.error(`Fatal: No credentials available!`)
-    //     process.exit(1)
-    // }
-    
-    // if (!AWS_REGION) {
-    //     log.warn(`Region not explicitly provided. Using default: ${defaultRegion}`);
-    // }
+    if (!credentials) {
+        log.warn(`Using environment credentials rather than discoverable ECS credentials!`)
+    }
 
-    // if (process.env.AWS_S3_HOST) {
-    //     log.warn(`The current configuration provides S3 hostname override: ${process.env.AWS_S3_HOST}.`)
-    // }
+    if (process.env.AWS_S3_HOST) {
+        log.warn(`Using S3 hostname override: ${process.env.AWS_S3_HOST}.`)
+    }
 
-    // if (!process.env.AWS_BUCKET) {
-    //     log.error(`Fatal: No AWS Bucket defined! Provide a bucketname using the AWS_BUCKET environment variable.`)
-    //     process.exit(1);
-    // }
+    if (!process.env.AWS_BUCKET) {
+        log.error(`Fatal: No AWS Bucket defined! Provide a bucketname using the AWS_BUCKET environment variable.`)
+        process.exit(1);
+    }
 
-    // log.info(`S3 configured for storage in bucket: ${process.env.AWS_BUCKET}`)
+    log.info(`S3 configured for storage in bucket: ${process.env.AWS_BUCKET}`)
 
-    // s3Client = providedS3Client || new S3Client({
-    //     region: AWS_REGION || defaultRegion,
-    //     credentials, 
-    //     endpoint: process.env.AWS_S3_HOST || undefined
-    // });
-
-    s3Client = new S3Client({
-        // endpoint: process.env.AWS_S3_HOST || undefined
+    s3Client = providedS3Client || new S3Client({
+        region: AWS_REGION || undefined,
+        credentials, 
+        endpoint: process.env.AWS_S3_HOST || undefined
     });
 
     log.info('S3 initialization complete');
-
-
 }
 
 
 export const putObject = async (key: string, stream: JPEGStream, contentLength: number): Promise<void> => {
-    
-    // await checkEcsCredentialsRefresh();
-
     const request: PutObjectRequest = {
         Bucket: process.env.AWS_BUCKET,
         Key: key,
@@ -110,21 +76,21 @@ export const putObject = async (key: string, stream: JPEGStream, contentLength: 
 }
 
 export const readObject = async (key: string): Promise<Readable | undefined> => {
-    
-    // await checkEcsCredentialsRefresh();
-    
-    log.debug(`retrieving S3 object: ${key}`);
     const request: GetObjectRequest = {
         Bucket: process.env.AWS_BUCKET,
         Key: key
     };
 
     const command = new GetObjectCommand(request);
-    log.debug('sending object request');
+    log.debug(`sending object request for: ${key}`);
     try {
         const response = await s3Client.send(command);
         return response.Body as Readable;
     } catch (error) {
+        /* 
+            ! NOTE: S3 will respond with a 403 for 404 content in a private bucket! 
+            ! This condition is meant to catch scenarios when objects aren't in the bucket, not forbidden errors!
+        */
         if (error.$metadata?.httpStatusCode === 403) {
             return undefined;
         }
