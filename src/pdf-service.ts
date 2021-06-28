@@ -54,8 +54,17 @@ export const getPDFPages = async (pdfURL: URL):Promise<number> => {
 */
 export const getPDFPage = async (pdfName: string, page: number, pdfURL: URL): Promise<Readable> => {
     const pageKey = mapPageKey(pdfURL, pdfName, page);
+    let pageStream: Readable | undefined;
     
-    const pageStream: Readable | undefined = await s3Service.readObject(pageKey);
+    try {
+        pageStream = await s3Service.readObject(pageKey);
+    } catch (err) {
+        // 404 errors are expected here, so don't rethrow if it is 404
+        if (!(err instanceof HttpError)) {
+            throw createError(500, err);
+        }
+        if (err.status !== 404) throw err;
+    }
 
     if (pageStream) return pageStream;
     
@@ -82,7 +91,7 @@ export const getPDFPage = async (pdfName: string, page: number, pdfURL: URL): Pr
 
 
 const renderSinglePage = async (pageKey: string, pdfURL: URL, page: number) => {
-    // Async code invoked via IIFE to allow immediate access to the promise to cache
+    // Async code invoked via IIFE to allow immediate access of the promise to the cache
     const promise = (async () => {
         const em = getManager();
         const pdfMetadata = await em.findOne(PDFMetadata, pdfURL.toString().toLowerCase());
