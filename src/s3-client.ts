@@ -91,10 +91,11 @@ export const readObject = async (key: string): Promise<Readable | undefined> => 
             ! NOTE: S3 will respond with a 403 for 404 content in a private bucket! 
             ! This condition is meant to catch scenarios when objects aren't in the bucket, not forbidden errors!
         */
-        if (error.$metadata?.httpStatusCode === 403) {
+        if ([403, 404].includes(error.$metadata?.httpStatusCode)) {
             return undefined;
         }
         log.error(`S3 Read Object Failure: ${error.$metadata?.httpStatusCode} ${error.message}`);
+        console.log(error.$metadata);
         throw error;
     }
 }
