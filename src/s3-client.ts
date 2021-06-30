@@ -22,12 +22,20 @@ const credentials = AWS_SECRET_KEY && AWS_SECRET_KEY_NAME
 let s3Client: S3Client;
 
 export const initialize = async (providedS3Client?: S3Client): Promise<void> => {
+
+    if (providedS3Client) {
+        s3Client = providedS3Client;
+        log.info('Using providedS3Client');
+        return;
+    }
+
     log.info('Initializing S3 Service');
 
     if (!credentials) {
         log.warn(`Using environment credentials rather than discoverable ECS credentials!`)
     }
 
+    /* istanbul ignore if */
     if (process.env.AWS_S3_HOST) {
         log.warn(`Using S3 hostname override: ${process.env.AWS_S3_HOST}.`)
     }

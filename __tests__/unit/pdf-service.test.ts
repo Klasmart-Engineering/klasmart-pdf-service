@@ -154,6 +154,47 @@ describe('pdf-service', () => {
                 .should.eventually.equal(data);
         });
 
+        it('should reject with 500 when readObject rejects with non-HTTP error', async () => {
+            const expected = new Error('Non-HTTP Error');
+            fakeS3Service.readObject.rejects(expected);
+            
+            await pdfService.getPDFPage(testPdfName, 1, testUrl)
+                .should.eventually.be.rejectedWith(expected)
+                .and.be.an.instanceOf(Error)
+                .and.have.property('status', 500);
+        });
+
+        describe('should reject with rethrown http error from readObject when http status error is not 403, 404', async () => {
+            const errorCodes = [400, 401, 405, 500, 504, 503, 501];
+            errorCodes.forEach(code => {
+                it(code.toString(), async () => {
+                    const expected = createError(code);
+                    fakeS3Service.readObject.rejects(expected);
+                    
+                    await pdfService.getPDFPage(testPdfName, 1, testUrl)
+                        .should.eventually.be.rejected
+                        .and.be.an.instanceOf(Error)
+                        .and.have.property('status', code);
+                })
+            })
+        });
+
+        it('should not reject if first readObject call rejects with http status 404 or 403 and subsequent calls resolve', async () => {
+            const errorCodes = [403, 404];
+            errorCodes.forEach(code => {
+                it(code.toString(), async () => {
+                    const expected =  Readable.from(Buffer.from('data'));
+                    const err = createError(code);
+                    fakeS3Service.readObject.onFirstCall().rejects(err);
+                    fakeS3Service.readObject.onSecondCall().resolves(expected)
+                    cache.set(pdfService.mapPageKey(testUrl, testPdfName, 1), Promise.resolve());
+        
+                    await pdfService.getPDFPage(testPdfName, 1, testUrl)
+                        .should.eventually.equal(expected);
+                });
+            });
+        })
+
         it('should resolve to second call of readObject if the first is undefined and a promise is in the cache', async () => {
             const expected = Readable.from(Buffer.from('abc'.repeat(100)));
             const unexpected = Readable.from(Buffer.from('nono'.repeat(100)));

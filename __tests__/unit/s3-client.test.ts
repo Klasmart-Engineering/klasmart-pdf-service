@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import sinon from 'sinon';
+import sinon, { assert } from 'sinon';
 import rewire from 'rewire';
 import * as s3Service from '../../src/s3-client';
 import { S3Client } from '@aws-sdk/client-s3';
@@ -8,6 +8,10 @@ import { PassThrough } from 'stream';
 describe('s3-client', () => {
 
     const testKey = 'some-key/file.pdf';
+    const sandbox = sinon.createSandbox();
+    afterEach(() => {
+        sandbox.reset();
+    })
 
     describe('initialize', () => {
         let rewiredS3Client = rewire<typeof s3Service>('../../src/s3-client');
@@ -16,19 +20,30 @@ describe('s3-client', () => {
             expect(rewiredS3Client.__get__('s3Client')).to.be.undefined;
         });
 
-        it('should create an S3Client instance with default env configuration if one is not provided', () => {
-            rewiredS3Client.initialize();
+        it('should create an S3Client instance with default env configuration if one is not provided', async () => {
+            await rewiredS3Client.initialize();
             const originalRegion = process.env.AWS_REGION;
             process.env.AWS_REGION = 'test-region';
-            expect(rewiredS3Client.__get__('s3Client')).to.not.be.undefined;
+            expect(rewiredS3Client.__get__('s3Client')).not.to.be.undefined;
             process.env.AWS_REGION = originalRegion;
         });
 
-        it('should use provided S3Client instance if one is passed to initialize', () => {
+        it('should use provided S3Client instance if one is passed to initialize', async () => {
             const expectedInstance = sinon.createStubInstance(S3Client)
-            rewiredS3Client.initialize(expectedInstance as unknown as S3Client);
+            await rewiredS3Client.initialize(expectedInstance as unknown as S3Client);
             expect(rewiredS3Client.__get__('s3Client')).to.equal(expectedInstance);
+        });
 
+        it('should encounter fatal error if no AWS bucket is supplied', async () => {
+            const stub = sandbox.stub(process, 'exit');
+            const oldBucket = process.env.AWS_BUCKET; 
+            delete process.env.AWS_BUCKET;
+            await rewiredS3Client.initialize();
+            
+            if (oldBucket) process.env.AWS_BUCKET = oldBucket;
+            else delete process.env.AWS_BUCKET;
+
+            sinon.assert.calledOnce(stub);
         });
     });
 
@@ -36,9 +51,9 @@ describe('s3-client', () => {
         let rewiredS3Client = rewire<typeof s3Service>('../../src/s3-client');
         const mockS3Client = new S3Client({});
         rewiredS3Client.initialize(mockS3Client);
-        const s3ClientSendStub = sinon.stub(mockS3Client, 'send');
+        const s3ClientSendStub = sandbox.stub(mockS3Client, 'send');
 
-        it('should reject with bubbled error when send rejects', async () => {
+        it('should reject with bubbled error when send rejects and error has no http code', async () => {
             const inputStream = new PassThrough();
             const contentLength = 100;
             const expectedError = new Error('test-error');
@@ -47,6 +62,22 @@ describe('s3-client', () => {
 
             await rewiredS3Client.putObject(testKey, inputStream, contentLength)
                 .should.eventually.be.rejectedWith(expectedError);
+        });
+
+        it('should reject, mapping error to an httperror when send fails with an error that has an httpcode', async () => {
+            const inputStream = new PassThrough();
+            const contentLength = 100;
+            const expectedError = new Error('test-error') as any;
+            expectedError.$metadata = {
+                httpStatusCode: 400
+            }
+
+            s3ClientSendStub.rejects(expectedError);
+
+            await rewiredS3Client.putObject(testKey, inputStream, contentLength)
+                .should.eventually.be.rejectedWith(expectedError.message)
+                .and.be.an.instanceOf(Error)
+                .and.have.property('status', 400);
         });
 
         it('should resolve cleanly when send resolves', async () => {
@@ -58,12 +89,14 @@ describe('s3-client', () => {
             await rewiredS3Client.putObject(testKey, inputStream, contentLength)
                 .should.eventually.be.undefined;
         });
+
+
     });
 
     describe('readObject', () => {
         const mockS3Client = new S3Client({});
         s3Service.initialize(mockS3Client);
-        const s3ClientSendStub = sinon.stub(mockS3Client, 'send');
+        const s3ClientSendStub = sandbox.stub(mockS3Client, 'send');
 
         afterEach(() => {
             s3ClientSendStub.reset();
