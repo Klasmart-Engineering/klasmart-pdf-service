@@ -33,21 +33,19 @@ appRouter.get(`/:pdfName/pages`, async (request: Request, response: Response, ne
 appRouter.get(`/:pdfName/view.html`, async (request: Request, response: Response, next: NextFunction) => {
     try {
         const { pdfName } = request.params;
-
-        if (!pdfName) {
-            response.sendStatus(400);
-            return;
-        }
-
+        log.debug(`Handling request to render HTML document for ${pdfName}`)
         const pdfUrl = new URL(`/assets/${pdfName}`, process.env.CMS_BASE_URL);
+        log.debug(`Request URL: ${pdfUrl}`)
         const pageCount = await pdfService.getPDFPages(pdfUrl);
+        log.debug(`Building document with ${pageCount} pages`)
         const pages = Array.from(new Array(pageCount-1)).map((x,i) => i);
         
-        const output = pug.renderFile(__dirname + '/static/pdf.pug', { pages, pdfName });
+        const output = pug.renderFile(__dirname + '/../static/pdf.pug', { pages, pdfName });
         response
-        .contentType('text/html')
-        .send(output);
+            .contentType('text/html')
+            .send(output);
     } catch (err) {
+        log.error(err);
         next(err);
         return;
     }

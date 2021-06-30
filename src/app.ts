@@ -20,7 +20,6 @@ const routePrefix = process.env.ROUTE_PREFIX || '/pdf';
 typeormConfig.initialize();
 s3Service.initialize();
 pdfService.initialize();
-
 /* #endregion Initialization */
 
 /* #region middleware */
