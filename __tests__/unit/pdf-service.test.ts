@@ -165,7 +165,7 @@ describe('pdf-service', () => {
         });
 
         describe('should reject with rethrown http error from readObject when http status error is not 403, 404', async () => {
-            const errorCodes = [400, 401, 405, 500, 504, 503, 501];
+            const errorCodes = [400, 401, 402, 405, 406, 500, 501, 502, 503, 504];
             errorCodes.forEach(code => {
                 it(code.toString(), async () => {
                     const expected = createError(code);
