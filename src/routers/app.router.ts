@@ -8,27 +8,7 @@ import { withLogger } from '../logger';
 export const appRouter = Router();
 const log = withLogger('app.router');
 
-/* Retrieves total number of pages */
-appRouter.get(`/:pdfName/pages`, async (request: Request, response: Response, next: NextFunction) => {
-    const { pdfName } = request.params;
 
-    if (!pdfName) {
-        next(createError(400, 'Invalid Request URL'));
-        return;
-    }
-
-    if (!request.query.pdfURL){
-        next(createError(400, `Missing query parameters: [pdfURL]`))
-    }
-    log.silly(request.query.pdfURL);
-    const pdfURL = new URL(decodeURI(request.query.pdfURL as string))
-    log.silly(pdfURL);
-    log.silly(pdfURL.toString());
-    const pages = await pdfService.getPDFPages(pdfURL);
-    response
-        .json({pages});
-    next();
-})
 
 appRouter.get(`/:pdfName/view.html`, async (request: Request, response: Response, next: NextFunction) => {
     try {
@@ -54,38 +34,87 @@ appRouter.get(`/:pdfName/view.html`, async (request: Request, response: Response
 
 appRouter.get(`/:pdfName/page/:page`, async (request: Request, response: Response, next: NextFunction) => {
     const { pdfName, page } = request.params;
-    
-    if (!pdfName || !page) {
-        next(createError(400, 'Invalid Request URL'));
+    log.debug(`Request for page ${page}`)
+    // ? Note: +num is being used rather than parseInt due to parseInt interpreting 0 lead ints as binary
+    // ? while +num will drop the 0, a more inuitive behavior to service consumers
+
+    if (isNaN(+page)) {
+        next(createError(400, 'Page must be numeric'));
+        return;
+    }
+
+    // Validate page is a natural number
+    if (page.split('.').length > 1) {
+        next(createError(400, 'Page may not contain a decimal portion'));
+        return;
+    }
+
+    if (+page < 1) {
+        next(createError(400, 'Page must be a positive value'));
         return;
     }
     
     const pdfURL = new URL(`/assets/${pdfName}`, process.env.CMS_BASE_URL);
     
     response.contentType('image/jpeg')
-
-    const stream: Readable = await pdfService.getPDFPage(pdfName, +page, pdfURL)
-    
-    stream.pipe(response)
+    try {
+        const stream: Readable = await pdfService.getPDFPage(pdfName, +page, pdfURL)
+        stream.pipe(response)
+    } catch (err) {
+        next(err);
+        return;
+    }
 });
 
+/* Retrieves total number of pages */
+// ! Deprecated
+appRouter.get(`/:pdfName/pages`, async (request: Request, response: Response, next: NextFunction) => {
+    log.warn(`Note: This handler is deprecated. This handler is being replaced by an updated endpoint which does not require a query parameter.  Update code to send requests to: pdf-service://pdf/{pdf-file.pdf}/view.html`);
+    
+    if (!request.query.pdfURL){
+        next(createError(400, `Missing query parameters: [pdfURL]`))
+        return;
+    }
+    log.silly(request.query.pdfURL);
+    const pdfURL = new URL(decodeURI(request.query.pdfURL as string))
+    log.silly(pdfURL);
+    log.silly(pdfURL.toString());
+    try {
+        const pages = await pdfService.getPDFPages(pdfURL);
+        response
+            .json({pages});
+        next();
+    } catch (err) {
+        next(err);
+    }
+});
 
+// ! Deprecated
 appRouter.get(`/:pdfName/pages/:page`, async (request: Request, response: Response, next: NextFunction) => {
+    log.warn(`Note: This handler is deprecated. This handler is being replaced by an updated endpoint which does not require a query parameter.  Update code to send requests to: pdf-service://pdf/{pdf-file.pdf}/view.html`);
     const { pdfName, page } = request.params;
     
     if (!request.query.pdfURL){
         next(createError(400, `Missing query parameters: [pdfURL]`))
-    }
-    const pdfURL = new URL(decodeURI(request.query.pdfURL as string));
-
-    if (!pdfName || !page) {
-        next(createError(400, 'Invalid Request URL'));
         return;
     }
-    
-    response.contentType('image/jpeg')
 
-    const stream: Readable = await pdfService.getPDFPage(pdfName, +page, pdfURL)
-    
-    stream.pipe(response)
+    let pdfURL;
+    try {
+        pdfURL = new URL(decodeURI(request.query.pdfURL as string));
+    } catch (err) {
+        next(createError(400, 'URL is invalid'));
+        return;
+    }
+
+    let stream: Readable;
+    try {
+        stream = await pdfService.getPDFPage(pdfName, +page, pdfURL)
+    } catch (err) {
+        next(err);
+        return;
+    }
+
+    response.contentType('image/jpeg');
+    stream.pipe(response);
 });
