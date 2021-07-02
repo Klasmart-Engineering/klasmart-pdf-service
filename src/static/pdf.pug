@@ -1,0 +1,11 @@
+doctype html 
+html(lang="en")
+    head
+        title="PDF Viewer"
+        style
+            include css/styles.css
+    body
+        div(id="viewerContainer")
+            img(src='/pdf/'+pdfName+'/page/'+1, data-page-num=1)
+            each page, k in pages
+                img(src='/pdf/'+pdfName+'/page/'+(k+2), loading='lazy', data-page-num=k+2)

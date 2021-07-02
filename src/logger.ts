@@ -1,9 +1,9 @@
 import winston, { Logger } from 'winston';
 
 type NPMLoggingLevels = 'silly' | 'debug' | 'verbose' | 'http' | 'info' | 'warn' | 'error';
-type LogStyle = 'STRING_COLOR' | 'STRING' | 'JSON';
+type LogStyle = 'STRING_COLOR' | 'STRING' | 'JSON' | 'SILENT';
 
-const logStyles: LogStyle[] = ['STRING_COLOR', 'STRING', 'JSON'];
+const logStyles: LogStyle[] = ['STRING_COLOR', 'STRING', 'JSON', 'SILENT'];
 const defaultLogStyle: LogStyle = logStyles[0];
 
 const stdoutFormat = winston.format.printf(({ level, message, label, timestamp }) => {
@@ -38,6 +38,7 @@ export const withLogger = (label: string, level?: NPMLoggingLevels): Logger => {
         case 'JSON': return createJsonLogger(label, level);
         case 'STRING': return createStringLogger(label, level);
         case 'STRING_COLOR': return createColorStringLogger(label, level);
+        case 'SILENT': return createSilentLogger(label, level);
     }
 }
 
@@ -78,6 +79,16 @@ const createColorStringLogger = (label: string, level?: NPMLoggingLevels) => {
             winston.format.colorize(),
             stdoutFormat
         ),
+        transports: [
+            new winston.transports.Console()
+        ]
+    });
+}
+
+const createSilentLogger = (label: string, level?: NPMLoggingLevels) => {
+    return winston.loggers.add(label, {
+        silent: true,
+        level: level ?? defaultLoggingLevel,
         transports: [
             new winston.transports.Console()
         ]

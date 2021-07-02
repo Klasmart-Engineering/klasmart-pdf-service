@@ -6,7 +6,7 @@ const log = withLogger('init-typeorm');
 
 let connection: Connection | undefined;
 
-export default async (): Promise<Connection> => {
+export const initialize = async (): Promise<Connection> => {
     try {
       connection = await createConnection({
         name: 'default',
