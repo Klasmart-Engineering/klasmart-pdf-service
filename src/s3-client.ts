@@ -72,12 +72,12 @@ export const putObject = async (key: string, stream: JPEGStream, contentLength: 
     try {
         await s3Client.send(command);
     } catch (err){
+        if (err.$metadata?.httpStatusCode) {
+            log.error(`Error HTTP status response from S3 PutObject Request: ${err.$metadata.httpStatusCode}`)
+        }
         log.error(err.message);
         if (err.body) log.error(err.body);
-        if (err.$metadata?.httpStatusCode) {
-            throw createError(err.$metadata.httpStatusCode, err.message, err);
-        }
-        throw err;
+        throw createError(500, err);
     }
     log.debug('s3 upload complete');
     return Promise.resolve();
