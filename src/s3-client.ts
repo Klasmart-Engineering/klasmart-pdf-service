@@ -103,7 +103,6 @@ export const readObject = async (key: string): Promise<Readable | undefined> => 
             return undefined;
         }
         log.error(`S3 Read Object Failure: ${error.$metadata?.httpStatusCode} ${error.message}`);
-        console.log(error.$metadata);
         throw error;
     }
 }
