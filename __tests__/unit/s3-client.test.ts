@@ -64,20 +64,20 @@ describe('s3-client', () => {
                 .should.eventually.be.rejectedWith(expectedError);
         });
 
-        it('should reject, mapping error to an httperror when send fails with an error that has an httpcode', async () => {
+        it('should reject with 500 httpcode when putObject request rejects', async () => {
             const inputStream = new PassThrough();
             const contentLength = 100;
-            const expectedError = new Error('test-error') as any;
-            expectedError.$metadata = {
+            const error = new Error('test-error') as any;
+            error.$metadata = {
                 httpStatusCode: 400
             }
 
-            s3ClientSendStub.rejects(expectedError);
+            s3ClientSendStub.rejects(error);
 
             await rewiredS3Client.putObject(testKey, inputStream, contentLength)
-                .should.eventually.be.rejectedWith(expectedError.message)
+                .should.eventually.be.rejectedWith(error.message)
                 .and.be.an.instanceOf(Error)
-                .and.have.property('status', 400);
+                .and.have.property('status', 500);
         });
 
         it('should resolve cleanly when send resolves', async () => {
