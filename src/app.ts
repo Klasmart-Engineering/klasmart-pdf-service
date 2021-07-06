@@ -28,6 +28,7 @@ app.get(`/.well-known/express/server-health`, (_, response: Response) => {
     response.sendStatus(200).end();
 });
 
+
 app.use((request: Request, _, next: NextFunction) => {
     log.silly(`Handling request with request path: ${request.path}`)
     next();
@@ -48,6 +49,13 @@ app.use(routePrefix, appRouter);
 
 log.info(`Registering error handler middleware`);
 app.use(errorHandler);
+
+// ? Exposes PDF documents for testing
+if (process.env.EXPOSE_TESTING_PDFS == 'EXPOSE') {
+    log.warn(`Exposing testing pdfs`)
+    app.use(express.static(__dirname + '/testing-pdfs'));
+}
+
 
 /* #endregion middleware */
 

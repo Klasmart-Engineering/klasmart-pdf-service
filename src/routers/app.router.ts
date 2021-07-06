@@ -9,7 +9,6 @@ export const appRouter = Router();
 const log = withLogger('app.router');
 
 
-
 appRouter.get(`/:pdfName/view.html`, async (request: Request, response: Response, next: NextFunction) => {
     try {
         const { pdfName } = request.params;
@@ -30,6 +29,17 @@ appRouter.get(`/:pdfName/view.html`, async (request: Request, response: Response
         return;
     }
     next();
+});
+
+appRouter.get(`/:pdfName/validate`, async (request: Request, response: Response, next: NextFunction) => {
+    const { pdfName } = request.params;
+    try {
+        const valid = await pdfService.validatePDFTextContent(pdfName);
+        response.send({ valid });
+        next();
+    } catch (err) {
+        next(err);
+    }
 });
 
 appRouter.get(`/:pdfName/page/:page`, async (request: Request, response: Response, next: NextFunction) => {
@@ -65,6 +75,46 @@ appRouter.get(`/:pdfName/page/:page`, async (request: Request, response: Respons
         return;
     }
 });
+
+/* 
+    Utility endpoint which will bypass all FS/S3 workflows to directly render and display an image
+    Note: This route is for dev/test purposes and is only made available when the NODE_ENV environment is set to dev
+*/
+if (process.env.NODE_ENV === 'development') {
+    appRouter.get(`/:pdfName/render-page/:page`, async (request: Request, response: Response, next: NextFunction) => {
+        const { pdfName, page } = request.params;
+        log.debug(`Request for page ${page}`)
+        // ? Note: +num is being used rather than parseInt due to parseInt interpreting 0 lead ints as binary
+        // ? while +num will drop the 0, a more inuitive behavior to service consumers
+    
+        if (isNaN(+page)) {
+            next(createError(400, 'Page must be numeric'));
+            return;
+        }
+    
+        // Validate page is a natural number
+        if (page.split('.').length > 1) {
+            next(createError(400, 'Page may not contain a decimal portion'));
+            return;
+        }
+    
+        if (+page < 1) {
+            next(createError(400, 'Page must be a positive value'));
+            return;
+        }
+        
+        const pdfURL = new URL(`/assets/${pdfName}`, process.env.CMS_BASE_URL);
+        
+        response.contentType('image/jpeg')
+        try {
+            const stream: Readable = await pdfService.getDirectPageRender(pdfName, +page, pdfURL)
+            stream.pipe(response)
+        } catch (err) {
+            next(err);
+            return;
+        }
+    });
+}
 
 /* Retrieves total number of pages */
 // ! Deprecated

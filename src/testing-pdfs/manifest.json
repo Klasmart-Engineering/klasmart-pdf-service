@@ -1,0 +1,9 @@
+{
+    "pdfs": [
+        {
+            "file": "broken.pdf",
+            "valid": false,
+            "description": "A single page pdf document known to have problematic text content that frequently does not render or renders poorly."
+        }
+    ]
+}
