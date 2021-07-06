@@ -57,7 +57,7 @@ describe('app.router', () => {
                         .get('/pdf/misc.pdf/view.html')
                         .expect(e);
                 });
-            })
+            });
         });
 
         describe('should render a number of pages equal to the number returned by getPages', () => {

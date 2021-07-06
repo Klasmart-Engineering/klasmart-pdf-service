@@ -65,9 +65,11 @@ export const getPDFPage = async (pdfName: string, page: number, pdfURL: URL): Pr
     } catch (err) {
         // 404/403 errors are expected here, so don't rethrow these
         if (!(err instanceof HttpError)) {
-            throw createError(500, err);
+            // We can probably continue here, this error may indicate a problem but won't prevent us from trying other things
+            log.warn(`Unexpected error in initial S3 request: ${err.message}`)
+        } else if (![403, 404].includes(err.status)) {
+            throw err;
         }
-        if (![403, 404].includes(err.status)) throw err;
     }
 
     if (pageStream) return pageStream;
@@ -82,19 +84,31 @@ export const getPDFPage = async (pdfName: string, page: number, pdfURL: URL): Pr
 
     let stream;
     try {
-        await renderSinglePage(pageKey, pdfURL, page);
-        stream = await s3Service.readObject(pageKey);
+        const tempFilename = await renderSinglePage(pageKey, pdfURL, page);
+        // stream = await s3Service.readObject(pageKey);
+        stream = fs.createReadStream(tempFilename);
+        stream.on('close', () => {
+            log.debug(`Removing temporary file: ${tempFilename}`);
+            fs.promises.rm(tempFilename)
+        });
     } catch (err) {
         log.error(`Error rendering PDF page: ${err.message}`)
         if (err instanceof HttpError) throw err;
+
+        // Delete key, as data may not actually be available due to error
+        pageResolutionCache.del(pageKey);
         throw createError(500, err.message);
     } 
     if (!stream) throw createHttpError(500, 'Unable to retrieve object after write.');
     return stream;
 }
 
+export const getDirectPageRender = async (pdfName: string, page: number, pdfURL: URL): Promise<JPEGStream> => {
+    const document = await imageConverter.createDocumentFromStream(pdfURL.toString());
+    return imageConverter.generatePageImage(document, page);
+}
 
-const renderSinglePage = async (pageKey: string, pdfURL: URL, page: number) => {
+const renderSinglePage = async (pageKey: string, pdfURL: URL, page: number): Promise<string> => {
     // Async code invoked via IIFE to allow immediate access of the promise to the cache
     const promise = (async () => {
         const em = getManager();
@@ -109,30 +123,39 @@ const renderSinglePage = async (pageKey: string, pdfURL: URL, page: number) => {
 
         const jpegStream = await imageConverter.generatePageImage(document, page);
 
-        // S3 requires a content-length field, to get this we will first write to
-        // a temp file
-        const filename = `./${pageKey.replace('/', '-')}`;
+        const randPrefix = Buffer.from(crypto.randomBytes(16)).toString('hex');
+        const filename = `./${randPrefix}-${pageKey.replace('/', '-')}`;
         let contentLength: number;
+        let stat;
         try {
             contentLength = await writeStreamToTempFile(filename, jpegStream)
+            log.debug(`Bytes written for ${pageKey}: ${contentLength}`)
+            stat = await fs.promises.stat(filename);
+            log.debug(`Filesize for ${pageKey}: ${stat.size}`)
         } catch (err) {
             log.error(`Error writing image to temporary file: ${err.message}`);
             throw createError(500, err);
         }
 
         log.info('Reading temp file from file system');
+        fs.createReadStream(filename).pipe(
+            fs.createWriteStream(`rewrite-${filename}`)
+        );
+
         const readStream = fs.createReadStream(filename);
 
         log.info('Sending data to S3');
         
         try {
-            await s3Service.putObject(pageKey, readStream, contentLength);
+            await s3Service.uploadObject(pageKey, readStream);
         } catch (err) {
             if (err instanceof HttpError) throw err;
-            throw createError(500, err);
+            log.error(`Error writing file to S3.`);
+            log.error(JSON.stringify(err));
         }
+        return filename;
 
-        await fs.promises.rm(filename);
+        // await fs.promises.rm(filename);
     })();
 
     pageResolutionCache.set(pageKey, promise);
@@ -144,7 +167,7 @@ const writeStreamToTempFile = (filename: string, stream: JPEGStream): Promise<nu
     return new Promise((resolve, reject) => {
         const fileStream = fs.createWriteStream(filename);
         stream
-            .on('end', () => {
+            .on('end', async () => {
                 log.debug(`stream end`);
                 const contentLength = fileStream.bytesWritten;
                 log.silly(`contentLength: ${contentLength}`)
