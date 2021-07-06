@@ -6,6 +6,6 @@ html(lang="en")
             include css/styles.css
     body
         div(id="viewerContainer")
-            img(src='/pdf/'+pdfName+'/page/'+1, data-page-num=1)
+            img(src='/pdf/'+pdfName+'/page/'+1, data-page-num=1, class='pdf-page-img')
             each page, k in pages
-                img(src='/pdf/'+pdfName+'/page/'+(k+2), loading='lazy', data-page-num=k+2)
+                img(src='/pdf/'+pdfName+'/page/'+(k+2), loading='lazy', data-page-num=k+2, class='pdf-page-img')

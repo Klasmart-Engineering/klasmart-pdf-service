@@ -27,6 +27,10 @@ export const initialize = (cache: NodeCache = new NodeCache(defaultCacheProps)):
     pageResolutionCache = cache;
 }
 
+export const validatePDFTextContent = async (pdfName: string) : Promise<boolean> => {
+    return imageConverter.validatePDFTextContent(`http://localhost:32891/test-pdfs/${pdfName}`);
+}
+
 export const getPDFPages = async (pdfURL: URL):Promise<number> => {
     let existingMetadata;
     try {

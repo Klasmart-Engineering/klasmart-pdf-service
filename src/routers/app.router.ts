@@ -9,7 +9,6 @@ export const appRouter = Router();
 const log = withLogger('app.router');
 
 
-
 appRouter.get(`/:pdfName/view.html`, async (request: Request, response: Response, next: NextFunction) => {
     try {
         const { pdfName } = request.params;
@@ -30,6 +29,17 @@ appRouter.get(`/:pdfName/view.html`, async (request: Request, response: Response
         return;
     }
     next();
+});
+
+appRouter.get(`/:pdfName/validate`, async (request: Request, response: Response, next: NextFunction) => {
+    const { pdfName } = request.params;
+    try {
+        const valid = await pdfService.validatePDFTextContent(pdfName);
+        response.send({ valid });
+        next();
+    } catch (err) {
+        next(err);
+    }
 });
 
 appRouter.get(`/:pdfName/page/:page`, async (request: Request, response: Response, next: NextFunction) => {
