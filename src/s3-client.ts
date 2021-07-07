@@ -59,23 +59,31 @@ export const initialize = async (providedS3Client?: S3Client): Promise<void> => 
     log.info('S3 initialization complete');
 }
 
+/**
+ * Uploads data to S3 using lib-storage Upload utility function.
+ * @param key - s3 object key
+ * @param stream - data stream to be stored
+ */
 export const uploadObject = async (key: string, stream: JPEGStream): Promise<void> => {
     try {
         const s3Upload = new Upload({
-        client: s3Client,
-        params: {
-            Bucket: process.env.AWS_BUCKET,
-            Key: key,
-            Body: stream
-        }
-    });
+            client: s3Client,
+            params: {
+                Bucket: process.env.AWS_BUCKET,
+                Key: key,
+                Body: stream
+            }
+        });
 
-    s3Upload.on('httpUploadProgress', (progress) => {
-        log.debug(JSON.stringify(progress));
-    })
+        console.log(s3Upload);
 
-    await s3Upload.done();
+        s3Upload.on('httpUploadProgress', (progress) => {
+            log.debug(JSON.stringify(progress));
+        })
+
+        await s3Upload.done();
     } catch (err) {
+        console.log(err);
         log.error(`Object upload error: ${JSON.stringify(err)}`);
         throw createError(500, `Error uploading file to S3: ${JSON.stringify(err)}`)
     }
