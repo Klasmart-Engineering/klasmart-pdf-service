@@ -1,4 +1,5 @@
-import { GetObjectCommand, GetObjectRequest, PutObjectCommand, PutObjectRequest, S3Client } from '@aws-sdk/client-s3';
+import { GetObjectCommand, GetObjectRequest, S3Client } from '@aws-sdk/client-s3';
+import { Upload } from '@aws-sdk/lib-storage';
 import { Readable } from 'stream';
 import { JPEGStream } from 'canvas';
 import { withLogger } from './logger';
@@ -20,6 +21,7 @@ const credentials = AWS_SECRET_KEY && AWS_SECRET_KEY_NAME
     } : undefined;
 
 let s3Client: S3Client;
+
 
 export const initialize = async (providedS3Client?: S3Client): Promise<void> => {
 
@@ -50,37 +52,41 @@ export const initialize = async (providedS3Client?: S3Client): Promise<void> => 
     s3Client = providedS3Client || new S3Client({
         region: AWS_REGION || undefined,
         credentials, 
-        endpoint: process.env.AWS_S3_HOST || undefined
+        endpoint: process.env.AWS_S3_HOST || undefined,
+        apiVersion: '2006-03-01'
     });
 
     log.info('S3 initialization complete');
 }
 
-
-export const putObject = async (key: string, stream: JPEGStream, contentLength: number): Promise<void> => {
-    const request: PutObjectRequest = {
-        Bucket: process.env.AWS_BUCKET,
-        Key: key,
-        ContentType: 'image/jpeg',
-        ContentLength: contentLength,
-        Body: Readable.from(stream)
-    }
-
-    const command = new PutObjectCommand(request);
-
-    log.debug(`Sending S3 object creation request: ${key}`);
+/**
+ * Uploads data to S3 using lib-storage Upload utility function.
+ * @param key - s3 object key
+ * @param stream - data stream to be stored
+ */
+export const uploadObject = async (key: string, stream: JPEGStream): Promise<void> => {
     try {
-        await s3Client.send(command);
-    } catch (err){
-        if (err.$metadata?.httpStatusCode) {
-            log.error(`Error HTTP status response from S3 PutObject Request: ${err.$metadata.httpStatusCode}`)
-        }
-        log.error(err.message);
-        if (err.body) log.error(err.body);
-        throw createError(500, err);
+        const s3Upload = new Upload({
+            client: s3Client,
+            params: {
+                Bucket: process.env.AWS_BUCKET,
+                Key: key,
+                Body: stream
+            }
+        });
+
+        console.log(s3Upload);
+
+        s3Upload.on('httpUploadProgress', (progress) => {
+            log.debug(JSON.stringify(progress));
+        })
+
+        await s3Upload.done();
+    } catch (err) {
+        console.log(err);
+        log.error(`Object upload error: ${JSON.stringify(err)}`);
+        throw createError(500, `Error uploading file to S3: ${JSON.stringify(err)}`)
     }
-    log.debug('s3 upload complete');
-    return Promise.resolve();
 }
 
 export const readObject = async (key: string): Promise<Readable | undefined> => {
@@ -102,7 +108,7 @@ export const readObject = async (key: string): Promise<Readable | undefined> => 
         if ([403, 404].includes(error.$metadata?.httpStatusCode)) {
             return undefined;
         }
-        log.error(`S3 Read Object Failure: ${error.$metadata?.httpStatusCode} ${error.message}`);
+        log.error(`S3 Read Object Failure: ${error.$metadata?.httpStatusCode} ${JSON.stringify(error)}`);
         throw error;
     }
 }

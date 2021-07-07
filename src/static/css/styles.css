@@ -3,15 +3,23 @@ body {
     margin: 0;
     padding: 0;
   }
-  #viewerContainer {
-    overflow: auto;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    justify-content: center;
-    flex-direction: column;
-    
-  }
-  .canvasWrapper {
-    background: white;
-  }
+#viewerContainer {
+  overflow: auto;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+  padding: 5px;
+  box-sizing: border-box;
+}
+.canvasWrapper {
+  background: white;
+}
+
+.pdf-page-img {
+  min-width: 500px;
+  min-height: 500px;
+  margin-bottom: 5px;
+}
+
