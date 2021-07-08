@@ -4,9 +4,10 @@ import rewire from 'rewire';
 import * as s3Service from '../../src/s3-client';
 import { S3Client } from '@aws-sdk/client-s3';
 import { PassThrough } from 'stream';
-import { Upload } from '@aws-sdk/lib-storage';
+import * as libStorage from '@aws-sdk/lib-storage';
 
 describe('s3-client', () => {
+    const rewiredLibStorage = rewire('@aws-sdk/lib-storage');
 
     const testKey = 'some-key/file.pdf';
     const sandbox = sinon.createSandbox();
@@ -47,48 +48,6 @@ describe('s3-client', () => {
             sinon.assert.calledOnce(stub);
         });
     });
-
-    // describe('uploadObject', () => {
-    //     let rewiredS3Client = rewire<typeof s3Service>('../../src/s3-client');
-    //     const mockS3Client = new S3Client({});
-    //     rewiredS3Client.initialize(mockS3Client);
-    //     const s3ClientSendStub = sandbox.stub(mockS3Client, 'send');
-    //     const stub = sinon.stub().callsFake();
-    //     const original = Object.getPrototypeOf(Upload);
-    //     Object.setPrototypeOf(Upload, stub);
-        
-    //     const uploadStub = sandbox.createStubInstance(Upload);
-    //     Object.setPrototypeOf(Upload, uploadStub.));
-
-    //     after(() => {
-    //         Object.setPrototypeOf(Upload, original);
-    //     })
-
-    //     it('should reject with 500 httpcode when putObject request rejects', async () => {
-    //         const inputStream = new PassThrough();
-    //         const error = new Error('test-error') as any;
-    //         error.$metadata = {
-    //             httpStatusCode: 400
-    //         }
-
-    //         uploadStub.done.rejects(error);
-
-    //         await rewiredS3Client.uploadObject(testKey, inputStream)
-    //             .should.eventually.an.instanceOf(Error)
-    //             .and.have.property('status', 500);
-    //     });
-
-    //     it('should resolve cleanly when upload resolves', async () => {
-    //         const inputStream = new PassThrough();
-
-    //         uploadStub.done.resolves();
-
-    //         await rewiredS3Client.uploadObject(testKey, inputStream)
-    //             .should.eventually.be.undefined;
-    //     });
-
-
-    // });
 
     describe('readObject', () => {
         const mockS3Client = new S3Client({});
