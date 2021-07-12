@@ -9,7 +9,7 @@
     "start:local": "ts-node -r dotenv/config ./src/app.ts",
     "start:dist": "node -r dotenv/config ./dist/app.js",
     "test": "npm run test:unit",
-    "test:unit": "AWS_BUCKET=sample-bucket AWS_REGION=ap-northeast-2 NODE_ENV=test LOG_STYLE=SILENT nyc ts-mocha \"__tests__/unit/*.test.ts\"",
+    "test:unit": "AWS_BUCKET=sample-bucket AWS_REGION=ap-northeast-2 NODE_ENV=test nyc ts-mocha \"__tests__/unit/*.test.ts\"",
     "test:integration": "LOG_STYLE=SILENT nyc ts-mocha \"__tests__/integration/*.test.ts\"",
     "cover": "npm run cover:unit && npm run cover:integration && npm run cover:report",
     "cover:unit": "nyc --silent npm run test:unit",

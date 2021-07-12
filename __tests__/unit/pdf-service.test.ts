@@ -142,24 +142,16 @@ describe('pdf-service', () => {
     });
 
     describe('getPDFPage', () => {
-        // it('should resolve to the readable when returned by readObject', async () => {
-        //     const expectedData = ['expected', 'data'].join(' ').repeat(100);
-        //     const data = Readable.from((Buffer.from(expectedData)));
-        //     fakeS3Service.readObject.resolves(data)
+        it('should not reject when first call to s3Service.readObject rejects with a non-HttpError', async () => {
+            rewiredPdfService.initialize();
+            fakeS3Service.readObject.onFirstCall().rejects(new Error('Non HTTP error'));
+            rewiredPdfService.__set__('renderSinglePage', () => Promise.reject(createError(411)));
 
-        //     await pdfService.getPDFPage(testPdfName, 1, testUrl)
-        //         .should.eventually.equal(data);
-        // });
+            await rewiredPdfService.getPDFPage(testPdfName, 1, testUrl)
+                .should.eventually.be.rejected
+                .and.have.property('status', 411);
 
-        // it('should reject with 500 when readObject rejects with non-HTTP error', async () => {
-        //     const expected = new Error('Non-HTTP Error');
-        //     fakeS3Service.readObject.rejects(expected);
-            
-        //     await pdfService.getPDFPage(testPdfName, 1, testUrl)
-        //         .should.eventually.be.rejectedWith(expected)
-        //         .and.be.an.instanceOf(Error)
-        //         .and.have.property('status', 500);
-        // });
+        });
 
         describe('should reject with rethrown http error from readObject when http status error is not 403, 404', async () => {
             const errorCodes = [400, 401, 402, 405, 406, 500, 501, 502, 503, 504];
