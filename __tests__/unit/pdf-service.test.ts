@@ -16,6 +16,8 @@ import rewire from 'rewire';
 import createError from 'http-errors';
 
 const sandbox = sinon.createSandbox();
+let rewiredPdfService = rewire<typeof pdfService>('../../src/pdf-service');
+
 
 describe('pdf-service', () => {
     // Helper parameter values
@@ -37,6 +39,7 @@ describe('pdf-service', () => {
 
 
     beforeEach(() => {
+        rewiredPdfService = rewire<typeof pdfService>('../../src/pdf-service');
         fakeEntityManager = sandbox.createStubInstance(typeorm.EntityManager);
         fakeEntityManager.transaction.callsFake(transactionMockImpl as any);
         fakeImageConverter = sandbox.stub(imageConverter);
@@ -54,12 +57,6 @@ describe('pdf-service', () => {
     })
 
     describe('initialize', () => {
-        let rewiredPdfService = rewire<typeof pdfService>('../../src/pdf-service');
-        
-        beforeEach(() => {
-            rewiredPdfService = rewire<typeof pdfService>('../../src/pdf-service');
-        });
-
         it('should not have a cache if initialize was not called', () => {
             expect(rewiredPdfService.__get__('pageResolutionCache')).to.be.undefined;
         });
@@ -399,4 +396,194 @@ describe('pdf-service', () => {
                 .and.have.property('status', 500);
         });
     });
-})
+
+    describe('renderSinglePage', () => {
+        let renderSinglePage;
+        const fsPromisesstub = sandbox.stub(fs, 'promises');
+        beforeEach(() => {
+            rewiredPdfService.initialize();
+            rewiredPdfService.__get__('renderSinglePage');
+            renderSinglePage = rewiredPdfService.__get__('renderSinglePage');
+        })
+        
+        it('should reject with 400 when findOne returns undefined', async () => {
+            fakeEntityManager.findOne.resolves(undefined);
+
+            await rewiredPdfService.__get__('renderSinglePage')('key', new URL('https://pdf-service.com/pdf.pdf'))
+                .should.eventually.be.rejected
+                .and.be.an.instanceOf(Error)
+                .and.have.property('status', 400);
+        });
+
+        it('should reject with 404 when requested page is greater than totalPages', async () => {
+            const page = 10;
+            fakeEntityManager.findOne.resolves({
+                totalPages: page - 1
+            });
+
+            await rewiredPdfService.__get__('renderSinglePage')('key', new URL('https://pdf-service.com/pdf.pdf'), page)
+                .should.eventually.be.rejected
+                .and.be.an.instanceOf(Error)
+                .and.have.property('status', 404);
+        });
+
+        it('should not reject with 404 when requested page is equal to totalPages', async () => {
+            const page = 10;
+            fakeEntityManager.findOne.resolves({
+                totalPages: page
+            });
+
+            // Throw an error after page validation to simplify test configuration
+            const captureStatus = 502;
+            const expectedError = createError(captureStatus);
+            fakeImageConverter.createDocumentFromStream.rejects(expectedError);
+
+            await rewiredPdfService.__get__('renderSinglePage')('key', new URL('https://pdf-service.com/pdf.pdf'), page)
+                .should.eventually.be.rejected
+                .and.be.an.instanceOf(Error)
+                .and.not.have.property('status', 404);
+        });
+
+        it('should not reject with 404 when requested page is less than totalPages', async () => {
+            const page = 10;
+            fakeEntityManager.findOne.resolves({
+                totalPages: page + 1
+            });
+
+            // Throw an error after page validation to simplify test configuration
+            const captureStatus = 502;
+            const expectedError = createError(captureStatus);
+            fakeImageConverter.createDocumentFromStream.rejects(expectedError);
+
+            await rewiredPdfService.__get__('renderSinglePage')('key', new URL('https://pdf-service.com/pdf.pdf'), page)
+                .should.eventually.be.rejected
+                .and.be.an.instanceOf(Error)
+                .and.not.have.property('status', 404);
+        });
+
+        it('should reject with 500 when writeStreamToTempFile rejects', async () => {
+            const page = 10;
+            fakeEntityManager.findOne.resolves({
+                totalPages: page + 1
+            });
+
+            fakeImageConverter.createDocumentFromStream.resolves(undefined);
+            fakeImageConverter.generatePageImage.resolves(Readable.from(Buffer.from('data')));
+
+            rewiredPdfService.__set__('writeStreamToTempFile', sandbox.stub().rejects(new Error('401')));
+
+            await rewiredPdfService.__get__('renderSinglePage')('key', new URL('https://pdf-service.com/pdf.pdf'), page)
+                .should.eventually.be.rejected
+                .and.be.an.instanceOf(Error)
+                .and.have.property('status', 500);
+        });
+
+        it('should reject with 500 when fs.promises.stat rejects', async () => {
+            const page = 10;
+            fakeEntityManager.findOne.resolves({
+                totalPages: page + 1
+            });
+
+            const statStub = sandbox.stub().rejects(createError(412, 'testing error'));
+            sandbox.stub(fs, 'promises').value({ stat: statStub });
+
+            fakeImageConverter.createDocumentFromStream.resolves(undefined);
+            fakeImageConverter.generatePageImage.resolves(Readable.from(Buffer.from('data')));
+
+            rewiredPdfService.__set__('writeStreamToTempFile', sandbox.stub().resolves());
+
+            await rewiredPdfService.__get__('renderSinglePage')('key', new URL('https://pdf-service.com/pdf.pdf'), page)
+                .should.eventually.be.rejected
+                .and.be.an.instanceOf(Error)
+                .and.have.property('status', 500);
+        });
+
+        it('should rethrow HttpError when s3Seervice.uploadObject rejects with instance of HttpError', async () => {
+            const page = 10;
+            fakeEntityManager.findOne.resolves({
+                totalPages: page + 1
+            });
+
+            const statStub = sandbox.stub().resolves({
+                size: 10000
+            });
+            sandbox.stub(fs, 'promises').value({ stat: statStub });
+            fakeFs = sandbox.stub(fs);
+            fakeFs.createReadStream.onFirstCall().returns({
+                pipe: sandbox.stub()
+            } as any);
+            fakeFs.createWriteStream.returns({} as any);
+            fakeFs.createReadStream.onSecondCall().returns(undefined as any);
+            fakeS3Service.uploadObject.rejects(createError(411));
+
+
+            fakeImageConverter.createDocumentFromStream.resolves(undefined);
+            fakeImageConverter.generatePageImage.resolves(Readable.from(Buffer.from('data')));
+
+            rewiredPdfService.__set__('writeStreamToTempFile', sandbox.stub().resolves());
+
+            await rewiredPdfService.__get__('renderSinglePage')('key', new URL('https://pdf-service.com/pdf.pdf'), page)
+                .should.eventually.be.rejected
+                .and.be.an.instanceOf(Error)
+                .and.have.property('status', 411);
+        });
+    
+        it('should resolve when s3Seervice.uploadObject rejects with non-HttpError', async () => {
+            const page = 10;
+            fakeEntityManager.findOne.resolves({
+                totalPages: page + 1
+            });
+
+            const statStub = sandbox.stub().resolves({
+                size: 10000
+            });
+            sandbox.stub(fs, 'promises').value({ stat: statStub });
+            fakeFs = sandbox.stub(fs);
+            fakeFs.createReadStream.onFirstCall().returns({
+                pipe: sandbox.stub()
+            } as any);
+            fakeFs.createWriteStream.returns({} as any);
+            fakeFs.createReadStream.onSecondCall().returns(undefined as any);
+            fakeS3Service.uploadObject.rejects(new Error('non-http error'));
+
+
+            fakeImageConverter.createDocumentFromStream.resolves(undefined);
+            fakeImageConverter.generatePageImage.resolves(Readable.from(Buffer.from('data')));
+
+            rewiredPdfService.__set__('writeStreamToTempFile', sandbox.stub().resolves());
+
+            await rewiredPdfService.__get__('renderSinglePage')('key', new URL('https://pdf-service.com/pdf.pdf'), page)
+                .should.eventually.not.be.undefined;
+        });
+    
+        it('should resolve when s3Seervice.uploadObject resolves', async () => {
+            const page = 10;
+            fakeEntityManager.findOne.resolves({
+                totalPages: page + 1
+            });
+
+            const statStub = sandbox.stub().resolves({
+                size: 10000
+            });
+            sandbox.stub(fs, 'promises').value({ stat: statStub });
+            fakeFs = sandbox.stub(fs);
+            fakeFs.createReadStream.onFirstCall().returns({
+                pipe: sandbox.stub()
+            } as any);
+            fakeFs.createWriteStream.returns({} as any);
+            fakeFs.createReadStream.onSecondCall().returns(undefined as any);
+            fakeS3Service.uploadObject.resolves();
+
+            fakeImageConverter.createDocumentFromStream.resolves(undefined);
+            fakeImageConverter.generatePageImage.resolves(Readable.from(Buffer.from('data')));
+
+            rewiredPdfService.__set__('writeStreamToTempFile', sandbox.stub().resolves());
+
+            await rewiredPdfService.__get__('renderSinglePage')('key', new URL('https://pdf-service.com/pdf.pdf'), page)
+                .should.eventually.not.be.undefined;
+        });
+    
+    });
+
+
+});

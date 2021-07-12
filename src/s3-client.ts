@@ -1,5 +1,7 @@
 import { GetObjectCommand, GetObjectRequest, S3Client } from '@aws-sdk/client-s3';
-import { Upload } from '@aws-sdk/lib-storage';
+// import { Upload } from '@aws-sdk/lib-storage';
+import * as libStorage from '@aws-sdk/lib-storage';
+
 import { Readable } from 'stream';
 import { JPEGStream } from 'canvas';
 import { withLogger } from './logger';
@@ -66,7 +68,7 @@ export const initialize = async (providedS3Client?: S3Client): Promise<void> => 
  */
 export const uploadObject = async (key: string, stream: JPEGStream): Promise<void> => {
     try {
-        const s3Upload = new Upload({
+        const s3Upload = new libStorage.Upload({
             client: s3Client,
             params: {
                 Bucket: process.env.AWS_BUCKET,
@@ -74,8 +76,6 @@ export const uploadObject = async (key: string, stream: JPEGStream): Promise<voi
                 Body: stream
             }
         });
-
-        console.log(s3Upload);
 
         s3Upload.on('httpUploadProgress', (progress) => {
             log.debug(JSON.stringify(progress));

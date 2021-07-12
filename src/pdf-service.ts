@@ -103,7 +103,7 @@ export const getPDFPage = async (pdfName: string, page: number, pdfURL: URL): Pr
     return stream;
 }
 
-export const getDirectPageRender = async (pdfName: string, page: number, pdfURL: URL): Promise<JPEGStream> => {
+export const getDirectPageRender = async (page: number, pdfURL: URL): Promise<JPEGStream> => {
     const document = await imageConverter.createDocumentFromStream(pdfURL.toString());
     return imageConverter.generatePageImage(document, page);
 }
@@ -128,13 +128,13 @@ const renderSinglePage = async (pageKey: string, pdfURL: URL, page: number): Pro
         let contentLength: number;
         let stat;
         try {
-            contentLength = await writeStreamToTempFile(filename, jpegStream)
-            log.debug(`Bytes written for ${pageKey}: ${contentLength}`)
+            contentLength = await writeStreamToTempFile(filename, jpegStream);
+            log.debug(`Bytes written for ${pageKey}: ${contentLength}`);
             stat = await fs.promises.stat(filename);
-            log.debug(`Filesize for ${pageKey}: ${stat.size}`)
+            log.debug(`Filesize for ${pageKey}: ${stat.size}`);
         } catch (err) {
             log.error(`Error writing image to temporary file: ${err.message}`);
-            throw createError(500, err);
+            throw createError(500, err.message);
         }
 
         log.info('Reading temp file from file system');
@@ -149,6 +149,10 @@ const renderSinglePage = async (pageKey: string, pdfURL: URL, page: number): Pro
         try {
             await s3Service.uploadObject(pageKey, readStream);
         } catch (err) {
+            // ! Note: HttpErrors will be propagated, but any other error types will only be
+            // ! logged, as the requested image can still be successfully served from the temp
+            // ! file. While it would be better to persist the image, failing to do so will not
+            // ! prevent us from succcessfully serving the image to the user.
             if (err instanceof HttpError) throw err;
             log.error(`Error writing file to S3.`);
             log.error(JSON.stringify(err));
@@ -157,7 +161,6 @@ const renderSinglePage = async (pageKey: string, pdfURL: URL, page: number): Pro
 
         // await fs.promises.rm(filename);
     })();
-
     pageResolutionCache.set(pageKey, promise);
 
     return promise;
@@ -172,7 +175,8 @@ const writeStreamToTempFile = (filename: string, stream: JPEGStream): Promise<nu
                 const contentLength = fileStream.bytesWritten;
                 log.silly(`contentLength: ${contentLength}`)
                 resolve(contentLength);
-            }).on('error', (err) => {
+            })
+            .on('error', (err) => {
                 log.error(`Error reading from JPEGStream while streaming to temporary file: ${err.message}`)
                 reject(err);
             })

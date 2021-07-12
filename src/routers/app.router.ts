@@ -107,7 +107,7 @@ if (process.env.NODE_ENV === 'development') {
         
         response.contentType('image/jpeg')
         try {
-            const stream: Readable = await pdfService.getDirectPageRender(pdfName, +page, pdfURL)
+            const stream: Readable = await pdfService.getDirectPageRender(+page, pdfURL)
             stream.pipe(response)
         } catch (err) {
             next(err);

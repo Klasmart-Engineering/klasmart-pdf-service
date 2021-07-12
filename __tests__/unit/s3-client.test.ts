@@ -1,10 +1,9 @@
 import { expect } from 'chai';
-import sinon, { assert } from 'sinon';
+import sinon from 'sinon';
 import rewire from 'rewire';
 import * as s3Service from '../../src/s3-client';
 import { S3Client } from '@aws-sdk/client-s3';
 import { PassThrough } from 'stream';
-import * as libStorage from '@aws-sdk/lib-storage';
 
 describe('s3-client', () => {
     const rewiredLibStorage = rewire('@aws-sdk/lib-storage');
@@ -48,6 +47,31 @@ describe('s3-client', () => {
             sinon.assert.calledOnce(stub);
         });
     });
+
+    // describe('uploadObject', () => {
+    //     const mockS3Client = new S3Client({});
+    //     s3Service.initialize(mockS3Client);
+    //     const s3ClientSendStub = sandbox.stub(mockS3Client, 'send');
+
+    //     afterEach(() => {
+    //         s3ClientSendStub.reset();
+    //     })
+
+    //     it('should reject with 500 when update rejects', async () => {
+    //         s3ClientSendStub.rejects(new Error('test-error'));
+    //         await s3Service.uploadObject('key', Readable.from(Buffer.from('ldajflkdjlksf')))
+    //             .should.eventually.rejectedWith(Error)
+    //             .and.have.property('status', 500);
+    //     });
+
+    //     it('should resolve when send resolves', async () => {
+    //         s3ClientSendStub.resolves({
+    //             UploadId: 9999
+    //         });
+    //         await s3Service.uploadObject('key', Readable.from(Buffer.from('ldajflkdjlksf')))
+    //             .should.eventually.be.undefined;
+    //     })
+    // })
 
     describe('readObject', () => {
         const mockS3Client = new S3Client({});
