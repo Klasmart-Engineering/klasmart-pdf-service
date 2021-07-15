@@ -8,6 +8,7 @@ import { withLogger } from './logger';
 import * as s3Service from './s3-client';
 import { errorHandler } from './util/error-handler';
 import { appRouter } from './routers/app.router';
+import { doRender } from './pdf2png';
 
 const log = withLogger('app');
 
@@ -56,6 +57,14 @@ if (process.env.EXPOSE_TESTING_PDFS == 'EXPOSE') {
     app.use(express.static(__dirname + '/testing-pdfs'));
 }
 
+app.get('/pdf2png', async (req, res, next) => {
+  
+    const data = await doRender();
+    res.contentType('image/jpeg');
+    data.pipe(res);
+    next();
+  })
+  
 
 /* #endregion middleware */
 

@@ -4,6 +4,7 @@ import * as pdfService from '../pdf-service';
 import Readable from 'stream';
 import pug from 'pug';
 import { withLogger } from '../logger';
+import { doRender } from '../pdf2png';
 
 export const appRouter = Router();
 const log = withLogger('app.router');
@@ -102,7 +103,9 @@ if (process.env.NODE_ENV === 'development') {
             next(createError(400, 'Page must be a positive value'));
             return;
         }
-        
+    
+        // doRender()
+
         const pdfURL = new URL(`/assets/${pdfName}`, process.env.CMS_BASE_URL);
         
         response.contentType('image/jpeg')
