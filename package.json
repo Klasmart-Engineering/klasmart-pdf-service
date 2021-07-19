@@ -17,7 +17,7 @@
     "cover:report": "nyc report --reporter=lcov --reporter=text",
     "build": "babel src --out-dir dist --extensions \".ts\" --source-maps inline",
     "lint": "eslint",
-    "postinstall": "gulp dist-install --pwd=./node_modules/pdf.js/ && npm --prefix ./node_modules/pdf.js/ install ./node_modules/pdf.js/ && cp ./node_modules/pdf.js/dist && rm -rf ./node_modules/pdf.js"
+    "postinstall": "sh ./post-install.sh"
   },
   "author": {
     "name": "Mitch Goshorn",
@@ -36,12 +36,12 @@
     "node-cache": "^5.1.2",
     "pg": "^8.6.0",
     "pug": "^3.0.2",
+    "puppeteer": "^10.1.0",
     "reflect-metadata": "^0.1.13",
     "regenerator-runtime": "^0.13.7",
     "typeorm": "^0.2.34",
     "uuid": "^8.3.2",
-    "winston": "^3.3.3",
-    "pdf.js": "git+https://github.com/mozilla/pdf.js.git"
+    "winston": "^3.3.3"
   },
   "devDependencies": {
     "@babel/cli": "^7.14.5",

@@ -4,7 +4,6 @@ import * as pdfService from '../pdf-service';
 import Readable from 'stream';
 import pug from 'pug';
 import { withLogger } from '../logger';
-import { doRender } from '../pdf2png';
 
 export const appRouter = Router();
 const log = withLogger('app.router');
