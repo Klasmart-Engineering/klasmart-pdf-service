@@ -62,21 +62,18 @@ export const validatePDFTextContent = async (pdfUrl: string): Promise<boolean> =
             // If all promises resolve correctly, the method should return true, otherwise rejections will cause a false return
             await Promise.all(
                 Array.from(Array(pages)).map((x,i) => i+1)
-                    .map(x => { console.log(`Validating page text content ${x}`); return x;})
                     .map(i => document.getPage(i))
                     .map(x => x.then(proxy => proxy.getTextContent()))
             );
 
             await Promise.all(
                 Array.from(Array(pages)).map((x,i) => i+1)
-                    .map(x => { console.log(`Validating page ${x} operator list`); return x;})
                     .map(i => document.getPage(i))
                     .map(x => x.then(proxy => proxy.getOperatorList()))
             );
 
             await Promise.all(
                 Array.from(Array(pages)).map((x,i) => i+1)
-                    .map(x => { console.log(`Validating page ${x} operator list`); return x;})
                     .map(i => document.getPage(i))
                     .map(async x => {
                          return x.then(proxy => {
@@ -173,7 +170,6 @@ class NodeCMapReaderFactory {
       this.baseUrl = data.baseUrl;
       this.isCompressed = data.isCompressed;
       log.info(`NodeCMapReaderFactory initialized with baseURL: ${this.baseUrl}`)
-      console.log(this.baseUrl);
       log.info('Attemping test load of file');
       const url = `${this.baseUrl}` + '78-EUC-H' + (this.isCompressed ? '.bcmap' : '');
       fs.readFileSync(url);

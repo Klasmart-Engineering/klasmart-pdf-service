@@ -331,14 +331,10 @@ describe('pdf-service', () => {
             const resultPromise = pdfService.getPDFPage(testPdfName, page, testUrl);
             await new Promise<void>((resolve, _) => resolve());
             
-            try {
-                setTimeout(() => {
-                    // Force a stream error
-                    (mockReadable as PassThrough).emit('error', expectedError);
-                }, 100)
-            } catch (error) {
-                console.log(error);
-            }
+            setTimeout(() => {
+                // Force a stream error
+                (mockReadable as PassThrough).emit('error', expectedError);
+            }, 100)
 
             await resultPromise
                 .should.eventually.be.rejectedWith(expectedError.message)
