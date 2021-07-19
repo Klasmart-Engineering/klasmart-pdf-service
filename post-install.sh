@@ -1,3 +1,4 @@
+npm install -g gulp
 npm link gulp
 npm link gulp-less
 npm link gulp-watch
