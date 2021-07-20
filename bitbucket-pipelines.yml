@@ -12,6 +12,12 @@ pipelines:
             - npm config set npat true
             - npm i --no-progress
             - npx eslint . --ext .js,.jsx,.ts,.tsx
+      - step:
+          name: 'Test'
+          image: 'node:lts'
+          script:
+            - npm i --no-progress
+            - npm run test:unit
   branches:
     alpha:
     - step:
