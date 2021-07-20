@@ -3,10 +3,11 @@ import createHttpError from 'http-errors';
 import * as pdf from 'pdfjs-dist/legacy/build/pdf.js';
 import { PDFDocumentProxy } from 'pdfjs-dist/types/src/display/api';
 import { withLogger } from './logger';
-import fs from 'fs';
-import { CMapCompressionType } from 'pdfjs-dist/legacy/build/pdf.js';
-const log = withLogger('image-converter');
 
+const DEFAULT_SCALE = 3;
+const DEFAULT_JPEG_IMAGE_QUALITY = 0.99;
+
+const log = withLogger('image-converter');
 
 // Some PDFs need external cmaps.
 const CMAP_URL = __dirname + "/../node_modules/pdfjs-dist/cmaps/";
@@ -77,7 +78,7 @@ export const validatePDFTextContent = async (pdfUrl: string): Promise<boolean> =
                     .map(i => document.getPage(i))
                     .map(async x => {
                          return x.then(proxy => {
-                            const viewport = proxy.getViewport({scale: 3});
+                            const viewport = proxy.getViewport({ scale: parseFloat(process.env.IMAGE_SCALE as string) || DEFAULT_SCALE });
                             const canvas = Canvas.createCanvas(viewport.width, viewport.height);
                             return proxy.render({
                                 canvasContext: canvas.getContext('2d'),
@@ -109,16 +110,16 @@ export const generatePageImage = async (document: PDFDocumentProxy, pageNumber: 
         throw err;
     }
     log.debug('creating viewport/canvas')
-    const viewport = pageProxy.getViewport({ scale: 1.0 });
-    const canvasFactory = new NodeCanvasFactory();
-    const canvasAndContext = canvasFactory.create(
-        viewport.width,
-        viewport.height
-    );
+    const viewport = pageProxy.getViewport({ scale: parseFloat(process.env.IMAGE_SCALE as string) || DEFAULT_SCALE });
+    const nodeCanvas = new NodeCanvas(viewport.width, viewport.height);
+    // const canvasAndContext = canvasFactory.create(
+    //     viewport.width,
+    //     viewport.height
+    // );
     const renderContext = {
-        canvasContext: canvasAndContext.context,
+        canvasContext: nodeCanvas.context,
         viewport,
-        canvasFactory,
+        nodeCanvas,
     };
 
     log.debug('rendering page to canvas');
@@ -127,81 +128,70 @@ export const generatePageImage = async (document: PDFDocumentProxy, pageNumber: 
     
     // Convert the canvas to an image buffer.
     log.debug('creating jpeg output stream');
-    const imageOutputStream = canvasAndContext.canvas.createJPEGStream({
-        quality: .99
+    const imageOutputStream = nodeCanvas.canvas?.createJPEGStream({
+        quality: parseFloat(process.env.JPEG_QUALITY as string) || DEFAULT_JPEG_IMAGE_QUALITY,
     });
     
+    if (!imageOutputStream) throw new Error('Cannot create ImageOutputStream with undefined NodeCanvas!');
+
     return imageOutputStream;
 }
 
-function NodeCanvasFactory() {}
-NodeCanvasFactory.prototype = {
-  create: function NodeCanvasFactory_create(width, height) {
-    const canvas = Canvas.createCanvas(width, height);
-    
-    
-    const context = canvas.getContext("2d");
-    return {
-      canvas,
-      context,
-    };
-  },
+class NodeCanvas {
 
-  reset: function NodeCanvasFactory_reset(canvasAndContext, width, height) {
-    canvasAndContext.canvas.width = width;
-    canvasAndContext.canvas.height = height;
-  },
+  canvas: Canvas.Canvas | null;
+  context: Canvas.CanvasRenderingContext2D | null;
 
-  destroy: function NodeCanvasFactory_destroy(canvasAndContext) {
-    // Zeroing the width and height cause Firefox to release graphics
-    // resources immediately, which can greatly reduce memory consumption.
-    canvasAndContext.canvas.width = 0;
-    canvasAndContext.canvas.height = 0;
-    canvasAndContext.canvas = null;
-    canvasAndContext.context = null;
-  },
-};
+  constructor(width: number, height: number) {
+    this.canvas = Canvas.createCanvas(width, height);
+    this.context = this.canvas.getContext('2d');
+  }
 
-class NodeCMapReaderFactory {
-    baseUrl: string;
-    isCompressed: boolean;
+  reset (width: number, height: number) {
+    if (!this.canvas) throw new Error('Canvas undefined');
+    this.canvas.width = width;
+    this.canvas.height = height;
+  }
 
-    constructor(data: { baseUrl: string, isCompressed: boolean} ) {
-      this.baseUrl = data.baseUrl;
-      this.isCompressed = data.isCompressed;
-      log.info(`NodeCMapReaderFactory initialized with baseURL: ${this.baseUrl}`)
-      log.info('Attemping test load of file');
-      const url = `${this.baseUrl}` + '78-EUC-H' + (this.isCompressed ? '.bcmap' : '');
-      fs.readFileSync(url);
+  destroy() {
+    if (this.canvas) {
+      // Zeroing the width and height cause Firefox to release graphics
+      // resources immediately, which can greatly reduce memory consumption.
+      this.canvas.width = 0;
+      this.canvas.height = 0;
+      this.canvas = null;
     }
-  
-    fetch({ name, }) {
-      if (!this.baseUrl) {
-        return Promise.reject(new Error(
-          'The CMap "baseUrl" parameter must be specified, ensure that ' +
-          'the "cMapUrl" and "cMapPacked" API parameters are provided.'));
-      }
-      if (!name) {
-        return Promise.reject(new Error('CMap name must be specified.'));
-      }
 
-      return new Promise((resolve, reject) => {
-          const url = this.baseUrl + name + (this.isCompressed ? '.bcmap' : '');
-          log.info(`Fetching font ${name} from ${url}`);
-  
-        fs.readFile(url, (error, data) => {
-          if (error || !data) {
-            reject(new Error('Unable to load ' +
-                             (this.isCompressed ? 'binary ' : '') +
-                             'CMap at: ' + url));
-            return;
-          }
-          resolve({
-            cMapData: new Uint8Array(data),
-            compressionType: this.isCompressed ?
-              CMapCompressionType.BINARY : CMapCompressionType.NONE,
-          });
-        });
-      });
+    if (this.context) {
+      this.context = null;
     }
   }
+}
+
+// function NodeCanvasFactory() {}
+// NodeCanvasFactory.prototype = {
+//   create: function NodeCanvasFactory_create(width, height) {
+//     const canvas = Canvas.createCanvas(width, height);
+    
+    
+//     const context = canvas.getContext("2d");
+//     return {
+//       canvas,
+//       context,
+//     };
+//   },
+
+//   reset: function NodeCanvasFactory_reset(canvasAndContext, width, height) {
+//     canvasAndContext.canvas.width = width;
+//     canvasAndContext.canvas.height = height;
+//   },
+
+//   destroy: function NodeCanvasFactory_destroy(canvasAndContext) {
+//     // Zeroing the width and height cause Firefox to release graphics
+//     // resources immediately, which can greatly reduce memory consumption.
+//     canvasAndContext.canvas.width = 0;
+//     canvasAndContext.canvas.height = 0;
+//     canvasAndContext.canvas = null;
+//     canvasAndContext.context = null;
+//   },
+// };
