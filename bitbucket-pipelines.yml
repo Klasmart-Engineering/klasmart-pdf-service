@@ -17,6 +17,7 @@ pipelines:
           image: 'node:lts'
           script:
             - npm i --no-progress
+            - npm i -g gulp
             - sh ./post-install.sh
             - npm run test:unit
   branches:
