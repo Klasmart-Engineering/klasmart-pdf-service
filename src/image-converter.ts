@@ -112,10 +112,7 @@ export const generatePageImage = async (document: PDFDocumentProxy, pageNumber: 
     log.debug('creating viewport/canvas')
     const viewport = pageProxy.getViewport({ scale: parseFloat(process.env.IMAGE_SCALE as string) || DEFAULT_SCALE });
     const nodeCanvas = new NodeCanvas(viewport.width, viewport.height);
-    // const canvasAndContext = canvasFactory.create(
-    //     viewport.width,
-    //     viewport.height
-    // );
+
     const renderContext = {
         canvasContext: nodeCanvas.context,
         viewport,
@@ -167,31 +164,3 @@ class NodeCanvas {
     }
   }
 }
-
-// function NodeCanvasFactory() {}
-// NodeCanvasFactory.prototype = {
-//   create: function NodeCanvasFactory_create(width, height) {
-//     const canvas = Canvas.createCanvas(width, height);
-    
-    
-//     const context = canvas.getContext("2d");
-//     return {
-//       canvas,
-//       context,
-//     };
-//   },
-
-//   reset: function NodeCanvasFactory_reset(canvasAndContext, width, height) {
-//     canvasAndContext.canvas.width = width;
-//     canvasAndContext.canvas.height = height;
-//   },
-
-//   destroy: function NodeCanvasFactory_destroy(canvasAndContext) {
-//     // Zeroing the width and height cause Firefox to release graphics
-//     // resources immediately, which can greatly reduce memory consumption.
-//     canvasAndContext.canvas.width = 0;
-//     canvasAndContext.canvas.height = 0;
-//     canvasAndContext.canvas = null;
-//     canvasAndContext.context = null;
-//   },
-// };
