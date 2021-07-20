@@ -1,9 +1,13 @@
-import { expect } from 'chai';
+import chai, { expect } from 'chai';
 import sinon from 'sinon';
 import rewire from 'rewire';
 import * as s3Service from '../../src/s3-client';
 import { S3Client } from '@aws-sdk/client-s3';
 import { PassThrough } from 'stream';
+import chaiAsPromised from 'chai-as-promised';
+
+chai.use(chaiAsPromised);
+chai.should();
 
 describe('s3-client', () => {
     const rewiredLibStorage = rewire('@aws-sdk/lib-storage');

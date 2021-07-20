@@ -5,15 +5,19 @@ import { MockManager } from '../util/MockManager';
 import sinon from 'sinon';
 import { S3Client } from '@aws-sdk/client-s3';
 import * as imageConverter from '../../src/image-converter';
-import { PDFDocumentProxy } from 'pdfjs-dist/types/display/api';
+import { PDFDocumentProxy } from 'pdfjs-dist/types/src/display/api';
 import NodeCache from 'node-cache';
 import { Readable } from 'stream';
-import { expect } from 'chai';
+import chai, { expect } from 'chai';
+import chaiAsPromised from 'chai-as-promised';
 import fs, { WriteStream } from 'fs';
 import { PassThrough } from 'stream';
 import { JPEGStream } from 'canvas';
 import rewire from 'rewire';
 import createError from 'http-errors';
+
+chai.use(chaiAsPromised);
+chai.should();
 
 const sandbox = sinon.createSandbox();
 let rewiredPdfService = rewire<typeof pdfService>('../../src/pdf-service');
