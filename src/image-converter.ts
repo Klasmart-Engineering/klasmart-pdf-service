@@ -5,8 +5,8 @@ import { PDFDocumentProxy } from 'pdfjs-dist/types/src/display/api';
 import { withLogger } from './logger';
 import fs from 'fs';
 import { CMapCompressionType } from 'pdfjs-dist/legacy/build/pdf.js';
-const log = withLogger('image-converter');
 
+const log = withLogger('image-converter');
 
 // Some PDFs need external cmaps.
 const CMAP_URL = __dirname + "/../node_modules/pdfjs-dist/cmaps/";
@@ -109,7 +109,7 @@ export const generatePageImage = async (document: PDFDocumentProxy, pageNumber: 
         throw err;
     }
     log.debug('creating viewport/canvas')
-    const viewport = pageProxy.getViewport({ scale: 1.0 });
+    const viewport = pageProxy.getViewport({ scale: 3.0 });
     const canvasFactory = new NodeCanvasFactory();
     const canvasAndContext = canvasFactory.create(
         viewport.width,
