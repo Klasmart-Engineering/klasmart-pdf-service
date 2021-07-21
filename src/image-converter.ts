@@ -37,66 +37,54 @@ export const createDocumentFromStream = async (pdfUrl: string): Promise<PDFDocum
 }
 
 /**
- * Function validating PDF text content. Mapping text/font information is a common area where PDF issues
- * result in rendering issues. This method will consume a PDF document and attempt to validate the text
- * content and report failures that would not otherwise be known until time of rendering.
- * 
- * @param pdfUrl - Network location of the PDF to validate
- * @returns Promise<boolean> True indicating that no errors occurred while checking the PDF
- */
+* Function validating PDF text content. Mapping text/font information is a common area where PDF issues
+* result in rendering issues. This method will consume a PDF document and attempt to validate the text
+* content and report failures that would not otherwise be known until time of rendering.
+* 
+* @param pdfUrl - Network location of the PDF to validate
+* @returns Promise<boolean> True indicating that no errors occurred while checking the PDF
+*/
 export const validatePDFTextContent = async (pdfUrl: string): Promise<boolean> => {
-    log.debug(`Validating document: ${pdfUrl}`);
-    try {
-        const document = await pdf.getDocument({
-            url: pdfUrl,
-            cMapUrl: CMAP_URL,
-            cMapPacked: CMAP_PACKED,
-            standardFontDataUrl: STANDARD_FONT_DATA_URL,
-            useSystemFonts: true,
-            pdfBug: true
-        }).promise;
-
-        const pages = document.numPages;
-
-        try {
-            // Create an array of page nums, map them to page proxy promises, then map the proxies to a call to getTextContent
-            // If all promises resolve correctly, the method should return true, otherwise rejections will cause a false return
-            await Promise.all(
-                Array.from(Array(pages)).map((x,i) => i+1)
-                    .map(i => document.getPage(i))
-                    .map(x => x.then(proxy => proxy.getTextContent()))
-            );
-
-            await Promise.all(
-                Array.from(Array(pages)).map((x,i) => i+1)
-                    .map(i => document.getPage(i))
-                    .map(x => x.then(proxy => proxy.getOperatorList()))
-            );
-
-            await Promise.all(
-                Array.from(Array(pages)).map((x,i) => i+1)
-                    .map(i => document.getPage(i))
-                    .map(async x => {
-                         return x.then(proxy => {
-                            const viewport = proxy.getViewport({ scale: parseFloat(process.env.IMAGE_SCALE as string) || DEFAULT_SCALE });
-                            const canvas = Canvas.createCanvas(viewport.width, viewport.height);
-                            return proxy.render({
-                                canvasContext: canvas.getContext('2d'),
-                                viewport
-                            });
-                        });
-                    })
-            );
-
-            return true;
-        } catch (err) {
-            log.debug(`Error raised while validating PDF. PDF evaluated as invalid. Error message: ${err.message}`)
-            return false;
-        }
+  log.debug(`Validating document: ${pdfUrl}`);
+  let document: PDFDocumentProxy;
+  try {
+      document =  await pdf.getDocument({
+          url: pdfUrl,
+          cMapUrl: CMAP_URL,
+          cMapPacked: CMAP_PACKED,
+          standardFontDataUrl: STANDARD_FONT_DATA_URL,
+          stopAtErrors: true
+      }).promise;
     } catch (err) {
-        log.error(`Error creating PDF document proxy: ${err.message}`);
-        log.error(err);
-        throw createHttpError(500, 'Error encountered creating PDF document');
+      log.error(`Error creating PDF document proxy: ${err.message}`);
+      log.error(err);
+      throw createHttpError(500, 'Error encountered creating PDF document');
+   }
+
+    const pages = document.numPages;
+    log.silly(`Document has ${pages} pages to validate`);
+
+    try {
+
+        for (let page = 1; page <= pages; page++) {
+          const pageProxy: any = await document.getPage(page)
+          const viewport = pageProxy.getViewport({ scale: parseFloat(process.env.IMAGE_SCALE as string) || DEFAULT_SCALE });
+          const nodeCanvas = new NodeCanvas(viewport.width, viewport.height);
+      
+          const renderContext = {
+              canvasContext: nodeCanvas.context,
+              viewport,
+              nodeCanvas,
+          };
+      
+          log.debug(`Validating render of page ${page}/${pages} to canvas`);
+          const renderTask = pageProxy.render(renderContext);
+          await renderTask.promise
+        }
+        return true;
+    } catch (err) {
+        log.debug(`Error raised while validating PDF. PDF evaluated as invalid. Error message: ${err.message}`)
+        return false;
     }
 }
 
