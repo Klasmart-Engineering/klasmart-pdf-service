@@ -36,7 +36,6 @@ appRouter.get(`/:pdfName/validate`, async (request: Request, response: Response,
     try {
         const valid = await pdfService.validatePDFTextContent(pdfName);
         response.send({ valid });
-        next();
     } catch (err) {
         next(err);
     }
