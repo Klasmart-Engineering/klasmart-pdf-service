@@ -44,17 +44,18 @@ export const createDocumentFromStream = async (pdfUrl: string): Promise<PDFDocum
 * @param pdfUrl - Network location of the PDF to validate
 * @returns Promise<boolean> True indicating that no errors occurred while checking the PDF
 */
-export const validatePDFTextContent = async (pdfUrl: string): Promise<boolean> => {
+export const validatePDFTextContent = async (pdfUrl: string): Promise<{ valid: true, pages: number}> => {
   log.debug(`Validating document: ${pdfUrl}`);
   let document: PDFDocumentProxy;
+  const documentOptions = {
+    url: pdfUrl,
+    cMapUrl: CMAP_URL,
+    cMapPacked: CMAP_PACKED,
+    standardFontDataUrl: STANDARD_FONT_DATA_URL,
+    stopAtErrors: true
+  };
   try {
-      document =  await pdf.getDocument({
-          url: pdfUrl,
-          cMapUrl: CMAP_URL,
-          cMapPacked: CMAP_PACKED,
-          standardFontDataUrl: STANDARD_FONT_DATA_URL,
-          stopAtErrors: true
-      }).promise;
+      document =  await pdf.getDocument(documentOptions).promise;
     } catch (err) {
       log.error(`Error creating PDF document proxy: ${err.message}`);
       log.error(err);
@@ -67,6 +68,11 @@ export const validatePDFTextContent = async (pdfUrl: string): Promise<boolean> =
     try {
 
         for (let page = 1; page <= pages; page++) {
+
+          if (page % 25 === 0) {
+            // After every 25 pages, let the document object reference be released and create a new one to prevent potential OOM
+            document = await pdf.getDocument(documentOptions).promise;
+          }
           const pageProxy: any = await document.getPage(page)
           const viewport = pageProxy.getViewport({ scale: parseFloat(process.env.IMAGE_SCALE as string) || DEFAULT_SCALE });
           const nodeCanvas = new NodeCanvas(viewport.width, viewport.height);
@@ -81,10 +87,10 @@ export const validatePDFTextContent = async (pdfUrl: string): Promise<boolean> =
           const renderTask = pageProxy.render(renderContext);
           await renderTask.promise;
         }
-        return true;
+        return { valid: true, pages };
     } catch (err) {
         log.debug(`Error raised while validating PDF. PDF evaluated as invalid. Error message: ${err.message}`)
-        return false;
+        return { valid: true, pages };
     } 
 }
 

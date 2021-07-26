@@ -27,7 +27,7 @@ export const initialize = (cache: NodeCache = new NodeCache(defaultCacheProps)):
     pageResolutionCache = cache;
 }
 
-export const validatePDFTextContent = async (pdfName: string) : Promise<boolean> => {
+export const validatePDFTextContent = async (pdfName: string) : Promise<{ valid: boolean, pages: number }> => {
     return imageConverter.validatePDFTextContent(`${process.env.CMS_BASE_URL}/assets/${pdfName}`);
 }
 
