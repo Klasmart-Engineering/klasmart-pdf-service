@@ -47,7 +47,7 @@ app.use(errorHandler);
 // ? Exposes PDF documents for testing
 if (process.env.EXPOSE_TESTING_PDFS == 'EXPOSE') {
     log.warn(`Exposing testing pdfs`)
-    app.use(express.static('/home/ubuntu/pdfs'));
+    app.use(express.static(__dirname + '/testing-pdfs'));
 }  
 
 /* #endregion middleware */
