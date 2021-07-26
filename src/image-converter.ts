@@ -79,13 +79,13 @@ export const validatePDFTextContent = async (pdfUrl: string): Promise<boolean> =
       
           log.debug(`Validating render of page ${page}/${pages} to canvas`);
           const renderTask = pageProxy.render(renderContext);
-          const throwaway = await renderTask.promise;
+          await renderTask.promise;
         }
         return true;
     } catch (err) {
         log.debug(`Error raised while validating PDF. PDF evaluated as invalid. Error message: ${err.message}`)
         return false;
-    }
+    } 
 }
 
 export const generatePageImage = async (document: PDFDocumentProxy, pageNumber: number): Promise<JPEGStream> => {

@@ -1,0 +1,6 @@
+# API Documentation
+
+- /:pdfFilename/view.html - Example: `https://live.alpha.kidsloop.net/some-document.pdf/view.html`. Responds with HTML page for rendering the PDF document. Responsds with content type text/html.
+- /:pdfFilename/validate - Example: `https://live.alpha.kidsloop.net/some-document.pdf/validate`. Attempts to validate the PDF document by individually rendering each page.  Responds with content type application/json - { valid: boolean }
+- /:pdfFilename/page/:pageNumber  - Example: `https://live.alpha.kidsloop.net/some-document.pdf/page/1`. Loads JPEG render of a page of the PDF document, creating a render if not already rendered. Responds with content type image/jpeg.
+- /:pdfFilename/render-page/:pageNumber - Example: `https://live.alpha.kidsloop.net/some-document.pdf/render-page/1`. - **Only available when application running in development mode!** This endpoint is used to test image rendering. Does not attempt to load the image from storage and instead always creates a fresh render of the PDF page. Responds with content type image/jpeg.
