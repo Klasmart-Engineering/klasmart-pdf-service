@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import 'core-js/stable'
 import 'regenerator-runtime/runtime'
-import express, { NextFunction, Request, Response } from 'express';
+import express, { NextFunction, Response } from 'express';
 import * as typeormConfig from './init-typeorm';
 import * as pdfService from './pdf-service';
 import { withLogger } from './logger';
@@ -59,4 +59,4 @@ const server = app.listen(port, () => {
 server.on('connection', (conn) => {
     conn.setKeepAlive(true);
     conn.setTimeout(1000 * 60 * 10);
-})
+});

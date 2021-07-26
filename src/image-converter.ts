@@ -79,7 +79,7 @@ export const validatePDFTextContent = async (pdfUrl: string): Promise<boolean> =
       
           log.debug(`Validating render of page ${page}/${pages} to canvas`);
           const renderTask = pageProxy.render(renderContext);
-          await renderTask.promise
+          await renderTask.promise;
         }
         return true;
     } catch (err) {
