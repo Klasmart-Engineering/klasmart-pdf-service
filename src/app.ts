@@ -28,12 +28,6 @@ app.get(`/.well-known/express/server-health`, (_, response: Response) => {
     response.sendStatus(200).end();
 });
 
-
-app.use((request: Request, _, next: NextFunction) => {
-    log.silly(`Handling request with request path: ${request.path}`)
-    next();
-});
-
 app.use((_, response: Response, next: NextFunction) => {
     response.set(`Access-Control-Allow-Origin`, `*`);
     next();
@@ -53,11 +47,16 @@ app.use(errorHandler);
 // ? Exposes PDF documents for testing
 if (process.env.EXPOSE_TESTING_PDFS == 'EXPOSE') {
     log.warn(`Exposing testing pdfs`)
-    app.use(express.static(__dirname + '/testing-pdfs'));
+    app.use(express.static('/home/ubuntu/pdfs'));
 }  
 
 /* #endregion middleware */
 
-app.listen(port, () => {
+const server = app.listen(port, () => {
     log.info(`Application listening with prefix ${routePrefix} on port ${port}`);
+});
+
+server.on('connection', (conn) => {
+    conn.setKeepAlive(true);
+    conn.setTimeout(1000 * 60 * 10);
 });
