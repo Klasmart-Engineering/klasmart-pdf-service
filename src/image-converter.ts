@@ -44,7 +44,7 @@ export const createDocumentFromStream = async (pdfUrl: string): Promise<PDFDocum
 * @param pdfUrl - Network location of the PDF to validate
 * @returns Promise<boolean> True indicating that no errors occurred while checking the PDF
 */
-export const validatePDFTextContent = async (pdfUrl: string): Promise<{ valid: true, pages: number}> => {
+export const validatePDFTextContent = async (pdfUrl: string): Promise<{ valid: boolean, pages: number}> => {
   log.debug(`Validating document: ${pdfUrl}`);
   let document: PDFDocumentProxy;
   const documentOptions = {
@@ -66,7 +66,6 @@ export const validatePDFTextContent = async (pdfUrl: string): Promise<{ valid: t
     log.silly(`Document has ${pages} pages to validate`);
 
     try {
-
         for (let page = 1; page <= pages; page++) {
 
           if (page % 25 === 0) {
@@ -90,7 +89,7 @@ export const validatePDFTextContent = async (pdfUrl: string): Promise<{ valid: t
         return { valid: true, pages };
     } catch (err) {
         log.debug(`Error raised while validating PDF. PDF evaluated as invalid. Error message: ${err.message}`)
-        return { valid: true, pages };
+        return { valid: false, pages };
     } 
 }
 
