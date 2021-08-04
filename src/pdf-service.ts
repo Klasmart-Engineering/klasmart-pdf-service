@@ -50,6 +50,25 @@ export const getPDFPages = async (pdfURL: URL):Promise<number> => {
     return pdfMetadata.totalPages;
 }
 
+/**
+ * Function to generate and store images from a PDF - intended to be used to hook into the 
+ * CMS upload process to pre-generate images
+ * @param pdfName 
+ * @param pdfURL 
+ */
+export const generateAndStorgePageImages = async (pdfName: string, pdfURL: URL): Promise<void> => {
+    const pages = await getPDFPages(pdfURL);
+
+    for(let i = 1; i <= pages; i++) {
+        try {
+            await getPDFPage(pdfName, i, pdfURL);
+        } catch (err) {
+            log.error(err.message);
+            console.error(err);
+        }
+    }
+} 
+
 /* Produces the page key for the pdf, then attempts to load it from s3.
     If the object is not in S3, then the application will check the page cache. If the pageKey is found in the cache, 
     then it will await page creation and then read the page image.
