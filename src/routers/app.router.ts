@@ -34,8 +34,10 @@ appRouter.get(`/:pdfName/view.html`, async (request: Request, response: Response
 appRouter.get(`/:pdfName/validate`, async (request: Request, response: Response, next: NextFunction) => {
     const { pdfName } = request.params;
     try {
+        const start = new Date().valueOf();
         const validationStatus = await pdfService.validatePDFTextContent(pdfName);
-        response.send(validationStatus);
+        const diff = new Date().valueOf() - start.valueOf();
+        response.send({ ...validationStatus, processingTime: diff });
     } catch (err) {
         next(err);
     }

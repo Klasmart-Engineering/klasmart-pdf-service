@@ -32,6 +32,10 @@ export const createDocumentFromStream = async (pdfUrl: string): Promise<PDFDocum
         console.log(err);
         log.error(`Error creating PDF document proxy: ${err.message}`);
         log.error(err);
+
+        if (err.name === `InvalidPDFException`) createHttpError(500, 'Document is not a valid PDF');
+        if (err.name === `MissingPDFException`) throw createHttpError(404, 'PDF with provided key not found');
+     
         throw createHttpError(500, 'Error encountered creating PDF document');
     }
 }
@@ -44,7 +48,7 @@ export const createDocumentFromStream = async (pdfUrl: string): Promise<PDFDocum
 * @param pdfUrl - Network location of the PDF to validate
 * @returns Promise<boolean> True indicating that no errors occurred while checking the PDF
 */
-export const validatePDFTextContent = async (pdfUrl: string): Promise<{ valid: boolean, pages: number}> => {
+export const validatePDFTextContent = async (pdfUrl: string): Promise<{ valid: boolean, pages?: number}> => {
   log.debug(`Validating document: ${pdfUrl}`);
   let document: PDFDocumentProxy;
   const documentOptions = {
@@ -59,12 +63,19 @@ export const validatePDFTextContent = async (pdfUrl: string): Promise<{ valid: b
     } catch (err) {
       log.error(`Error creating PDF document proxy: ${err.message}`);
       log.error(err);
+
+      // Handle useful PDF error types
+      if (err.name === `InvalidPDFException`) return { valid: false }
+      if (err.name === `MissingPDFException`) throw createHttpError(404, 'PDF with provided key not found');
+      
+      // If the error wasn't caused by an invalid PDF, then consider it a server error
       throw createHttpError(500, 'Error encountered creating PDF document');
    }
 
     const pages = document.numPages;
     log.silly(`Document has ${pages} pages to validate`);
 
+    // const GROUP_SIZE = 25;
     try {
         for (let page = 1; page <= pages; page++) {
 
@@ -73,7 +84,7 @@ export const validatePDFTextContent = async (pdfUrl: string): Promise<{ valid: b
             document = await pdf.getDocument(documentOptions).promise;
           }
           const pageProxy: any = await document.getPage(page)
-          const viewport = pageProxy.getViewport({ scale: parseFloat(process.env.IMAGE_SCALE as string) || DEFAULT_SCALE });
+          const viewport = pageProxy.getViewport({ scale: 1 });
           const nodeCanvas = new NodeCanvas(viewport.width, viewport.height);
       
           const renderContext = {
