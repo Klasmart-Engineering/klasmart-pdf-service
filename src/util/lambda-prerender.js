@@ -1,4 +1,3 @@
-const aws = require('aws-sdk');
 const http = require('http');
 
 exports.handler = async (event, context, callback) => {
