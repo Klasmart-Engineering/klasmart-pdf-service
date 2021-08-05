@@ -28,6 +28,8 @@ export const initialize = (cache: NodeCache = new NodeCache(defaultCacheProps)):
 
     if (process.env.CMS_BASE_URL) {
         log.info(`Registering CMS asset location: ${process.env.CMS_BASE_URL}`)
+    } else {
+        log.warn(`CMS_BASE_URL not configured! PDF resource locations may be unreachable!`);
     }
 }
 
