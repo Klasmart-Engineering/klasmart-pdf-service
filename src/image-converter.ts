@@ -3,10 +3,11 @@ import createHttpError from 'http-errors';
 import * as pdf from 'pdfjs-dist/legacy/build/pdf.js';
 import { PDFDocumentProxy } from 'pdfjs-dist/types/src/display/api';
 import { withLogger } from './logger';
-import fs from 'fs';
-import { CMapCompressionType } from 'pdfjs-dist/legacy/build/pdf.js';
-const log = withLogger('image-converter');
 
+const DEFAULT_SCALE = 3;
+const DEFAULT_JPEG_IMAGE_QUALITY = 0.99;
+
+const log = withLogger('image-converter');
 
 // Some PDFs need external cmaps.
 const CMAP_URL = __dirname + "/../node_modules/pdfjs-dist/cmaps/";
@@ -31,72 +32,76 @@ export const createDocumentFromStream = async (pdfUrl: string): Promise<PDFDocum
         console.log(err);
         log.error(`Error creating PDF document proxy: ${err.message}`);
         log.error(err);
+
+        if (err.name === `InvalidPDFException`) createHttpError(500, 'Document is not a valid PDF');
+        if (err.name === `MissingPDFException`) throw createHttpError(404, 'PDF with provided key not found');
+     
         throw createHttpError(500, 'Error encountered creating PDF document');
     }
 }
 
 /**
- * Function validating PDF text content. Mapping text/font information is a common area where PDF issues
- * result in rendering issues. This method will consume a PDF document and attempt to validate the text
- * content and report failures that would not otherwise be known until time of rendering.
- * 
- * @param pdfUrl - Network location of the PDF to validate
- * @returns Promise<boolean> True indicating that no errors occurred while checking the PDF
- */
-export const validatePDFTextContent = async (pdfUrl: string): Promise<boolean> => {
-    log.debug(`Validating document: ${pdfUrl}`);
-    try {
-        const document = await pdf.getDocument({
-            url: pdfUrl,
-            cMapUrl: CMAP_URL,
-            cMapPacked: CMAP_PACKED,
-            standardFontDataUrl: STANDARD_FONT_DATA_URL,
-            useSystemFonts: true,
-            pdfBug: true
-        }).promise;
-
-        const pages = document.numPages;
-
-        try {
-            // Create an array of page nums, map them to page proxy promises, then map the proxies to a call to getTextContent
-            // If all promises resolve correctly, the method should return true, otherwise rejections will cause a false return
-            await Promise.all(
-                Array.from(Array(pages)).map((x,i) => i+1)
-                    .map(i => document.getPage(i))
-                    .map(x => x.then(proxy => proxy.getTextContent()))
-            );
-
-            await Promise.all(
-                Array.from(Array(pages)).map((x,i) => i+1)
-                    .map(i => document.getPage(i))
-                    .map(x => x.then(proxy => proxy.getOperatorList()))
-            );
-
-            await Promise.all(
-                Array.from(Array(pages)).map((x,i) => i+1)
-                    .map(i => document.getPage(i))
-                    .map(async x => {
-                         return x.then(proxy => {
-                            const viewport = proxy.getViewport({scale: 3});
-                            const canvas = Canvas.createCanvas(viewport.width, viewport.height);
-                            return proxy.render({
-                                canvasContext: canvas.getContext('2d'),
-                                viewport
-                            });
-                        });
-                    })
-            );
-
-            return true;
-        } catch (err) {
-            log.debug(`Error raised while validating PDF. PDF evaluated as invalid. Error message: ${err.message}`)
-            return false;
-        }
+* Function validating PDF text content. Mapping text/font information is a common area where PDF issues
+* result in rendering issues. This method will consume a PDF document and attempt to validate the text
+* content and report failures that would not otherwise be known until time of rendering.
+* 
+* @param pdfUrl - Network location of the PDF to validate
+* @returns Promise<boolean> True indicating that no errors occurred while checking the PDF
+*/
+export const validatePDFTextContent = async (pdfUrl: string): Promise<{ valid: boolean, pages?: number}> => {
+  log.debug(`Validating document: ${pdfUrl}`);
+  let document: PDFDocumentProxy;
+  const documentOptions = {
+    url: pdfUrl,
+    cMapUrl: CMAP_URL,
+    cMapPacked: CMAP_PACKED,
+    standardFontDataUrl: STANDARD_FONT_DATA_URL,
+    stopAtErrors: true
+  };
+  try {
+      document =  await pdf.getDocument(documentOptions).promise;
     } catch (err) {
-        log.error(`Error creating PDF document proxy: ${err.message}`);
-        log.error(err);
-        throw createHttpError(500, 'Error encountered creating PDF document');
-    }
+      log.error(`Error creating PDF document proxy: ${err.message}`);
+      log.error(err);
+
+      // Handle useful PDF error types
+      if (err.name === `InvalidPDFException`) return { valid: false }
+      if (err.name === `MissingPDFException`) throw createHttpError(404, 'PDF with provided key not found');
+      
+      // If the error wasn't caused by an invalid PDF, then consider it a server error
+      throw createHttpError(500, 'Error encountered creating PDF document');
+   }
+
+    const pages = document.numPages;
+    log.silly(`Document has ${pages} pages to validate`);
+
+    // const GROUP_SIZE = 25;
+    try {
+        for (let page = 1; page <= pages; page++) {
+
+          if (page % 25 === 0) {
+            // After every 25 pages, let the document object reference be released and create a new one to prevent potential OOM
+            document = await pdf.getDocument(documentOptions).promise;
+          }
+          const pageProxy = await document.getPage(page)
+          const viewport = pageProxy.getViewport({ scale: 1 });
+          const nodeCanvas = new NodeCanvas(viewport.width, viewport.height);
+      
+          const renderContext = {
+              canvasContext: nodeCanvas.context as Canvas.NodeCanvasRenderingContext2D,
+              viewport,
+              nodeCanvas,
+          };
+      
+          log.debug(`Validating render of page ${page}/${pages} to canvas`);
+          const renderTask = pageProxy.render(renderContext);
+          await renderTask.promise;
+        }
+        return { valid: true, pages };
+    } catch (err) {
+        log.debug(`Error raised while validating PDF. PDF evaluated as invalid. Error message: ${err.message}`)
+        return { valid: false, pages };
+    } 
 }
 
 export const generatePageImage = async (document: PDFDocumentProxy, pageNumber: number): Promise<JPEGStream> => {
@@ -109,16 +114,13 @@ export const generatePageImage = async (document: PDFDocumentProxy, pageNumber: 
         throw err;
     }
     log.debug('creating viewport/canvas')
-    const viewport = pageProxy.getViewport({ scale: 1.0 });
-    const canvasFactory = new NodeCanvasFactory();
-    const canvasAndContext = canvasFactory.create(
-        viewport.width,
-        viewport.height
-    );
+    const viewport = pageProxy.getViewport({ scale: parseFloat(process.env.IMAGE_SCALE as string) || DEFAULT_SCALE });
+    const nodeCanvas = new NodeCanvas(viewport.width, viewport.height);
+
     const renderContext = {
-        canvasContext: canvasAndContext.context,
+        canvasContext: nodeCanvas.context,
         viewport,
-        canvasFactory,
+        nodeCanvas,
     };
 
     log.debug('rendering page to canvas');
@@ -127,81 +129,42 @@ export const generatePageImage = async (document: PDFDocumentProxy, pageNumber: 
     
     // Convert the canvas to an image buffer.
     log.debug('creating jpeg output stream');
-    const imageOutputStream = canvasAndContext.canvas.createJPEGStream({
-        quality: .99
+    const imageOutputStream = nodeCanvas.canvas?.createJPEGStream({
+        quality: parseFloat(process.env.JPEG_QUALITY as string) || DEFAULT_JPEG_IMAGE_QUALITY,
     });
     
+    if (!imageOutputStream) throw new Error('Cannot create ImageOutputStream with undefined NodeCanvas!');
+
     return imageOutputStream;
 }
 
-function NodeCanvasFactory() {}
-NodeCanvasFactory.prototype = {
-  create: function NodeCanvasFactory_create(width, height) {
-    const canvas = Canvas.createCanvas(width, height);
-    
-    
-    const context = canvas.getContext("2d");
-    return {
-      canvas,
-      context,
-    };
-  },
+class NodeCanvas {
 
-  reset: function NodeCanvasFactory_reset(canvasAndContext, width, height) {
-    canvasAndContext.canvas.width = width;
-    canvasAndContext.canvas.height = height;
-  },
+  canvas: Canvas.Canvas | null;
+  context: Canvas.CanvasRenderingContext2D | null;
 
-  destroy: function NodeCanvasFactory_destroy(canvasAndContext) {
-    // Zeroing the width and height cause Firefox to release graphics
-    // resources immediately, which can greatly reduce memory consumption.
-    canvasAndContext.canvas.width = 0;
-    canvasAndContext.canvas.height = 0;
-    canvasAndContext.canvas = null;
-    canvasAndContext.context = null;
-  },
-};
+  constructor(width: number, height: number) {
+    this.canvas = Canvas.createCanvas(width, height);
+    this.context = this.canvas.getContext('2d');
+  }
 
-class NodeCMapReaderFactory {
-    baseUrl: string;
-    isCompressed: boolean;
+  reset (width: number, height: number) {
+    if (!this.canvas) throw new Error('Canvas undefined');
+    this.canvas.width = width;
+    this.canvas.height = height;
+  }
 
-    constructor(data: { baseUrl: string, isCompressed: boolean} ) {
-      this.baseUrl = data.baseUrl;
-      this.isCompressed = data.isCompressed;
-      log.info(`NodeCMapReaderFactory initialized with baseURL: ${this.baseUrl}`)
-      log.info('Attemping test load of file');
-      const url = `${this.baseUrl}` + '78-EUC-H' + (this.isCompressed ? '.bcmap' : '');
-      fs.readFileSync(url);
+  destroy() {
+    if (this.canvas) {
+      // Zeroing the width and height cause Firefox to release graphics
+      // resources immediately, which can greatly reduce memory consumption.
+      this.canvas.width = 0;
+      this.canvas.height = 0;
+      this.canvas = null;
     }
-  
-    fetch({ name, }) {
-      if (!this.baseUrl) {
-        return Promise.reject(new Error(
-          'The CMap "baseUrl" parameter must be specified, ensure that ' +
-          'the "cMapUrl" and "cMapPacked" API parameters are provided.'));
-      }
-      if (!name) {
-        return Promise.reject(new Error('CMap name must be specified.'));
-      }
 
-      return new Promise((resolve, reject) => {
-          const url = this.baseUrl + name + (this.isCompressed ? '.bcmap' : '');
-          log.info(`Fetching font ${name} from ${url}`);
-  
-        fs.readFile(url, (error, data) => {
-          if (error || !data) {
-            reject(new Error('Unable to load ' +
-                             (this.isCompressed ? 'binary ' : '') +
-                             'CMap at: ' + url));
-            return;
-          }
-          resolve({
-            cMapData: new Uint8Array(data),
-            compressionType: this.isCompressed ?
-              CMapCompressionType.BINARY : CMapCompressionType.NONE,
-          });
-        });
-      });
+    if (this.context) {
+      this.context = null;
     }
   }
+}

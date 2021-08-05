@@ -6,7 +6,7 @@
   "main": "app.ts",
   "scripts": {
     "start": "ts-node ./src/app.ts",
-    "start:local": "ts-node -r dotenv/config ./src/app.ts",
+    "start:local": "node --max_old_space_size=8192 -r ts-node/register -r dotenv/config ./src/app.ts",
     "start:dist": "node -r dotenv/config ./dist/app.js",
     "test": "npm run test:unit",
     "test:unit": "AWS_BUCKET=sample-bucket AWS_REGION=ap-northeast-2 NODE_ENV=test nyc ts-mocha \"__tests__/unit/*.test.ts\"",
@@ -66,6 +66,7 @@
     "chai-as-promised": "^7.1.1",
     "dotenv": "^10.0.0",
     "eslint": "^7.28.0",
+    "gulp": "^4.0.2",
     "gulp-typescript": "^6.0.0-alpha.1",
     "minimatch": "^3.0.4",
     "mocha": "^9.0.1",

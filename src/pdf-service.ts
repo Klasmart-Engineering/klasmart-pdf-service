@@ -27,8 +27,8 @@ export const initialize = (cache: NodeCache = new NodeCache(defaultCacheProps)):
     pageResolutionCache = cache;
 }
 
-export const validatePDFTextContent = async (pdfName: string) : Promise<boolean> => {
-    return imageConverter.validatePDFTextContent(`http://localhost:32891/test-pdfs/${pdfName}`);
+export const validatePDFTextContent = async (pdfName: string) : Promise<{ valid: boolean, pages?: number }> => {
+    return imageConverter.validatePDFTextContent(`${process.env.CMS_BASE_URL}/assets/${pdfName}`);
 }
 
 export const getPDFPages = async (pdfURL: URL):Promise<number> => {
@@ -48,7 +48,28 @@ export const getPDFPages = async (pdfURL: URL):Promise<number> => {
     const { pdfMetadata } = await initializeMetadata(pdfURL);
 
     return pdfMetadata.totalPages;
-}   
+}
+
+/**
+ * Function to generate and store images from a PDF - intended to be used to hook into the 
+ * CMS upload process to pre-generate images
+ * @param pdfName 
+ * @param pdfURL 
+ */
+export const generateAndStorgePageImages = async (pdfName: string, pdfURL: URL): Promise<void> => {
+    const pages = await getPDFPages(pdfURL);
+
+    for(let i = 1; i <= pages; i++) {
+        try {
+            const stream = await getPDFPage(pdfName, i, pdfURL);
+            // Destroy stream so that .close listeners fire
+            stream.destroy();
+        } catch (err) {
+            log.error(err.message);
+            console.error(err);
+        }
+    }
+} 
 
 /* Produces the page key for the pdf, then attempts to load it from s3.
     If the object is not in S3, then the application will check the page cache. If the pageKey is found in the cache, 
@@ -158,8 +179,6 @@ const renderSinglePage = async (pageKey: string, pdfURL: URL, page: number): Pro
             log.error(JSON.stringify(err));
         }
         return filename;
-
-        // await fs.promises.rm(filename);
     })();
     pageResolutionCache.set(pageKey, promise);
 

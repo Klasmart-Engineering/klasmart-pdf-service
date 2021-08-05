@@ -6,3 +6,6 @@ node_modules
 dist
 .nyc_output
 coverage
+src/core
+test/**
+lambda.zip

@@ -6,3 +6,6 @@ dist
 coverage
 
 __tests__
+test/*
+src/core/*
+src/util/lambda-prerender.js
