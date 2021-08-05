@@ -25,6 +25,10 @@ const defaultCacheProps = {
  */
 export const initialize = (cache: NodeCache = new NodeCache(defaultCacheProps)): void => {
     pageResolutionCache = cache;
+
+    if (process.env.CMS_BASE_URL) {
+        log.info(`Registering CMS asset location: ${process.env.CMS_BASE_URL}`)
+    }
 }
 
 export const validatePDFTextContent = async (pdfName: string) : Promise<{ valid: boolean, pages?: number }> => {
