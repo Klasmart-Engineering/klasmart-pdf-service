@@ -31,6 +31,22 @@ appRouter.get(`/:pdfName/view.html`, async (request: Request, response: Response
     next();
 });
 
+appRouter.get(`/:pdfName/prerender`, async (request: Request, response: Response, next: NextFunction) => {
+    const { pdfName } = request.params;
+    log.info(`Request to prerender pages of ${pdfName}`);
+    const pdfUrl = new URL(`/assets/${pdfName}`, process.env.CMS_BASE_URL);
+
+    try {
+        await pdfService.generateAndStorgePageImages(pdfName, pdfUrl);
+    } catch (err) {
+        next(err);
+        return;
+    }
+    response.sendStatus(202);
+
+
+});
+
 appRouter.get(`/:pdfName/validate`, async (request: Request, response: Response, next: NextFunction) => {
     const { pdfName } = request.params;
     try {
