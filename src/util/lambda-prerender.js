@@ -13,7 +13,9 @@ exports.handler = async (event, context, callback) => {
             callback(err);
         })
         .on('timeout', () => {
-            callback(new Error('timeout'))
+            callback(new Error('timeout'));
         });
+    } else {
+        callback(null, 204);
     }
 }
