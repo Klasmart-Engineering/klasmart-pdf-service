@@ -61,7 +61,9 @@ export const generateAndStorgePageImages = async (pdfName: string, pdfURL: URL):
 
     for(let i = 1; i <= pages; i++) {
         try {
-            await getPDFPage(pdfName, i, pdfURL);
+            const stream = await getPDFPage(pdfName, i, pdfURL);
+            // Destroy stream so that .close listeners fire
+            stream.destroy();
         } catch (err) {
             log.error(err.message);
             console.error(err);
