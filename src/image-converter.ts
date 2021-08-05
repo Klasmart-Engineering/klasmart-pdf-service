@@ -83,12 +83,12 @@ export const validatePDFTextContent = async (pdfUrl: string): Promise<{ valid: b
             // After every 25 pages, let the document object reference be released and create a new one to prevent potential OOM
             document = await pdf.getDocument(documentOptions).promise;
           }
-          const pageProxy: any = await document.getPage(page)
+          const pageProxy = await document.getPage(page)
           const viewport = pageProxy.getViewport({ scale: 1 });
           const nodeCanvas = new NodeCanvas(viewport.width, viewport.height);
       
           const renderContext = {
-              canvasContext: nodeCanvas.context,
+              canvasContext: nodeCanvas.context as Canvas.NodeCanvasRenderingContext2D,
               viewport,
               nodeCanvas,
           };
