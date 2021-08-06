@@ -31,6 +31,13 @@ appRouter.get(`/:pdfName/view.html`, async (request: Request, response: Response
     next();
 });
 
+
+/**
+ * This endpoint is intended to allow automation hooks to
+ * prerender a document without an initial user interaction.
+ * This should result in faster initial views of documents as
+ * users will not need to wait for initial renders.
+ */
 appRouter.get(`/:pdfName/prerender`, async (request: Request, response: Response, next: NextFunction) => {
     const { pdfName } = request.params;
     log.info(`Request to prerender pages of ${pdfName}`);
