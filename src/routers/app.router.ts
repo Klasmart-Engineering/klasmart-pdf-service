@@ -44,7 +44,7 @@ appRouter.get(`/:pdfName/prerender`, async (request: Request, response: Response
     const pdfUrl = new URL(`/assets/${pdfName}`, process.env.CMS_BASE_URL);
 
     try {
-        await pdfService.generateAndStorgePageImages(pdfName, pdfUrl);
+        await pdfService.prerenderDocument(pdfName, pdfUrl);
     } catch (err) {
         next(err);
         return;

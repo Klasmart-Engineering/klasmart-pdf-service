@@ -577,5 +577,12 @@ describe('pdf-service', () => {
     
     });
 
+    describe('getDirectPageRender', () => {
+    
+    });
+
+    describe('prerenderDocument', () => {
+
+    })
 
 });

@@ -62,7 +62,7 @@ export const getPDFPages = async (pdfURL: URL):Promise<number> => {
  * @param pdfName 
  * @param pdfURL 
  */
-export const generateAndStorgePageImages = async (pdfName: string, pdfURL: URL): Promise<void> => {
+export const prerenderDocument = async (pdfName: string, pdfURL: URL): Promise<void> => {
     const pages = await getPDFPages(pdfURL);
 
     for(let i = 1; i <= pages; i++) {
