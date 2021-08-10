@@ -23,7 +23,7 @@ const defaultCacheProps = {
  * Provides configuration for the PDF service
  * @param cache - Provided NodeCache. Will use a default configuration if not provided
  */
-export const initialize = (cache: NodeCache = new NodeCache(defaultCacheProps)): void => {
+export function initialize(cache: NodeCache = new NodeCache(defaultCacheProps)): void {
     pageResolutionCache = cache;
 
     if (process.env.CMS_BASE_URL) {
@@ -33,11 +33,11 @@ export const initialize = (cache: NodeCache = new NodeCache(defaultCacheProps)):
     }
 }
 
-export const validatePDFTextContent = async (pdfName: string) : Promise<{ valid: boolean, pages?: number }> => {
+export async function validatePDFTextContent(pdfName: string) : Promise<{ valid: boolean, pages?: number }> {
     return imageConverter.validatePDFTextContent(`${process.env.CMS_BASE_URL}/assets/${pdfName}`);
 }
 
-export const getPDFPages = async (pdfURL: URL):Promise<number> => {
+export async function getPDFPages(pdfURL: URL):Promise<number> {
     let existingMetadata;
     try {
         const em = getManager();
@@ -62,7 +62,7 @@ export const getPDFPages = async (pdfURL: URL):Promise<number> => {
  * @param pdfName 
  * @param pdfURL 
  */
-export const prerenderDocument = async (pdfName: string, pdfURL: URL): Promise<void> => {
+export async function prerenderDocument(pdfName: string, pdfURL: URL): Promise<void> {
     const pages = await getPDFPages(pdfURL);
 
     for(let i = 1; i <= pages; i++) {
@@ -83,7 +83,7 @@ export const prerenderDocument = async (pdfName: string, pdfURL: URL): Promise<v
     If the pageKey is not in the cache it will add it to the cache and then load the PDF, generate an image for the page and save it to S3,
         then return a stream for this image
 */
-export const getPDFPage = async (pdfName: string, page: number, pdfURL: URL): Promise<Readable> => {
+export async function getPDFPage(pdfName: string, page: number, pdfURL: URL): Promise<Readable> {
     const pageKey = mapPageKey(pdfURL, pdfName, page);
     let pageStream: Readable | undefined;
     
@@ -130,12 +130,12 @@ export const getPDFPage = async (pdfName: string, page: number, pdfURL: URL): Pr
     return stream;
 }
 
-export const getDirectPageRender = async (page: number, pdfURL: URL): Promise<JPEGStream> => {
+export async function getDirectPageRender(page: number, pdfURL: URL): Promise<JPEGStream> {
     const document = await imageConverter.createDocumentFromStream(pdfURL.toString());
     return imageConverter.generatePageImage(document, page);
 }
 
-const renderSinglePage = async (pageKey: string, pdfURL: URL, page: number): Promise<string> => {
+async function renderSinglePage(pageKey: string, pdfURL: URL, page: number): Promise<string> {
     // Async code invoked via IIFE to allow immediate access of the promise to the cache
     const promise = (async () => {
         const em = getManager();
@@ -191,7 +191,7 @@ const renderSinglePage = async (pageKey: string, pdfURL: URL, page: number): Pro
     return promise;
 }
 
-const writeStreamToTempFile = (filename: string, stream: JPEGStream): Promise<number> => {
+async function writeStreamToTempFile (filename: string, stream: JPEGStream): Promise<number> {
     return new Promise((resolve, reject) => {
         const fileStream = fs.createWriteStream(filename);
         stream
@@ -219,7 +219,7 @@ const writeStreamToTempFile = (filename: string, stream: JPEGStream): Promise<nu
  *  Initializes metadata for the first read of a PDF 
  *  @returns Object containing metadata and pdfjs document
 **/
-const initializeMetadata = async (pdfURL: URL) => {
+async function initializeMetadata(pdfURL: URL) {
     log.debug(`Creating document for pdf located at ${pdfURL.toString()}`); 
     try {
         const document = await imageConverter.createDocumentFromStream(pdfURL.toString());
