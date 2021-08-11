@@ -8,6 +8,8 @@ import { withLogger } from './logger';
 import * as s3Service from './s3-client';
 import { errorHandler } from './util/error-handler';
 import { appRouter } from './routers/app.router';
+import cookieParser from 'cookie-parser';
+import { kidsloopAuthMiddleware } from './middleware/kidsloop-auth-middleware';
 
 const log = withLogger('app');
 
@@ -23,10 +25,14 @@ pdfService.initialize();
 /* #endregion Initialization */
 
 /* #region middleware */
+
 // ! Note: This endpoint is used for ECS healthchecks. If it is removed, AWS will kill the app after a few minutes!
 app.get(`/.well-known/express/server-health`, (_, response: Response) => {
     response.sendStatus(200).end();
 });
+
+app.use(cookieParser());
+app.use(kidsloopAuthMiddleware());
 
 app.use((_, response: Response, next: NextFunction) => {
     response.set(`Access-Control-Allow-Origin`, `*`);
