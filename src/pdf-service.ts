@@ -60,11 +60,12 @@ export async function getPDFPages(pdfURL: URL):Promise<number> {
  * Function to generate and store images from a PDF - intended to be used to hook into the 
  * CMS upload process to pre-generate images
  * @param pdfName 
- * @param pdfURL 
+ * @param pdfURL
+ * @param accepted - Function, call when the response is ready to be accepted 
  */
-export async function prerenderDocument(pdfName: string, pdfURL: URL): Promise<void> {
+export async function prerenderDocument(pdfName: string, pdfURL: URL, accepted: () => void): Promise<void> {
     const pages = await getPDFPages(pdfURL);
-
+    accepted();
     for(let i = 1; i <= pages; i++) {
         try {
             const stream = await getPDFPage(pdfName, i, pdfURL);

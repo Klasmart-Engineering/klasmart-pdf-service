@@ -593,7 +593,7 @@ describe('pdf-service', () => {
             });
 
             console.log(count);
-            await rewiredPdfService.prerenderDocument('somepdf', new URL('http://someurl.com'));
+            await rewiredPdfService.prerenderDocument('somepdf', new URL('http://someurl.com'), () => {});
             await asyncTimeout(300);
             expect(count).to.equal(5);
         });
@@ -607,7 +607,7 @@ describe('pdf-service', () => {
                 return Promise.resolve(Readable.from(Buffer.from('')));
             });
 
-            await rewiredPdfService.prerenderDocument('somepdf', new URL('http://someurl.com'))
+            await rewiredPdfService.prerenderDocument('somepdf', new URL('http://someurl.com'), () => {})
                 .should.eventually.be.rejectedWith(expected.message);
             await asyncTimeout(300);
             expect(count).to.equal(0);
@@ -623,7 +623,7 @@ describe('pdf-service', () => {
                 return Promise.resolve(Readable.from(Buffer.from('')));
             });
 
-            await rewiredPdfService.prerenderDocument('somepdf', new URL('http://someurl.com'));
+            await rewiredPdfService.prerenderDocument('somepdf', new URL('http://someurl.com'), () => {});
             await asyncTimeout(300);
             expect(count).to.equal(3);
         });
@@ -638,7 +638,7 @@ describe('pdf-service', () => {
                 return Promise.resolve(Readable.from(Buffer.from('')));
             });
 
-            await rewiredPdfService.prerenderDocument('somepdf', new URL('http://someurl.com'));
+            await rewiredPdfService.prerenderDocument('somepdf', new URL('http://someurl.com'), () => {});
             // Although prerenderDocument has resolved, getPDFPage should not have resolved yet
             // this can be shown by count still being 0
             expect(count).to.equal(0);

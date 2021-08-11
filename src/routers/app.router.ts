@@ -43,15 +43,15 @@ appRouter.get(`/:pdfName/prerender`, async (request: Request, response: Response
     log.info(`Request to prerender pages of ${pdfName}`);
     const pdfUrl = new URL(`/assets/${pdfName}`, process.env.CMS_BASE_URL);
 
+    // Provide a callback function for the service to call to write the response
+    const accepted = () => response.sendStatus(202);
+
     try {
-        await pdfService.prerenderDocument(pdfName, pdfUrl);
+        pdfService.prerenderDocument(pdfName, pdfUrl, accepted);
     } catch (err) {
         next(err);
         return;
     }
-    response.sendStatus(202);
-
-
 });
 
 appRouter.get(`/:pdfName/validate`, async (request: Request, response: Response, next: NextFunction) => {
