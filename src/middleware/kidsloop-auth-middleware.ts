@@ -29,7 +29,7 @@ export function kidsloopAuthMiddleware(): (request: Request, response: Response,
             response.locals.authType = AuthType.Authenticated;
             response.locals.token = authenticationDetails;
         } catch (err) {
-            log.silly(`Unauthenticated request: Bad token`);
+            log.silly(`Unauthenticated request: Bad token - ${err.message}`);
             response.locals.authenticated = false;
             response.locals.authType = AuthType.Anonymous;
         }

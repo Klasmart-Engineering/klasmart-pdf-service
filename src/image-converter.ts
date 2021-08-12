@@ -21,6 +21,8 @@ const STANDARD_FONT_DATA_URL =
 export interface ValidationResult {
   valid: boolean;
   pages?: number;
+  hash?: string;
+  length?: number;
 }
 
 export const createDocumentFromStream = async (pdfUrl: string): Promise<PDFDocumentProxy> => {

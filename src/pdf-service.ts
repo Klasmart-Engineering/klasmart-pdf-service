@@ -45,8 +45,11 @@ export async function validateCMSPDF(pdfName: string) : Promise<ValidationResult
 }
 
 export async function validatePostedPDF(request: Request, registerTempFile: (filename: string) => void): Promise<ValidationResult> {
+    const length = request.headers['content-length'] ? parseInt(request.headers['content-length']) : undefined;
+    
     // Write file data to temp file
     const tempFileName = `${uuidV4()}.pdf`;
+    log.debug(`Temporarily writing file with length ${length} to file system as ${tempFileName}`)
     const writeStream = fs.createWriteStream(tempFileName);
     registerTempFile(tempFileName);
     request.pipe(writeStream);
@@ -59,10 +62,31 @@ export async function validatePostedPDF(request: Request, registerTempFile: (fil
         data
     }
 
-    // Get Validation result
-    const valid = await imageConverter.validatePDFTextContent(config);
     
-    return valid;
+    // Start Validation Check
+    const validPromise = imageConverter.validatePDFTextContent(config);
+
+    // Start Hash Calculation
+    const hash = crypto.createHash('md5');
+    hash.setEncoding('hex');
+    const hashPromise = new Promise<string | undefined>((resolve, reject) => {
+        fs.createReadStream(tempFileName)
+            .on('end', () => {
+                hash.end();
+                const digest = hash.read();
+                resolve(digest);
+            })
+            .on('error', (err) => {
+                reject(`Error calculating file hash: ${err.message}`)
+            })
+            .pipe(hash);
+    });
+
+    // Wait for both Validation and Hash calculation to complete
+    const [valid, hashString] = await Promise.all([validPromise, hashPromise]);
+
+    // Return values
+    return { ...valid, hash: hashString, length };
 }
 
 export async function getPDFPages(pdfURL: URL):Promise<number> {

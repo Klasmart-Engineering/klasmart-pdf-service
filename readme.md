@@ -2,6 +2,13 @@
 
 This service stores and serves PDF content in the form of jpeg images for consumption via Kidsloop Live. Requests provide a PDF URL and a page number, which are then generated/stored via pdf.js and served to the users as jpeg images.
 
+## Authorization
+Some endpoints are only accessible with authorization. This is provided by a cookie named access with a JWT describing the user.  In production, this JWT is provided by the auth server. In development you may want to supply a cookie to use manually.  For convenience, one is included here. Note that this cookie is only valid when NODE_ENV is not set to `production` and the DEV_JWT_SECRET is set to `dev-secret`.
+
+JWT: `eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwibmFtZSI6IlRlc3QgVXNlciIsImlhdCI6MTUxNjIzOTAyMiwiaXNzIjoiY2FsbWlkLWRlYnVnIiwiaWQiOiJiMDQ1ZTgwMC05NjY4LTQ4ZDgtYmNmOC0yZTY2MWQ1YzgzZTYiLCJlbWFpbCI6ImRldnRlc3RAa2lkc2xvb3AubGl2ZSIsImV4cCI6MjU0Mzg5MTI0NzAwMH0.b-XOD5Jiss3bHhzVtneEsGRXSWylC5_YMQqMlP_RCIUniT28lRrDIz9-iL6Nts7gVzDv-9sasUqFrEn1N_9HIg`
+
+Sample cookie: `access=eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwibmFtZSI6IlRlc3QgVXNlciIsImlhdCI6MTUxNjIzOTAyMiwiaXNzIjoiY2FsbWlkLWRlYnVnIiwiaWQiOiJiMDQ1ZTgwMC05NjY4LTQ4ZDgtYmNmOC0yZTY2MWQ1YzgzZTYiLCJlbWFpbCI6ImRldnRlc3RAa2lkc2xvb3AubGl2ZSIsImV4cCI6MjU0Mzg5MTI0NzAwMH0.b-XOD5Jiss3bHhzVtneEsGRXSWylC5_YMQqMlP_RCIUniT28lRrDIz9-iL6Nts7gVzDv-9sasUqFrEn1N_9HIg; Path=/; Domain=localhost; Expires=Thu, 11 Aug 2022 07:18:52 GMT;`
+
 ## Environment
 ### App Environment
 - PORT - Port that application will listen on. Defaults to 32891.

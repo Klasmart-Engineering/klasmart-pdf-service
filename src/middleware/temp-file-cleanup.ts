@@ -20,6 +20,7 @@ export function cleanupTempFile() {
 
         if (typeof response.locals.tempFiles === 'string') {
             try {
+                log.debug(`Cleaning up temp file: ${response.locals.tempFiles}`)
                 await fs.promises.rm(response.locals.tempFiles);
             } catch (err) {
                 log.error(`Error attempting to cleanup temp file ${response.locals.tempFiles}: ${err.message}`);
@@ -30,12 +31,15 @@ export function cleanupTempFile() {
         }
 
         const promises = (response.locals.tempFiles as string[])
-            .map(filename => fs.promises.rm(filename));
+            .map((filename, i) => {
+                log.debug(`Cleaning up temp file ${i+1}/${response.locals.tempFiles.length}: ${filename}`)
+                fs.promises.rm(filename)
+            });
 
         try {
             await Promise.all(promises);
         } catch (err) {
-            log.error(`Error attempingt o cleanup temp files: ${response.locals.tempFiles}: ${err.message}`);
+            log.error(`Error attemping to cleanup temp files: ${response.locals.tempFiles}: ${err.message}`);
             console.log(err);
         }
         next();

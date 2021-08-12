@@ -10,8 +10,12 @@ import { errorHandler } from './util/error-handler';
 import { appRouter } from './routers/app.router';
 import cookieParser from 'cookie-parser';
 import { kidsloopAuthMiddleware } from './middleware/kidsloop-auth-middleware';
+import { cleanupTempFile } from './middleware/temp-file-cleanup';
+import { contentLengthFilter } from './middleware/content-length-filter';
 
 const log = withLogger('app');
+
+log.info(`Starting in node environtment: ${process.env.NODE_ENV}`)
 
 const app = express();
 const port = process.env.PORT || 32891;
@@ -33,6 +37,7 @@ app.get(`/.well-known/express/server-health`, (_, response: Response) => {
 
 app.use(cookieParser());
 app.use(kidsloopAuthMiddleware());
+app.use(contentLengthFilter({ maxLength: 524_288_000 }))
 
 app.use((_, response: Response, next: NextFunction) => {
     response.set(`Access-Control-Allow-Origin`, `*`);
@@ -54,7 +59,9 @@ app.use(errorHandler);
 if (process.env.EXPOSE_TESTING_PDFS == 'EXPOSE') {
     log.warn(`Exposing testing pdfs`)
     app.use(express.static(__dirname + '/testing-pdfs'));
-}  
+}
+
+app.use(cleanupTempFile());
 
 /* #endregion middleware */
 
