@@ -1,8 +1,9 @@
 import Canvas, { JPEGStream } from 'canvas';
 import createHttpError from 'http-errors';
 import * as pdf from 'pdfjs-dist/legacy/build/pdf.js';
-import { PDFDocumentProxy } from 'pdfjs-dist/types/src/display/api';
+import { PDFDocumentProxy, } from 'pdfjs-dist/types/src/display/api';
 import { withLogger } from './logger';
+import { DocumentInitParameters } from 'pdfjs-dist/types/src/display/api';
 
 const DEFAULT_SCALE = 3;
 const DEFAULT_JPEG_IMAGE_QUALITY = 0.99;
@@ -17,11 +18,17 @@ const CMAP_PACKED = true;
 const STANDARD_FONT_DATA_URL =
   __dirname + "/../node_modules/pdfjs-dist/standard_fonts/";
 
+export interface ValidationResult {
+  valid: boolean;
+  pages?: number;
+  hash?: string;
+  length?: number;
+}
+
 export const createDocumentFromStream = async (pdfUrl: string): Promise<PDFDocumentProxy> => {
     log.debug('creating document');
     try {
-        // ? Note: await here allows for exceptions thrown by the promise to be caught in the try block
-        
+        // ? Note: await here allows for exceptions thrown by the promise to be caught in the catch block
         return await pdf.getDocument({
             url: pdfUrl,
             cMapUrl: CMAP_URL,
@@ -45,18 +52,18 @@ export const createDocumentFromStream = async (pdfUrl: string): Promise<PDFDocum
 * result in rendering issues. This method will consume a PDF document and attempt to validate the text
 * content and report failures that would not otherwise be known until time of rendering.
 * 
-* @param pdfUrl - Network location of the PDF to validate
+* @param config - DocumentInitParameters, which will be spread onto the default config
 * @returns Promise<boolean> True indicating that no errors occurred while checking the PDF
 */
-export const validatePDFTextContent = async (pdfUrl: string): Promise<{ valid: boolean, pages?: number}> => {
-  log.debug(`Validating document: ${pdfUrl}`);
+export const validatePDFTextContent = async (config: DocumentInitParameters): Promise<ValidationResult> => {
+  log.debug(`Validating document: ${config.url ? config.url : '[filestream]'}`);
   let document: PDFDocumentProxy;
   const documentOptions = {
-    url: pdfUrl,
     cMapUrl: CMAP_URL,
     cMapPacked: CMAP_PACKED,
     standardFontDataUrl: STANDARD_FONT_DATA_URL,
-    stopAtErrors: true
+    stopAtErrors: true,
+    ...config
   };
   try {
       document =  await pdf.getDocument(documentOptions).promise;

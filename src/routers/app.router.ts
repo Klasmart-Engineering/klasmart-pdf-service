@@ -4,10 +4,21 @@ import * as pdfService from '../pdf-service';
 import Readable from 'stream';
 import pug from 'pug';
 import { withLogger } from '../logger';
+import { Authorized, AuthType } from '../middleware/Access';
 
 export const appRouter = Router();
 const log = withLogger('app.router');
 
+appRouter.post(`/validate`, Authorized(AuthType.Authenticated), 
+    async (request: Request, response: Response, next: NextFunction) => {
+        const registerTempFile = (filename: string) => response.locals.tempFiles = filename;
+        log.debug(`Request to validate posted file of length ${request.readableLength} from user: ${response.locals.token.id} (${response.locals.token.email})`)
+        const valid = await pdfService.validatePostedPDF(request, registerTempFile);
+        log.info(`Validation result: ${JSON.stringify(valid)}`)
+        response.json(valid);
+        next();
+    }
+);
 
 appRouter.get(`/:pdfName/view.html`, async (request: Request, response: Response, next: NextFunction) => {
     try {
@@ -58,7 +69,7 @@ appRouter.get(`/:pdfName/validate`, async (request: Request, response: Response,
     const { pdfName } = request.params;
     try {
         const start = new Date().valueOf();
-        const validationStatus = await pdfService.validatePDFTextContent(pdfName);
+        const validationStatus = await pdfService.validateCMSPDF(pdfName);
         const diff = new Date().valueOf() - start.valueOf();
         response.send({ ...validationStatus, processingTime: diff });
     } catch (err) {

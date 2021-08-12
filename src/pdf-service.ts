@@ -1,6 +1,7 @@
 import { getManager } from 'typeorm';
 import { PDFMetadata } from './models/PDFMetadata'
 import * as imageConverter from './image-converter';
+import { ValidationResult } from './image-converter';
 import * as s3Service from './s3-client';
 import NodeCache from 'node-cache';
 import createError, { HttpError } from 'http-errors';
@@ -10,6 +11,9 @@ import fs from 'fs';
 import { JPEGStream } from 'canvas';
 import crypto from 'crypto';
 import createHttpError from 'http-errors';
+import { v4 as uuidV4 } from 'uuid';
+import { Request } from 'express';
+import { DocumentInitParameters } from 'pdfjs-dist/types/src/display/api';
 
 const log = withLogger('pdf-service');
 
@@ -33,8 +37,56 @@ export function initialize(cache: NodeCache = new NodeCache(defaultCacheProps)):
     }
 }
 
-export async function validatePDFTextContent(pdfName: string) : Promise<{ valid: boolean, pages?: number }> {
-    return imageConverter.validatePDFTextContent(`${process.env.CMS_BASE_URL}/assets/${pdfName}`);
+export async function validateCMSPDF(pdfName: string) : Promise<ValidationResult> {
+    const config: DocumentInitParameters = {
+        url: `${process.env.CMS_BASE_URL}/assets/${pdfName}`
+    };
+    return imageConverter.validatePDFTextContent(config);
+}
+
+export async function validatePostedPDF(request: Request, registerTempFile: (filename: string) => void): Promise<ValidationResult> {
+    const length = request.headers['content-length'] ? parseInt(request.headers['content-length']) : undefined;
+    
+    // Write file data to temp file
+    const tempFileName = `${uuidV4()}.pdf`;
+    log.debug(`Temporarily writing file with length ${length} to file system as ${tempFileName}`)
+    const writeStream = fs.createWriteStream(tempFileName);
+    registerTempFile(tempFileName);
+    request.pipe(writeStream);
+
+    const filedata = await fs.promises.readFile(tempFileName);
+    const data = Uint8Array.from(filedata);
+
+    // Create config for validator
+    const config: DocumentInitParameters = {
+        data
+    }
+
+    
+    // Start Validation Check
+    const validPromise = imageConverter.validatePDFTextContent(config);
+
+    // Start Hash Calculation
+    const hash = crypto.createHash('md5');
+    hash.setEncoding('hex');
+    const hashPromise = new Promise<string | undefined>((resolve, reject) => {
+        fs.createReadStream(tempFileName)
+            .on('end', () => {
+                hash.end();
+                const digest = hash.read();
+                resolve(digest);
+            })
+            .on('error', (err) => {
+                reject(`Error calculating file hash: ${err.message}`)
+            })
+            .pipe(hash);
+    });
+
+    // Wait for both Validation and Hash calculation to complete
+    const [valid, hashString] = await Promise.all([validPromise, hashPromise]);
+
+    // Return values
+    return { ...valid, hash: hashString, length };
 }
 
 export async function getPDFPages(pdfURL: URL):Promise<number> {
