@@ -614,7 +614,6 @@ describe('pdf-service', () => {
         });
         it('should continue rendering pages even if an error occurs in one page', async () => {
             let count = 0;
-            const expected = new Error('prerender-test-error');
 
             rewiredPdfService.__set__('getPDFPages', async () => Promise.resolve(3));
             rewiredPdfService.__set__('getPDFPage', async () => {
@@ -628,26 +627,23 @@ describe('pdf-service', () => {
             expect(count).to.equal(3);
         });
         it('should resolve promise even when pages remain to be processed', async () => {
-            let count = 0;
-            const expected = new Error('prerender-test-error');
+            const acceptedStub = sandbox.stub();
 
             rewiredPdfService.__set__('getPDFPages', async () => Promise.resolve(1));
             rewiredPdfService.__set__('getPDFPage', async () => {
-                await asyncTimeout(100);
-                count++;
+                await asyncTimeout(25);
                 return Promise.resolve(Readable.from(Buffer.from('')));
             });
 
-            await rewiredPdfService.prerenderDocument('somepdf', new URL('http://someurl.com'), () => {});
+            rewiredPdfService.prerenderDocument('somepdf', new URL('http://someurl.com'), acceptedStub);
             // Although prerenderDocument has resolved, getPDFPage should not have resolved yet
-            // this can be shown by count still being 0
-            expect(count).to.equal(0);
+            expect(acceptedStub.calledOnce).to.equal(false);
             
             // Wait another moment for getPDFPage to resolve
-            await asyncTimeout(225);
+            await asyncTimeout(125);
             
             // Now count should be 1
-            expect(count).to.equal(1);
+            expect(acceptedStub.calledOnce).to.equal(true);
         });
     })
 
