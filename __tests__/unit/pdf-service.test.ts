@@ -15,6 +15,7 @@ import { PassThrough } from 'stream';
 import { JPEGStream } from 'canvas';
 import rewire from 'rewire';
 import createError from 'http-errors';
+import asyncTimeout from '../util/async-timeout';
 
 chai.use(chaiAsPromised);
 chai.should();
@@ -577,5 +578,77 @@ describe('pdf-service', () => {
     
     });
 
+    describe('getDirectPageRender', () => {
+    
+    });
+
+    describe('prerenderDocument', () => {
+        it('should attempt to generate a page from 1 to return value of getPDFPages inclusively', async () => {
+            let count = 0;
+            
+            rewiredPdfService.__set__('getPDFPages', async () => Promise.resolve(5));
+            rewiredPdfService.__set__('getPDFPage', async () => {
+                count++;
+                return Promise.resolve(Readable.from(Buffer.from('')));
+            });
+
+            console.log(count);
+            await rewiredPdfService.prerenderDocument('somepdf', new URL('http://someurl.com'), () => {});
+            await asyncTimeout(300);
+            expect(count).to.equal(5);
+        });
+        it('should propagate error thrown by getPDFPages', async () => {
+            let count = 0;
+            const expected = new Error('prerender-test-error');
+
+            rewiredPdfService.__set__('getPDFPages', async () => Promise.reject(expected));
+            rewiredPdfService.__set__('getPDFPage', async () => {
+                count++;
+                return Promise.resolve(Readable.from(Buffer.from('')));
+            });
+
+            await rewiredPdfService.prerenderDocument('somepdf', new URL('http://someurl.com'), () => {})
+                .should.eventually.be.rejectedWith(expected.message);
+            await asyncTimeout(300);
+            expect(count).to.equal(0);
+        });
+        it('should continue rendering pages even if an error occurs in one page', async () => {
+            let count = 0;
+            const expected = new Error('prerender-test-error');
+
+            rewiredPdfService.__set__('getPDFPages', async () => Promise.resolve(3));
+            rewiredPdfService.__set__('getPDFPage', async () => {
+                count++;
+                if (count === 1) return Promise.reject('unexpected-error');
+                return Promise.resolve(Readable.from(Buffer.from('')));
+            });
+
+            await rewiredPdfService.prerenderDocument('somepdf', new URL('http://someurl.com'), () => {});
+            await asyncTimeout(300);
+            expect(count).to.equal(3);
+        });
+        it('should resolve promise even when pages remain to be processed', async () => {
+            let count = 0;
+            const expected = new Error('prerender-test-error');
+
+            rewiredPdfService.__set__('getPDFPages', async () => Promise.resolve(1));
+            rewiredPdfService.__set__('getPDFPage', async () => {
+                await asyncTimeout(100);
+                count++;
+                return Promise.resolve(Readable.from(Buffer.from('')));
+            });
+
+            await rewiredPdfService.prerenderDocument('somepdf', new URL('http://someurl.com'), () => {});
+            // Although prerenderDocument has resolved, getPDFPage should not have resolved yet
+            // this can be shown by count still being 0
+            expect(count).to.equal(0);
+            
+            // Wait another moment for getPDFPage to resolve
+            await asyncTimeout(225);
+            
+            // Now count should be 1
+            expect(count).to.equal(1);
+        });
+    })
 
 });

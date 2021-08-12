@@ -25,3 +25,6 @@ This service stores and serves PDF content in the form of jpeg images for consum
 - DB_PORT
 - DB_DATABASE
 - DB_PASSWORD
+
+### Lambda Support
+This application has an endpoint available to render all pages in a PDF document (/pdf/${filename}/prerender). This endpoint is designed to be called by a cloud function triggered by files being added to CMS bucket storage. This allows for pages to be rendered before the user attempts view them, allowing for faster load times for first usages of PDF document.
