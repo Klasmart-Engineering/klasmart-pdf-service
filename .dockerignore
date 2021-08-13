@@ -1,4 +1,4 @@
-**/dist
+./dist
 Dockerfile
 .dockerignore
 util/lambda-prerender.js
