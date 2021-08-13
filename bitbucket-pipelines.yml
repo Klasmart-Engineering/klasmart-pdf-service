@@ -5,6 +5,10 @@ pipelines:
   pull-requests:
     'master':
       - step:
+          name: Atlassian Security Secrets Scan
+          script:
+            - pipe: atlassian/git-secrets-scan:0.5.1
+      - step:
           image: 'node:lts'
           name: 'Linter'
           script: 
@@ -22,6 +26,16 @@ pipelines:
             - npm run test:unit
   branches:
     alpha:
+    - step: 
+        name: 'Fetch NPM dependencies'
+        image: node:lts
+        script:
+          - npm ci --only=production
+          - npm audit fix
+        caches:
+          - nodemodules
+        artifacts:
+          - node_modules/**
     - step:
         name: "Build & Push Docker image"
         image: python:3.9-alpine
@@ -38,6 +52,16 @@ pipelines:
           - docker
         size: 2x
     production:
+    - step: 
+        name: 'Fetch NPM dependencies'
+        image: node:lts
+        script:
+          - npm ci --only=production
+          - npm audit fix
+        caches:
+          - nodemodules
+        artifacts:
+          - node_modules/**
     - step:
         name: "Build & Push Docker image"
         image: python:3.9-alpine
