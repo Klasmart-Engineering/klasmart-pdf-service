@@ -12,7 +12,7 @@ const log = withLogger('app.router');
 appRouter.post(`/validate`, Authorized(AuthType.Authenticated), 
     async (request: Request, response: Response, next: NextFunction) => {
         const registerTempFile = (filename: string) => response.locals.tempFiles = filename;
-        log.debug(`Request to validate posted file of length ${request.readableLength} from user: ${response.locals.token.id} (${response.locals.token.email})`)
+        log.debug(`Request to validate posted file of length ${request.headers['content-length']} from user: ${response.locals.token.id} (${response.locals.token.email})`)
         const valid = await pdfService.validatePostedPDF(request, registerTempFile);
         log.info(`Validation result: ${JSON.stringify(valid)}`)
         response.json(valid);
@@ -20,7 +20,8 @@ appRouter.post(`/validate`, Authorized(AuthType.Authenticated),
     }
 );
 
-appRouter.get(`/:pdfName/view.html`, async (request: Request, response: Response, next: NextFunction) => {
+appRouter.get(`/:pdfName/view.html`, Authorized(AuthType.Any),
+    async (request: Request, response: Response, next: NextFunction) => {
     try {
         const { pdfName } = request.params;
         log.debug(`Handling request to render HTML document for ${pdfName}`)
@@ -49,7 +50,8 @@ appRouter.get(`/:pdfName/view.html`, async (request: Request, response: Response
  * This should result in faster initial views of documents as
  * users will not need to wait for initial renders.
  */
-appRouter.get(`/:pdfName/prerender`, async (request: Request, response: Response, next: NextFunction) => {
+appRouter.get(`/:pdfName/prerender`, Authorized(AuthType.Any), 
+    async (request: Request, response: Response, next: NextFunction) => {
     const { pdfName } = request.params;
     log.info(`Request to prerender pages of ${pdfName}`);
     const pdfUrl = new URL(`/assets/${pdfName}`, process.env.CMS_BASE_URL);

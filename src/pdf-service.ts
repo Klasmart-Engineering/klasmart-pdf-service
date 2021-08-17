@@ -52,8 +52,20 @@ export async function validatePostedPDF(request: Request, registerTempFile: (fil
     log.debug(`Temporarily writing file with length ${length} to file system as ${tempFileName}`)
     const writeStream = fs.createWriteStream(tempFileName);
     registerTempFile(tempFileName);
-    request.pipe(writeStream);
-
+    
+    // Await temp file write
+    await new Promise<void>((resolve, reject) => {
+        request
+        .pipe(writeStream)
+        .on('close', () => {
+            log.silly(`Temporary file (${tempFileName}) successfully written.`);
+            resolve();
+        })
+        .on('error', (err) => {
+            reject(err);
+        });
+    });
+    
     const filedata = await fs.promises.readFile(tempFileName);
     const data = Uint8Array.from(filedata);
 

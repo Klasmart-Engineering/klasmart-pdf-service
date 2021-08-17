@@ -24,6 +24,8 @@ export function Authorized(...types: AuthType[]) {
         if (!response.locals.authType) {
             log.warn('No auth type information provided! Assuming anonymous');
             response.locals.authType = AuthType.Anonymous;
+            next();
+            return;
         }
 
         // Check if the auth type matches the action requirement
