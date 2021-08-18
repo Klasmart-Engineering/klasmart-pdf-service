@@ -62,6 +62,7 @@ export async function validatePostedPDF(request: Request, registerTempFile: (fil
             resolve();
         })
         .on('error', (err) => {
+            log.error(`Error streaming request payload to temporary file: ${err.message}`);
             reject(err);
         });
     });
@@ -74,7 +75,6 @@ export async function validatePostedPDF(request: Request, registerTempFile: (fil
         data
     }
 
-    
     // Start Validation Check
     const validPromise = imageConverter.validatePDFTextContent(config);
 
@@ -89,9 +89,10 @@ export async function validatePostedPDF(request: Request, registerTempFile: (fil
                 resolve(digest);
             })
             .on('error', (err) => {
-                reject(`Error calculating file hash: ${err.message}`)
+                log.error(`Error calculating file hash: ${err.message}`)
+                reject(err);
             })
-            .pipe(hash);
+            .pipe(hash)
     });
 
     // Wait for both Validation and Hash calculation to complete
@@ -136,8 +137,7 @@ export async function prerenderDocument(pdfName: string, pdfURL: URL, accepted: 
             // Destroy stream so that .close listeners fire
             stream.destroy();
         } catch (err) {
-            log.error(err.message);
-            console.error(err);
+            log.error(`Error prerendering document: ${err.message}`);
         }
     }
 } 
