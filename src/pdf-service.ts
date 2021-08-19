@@ -44,6 +44,15 @@ export async function validateCMSPDF(pdfName: string) : Promise<ValidationResult
     return imageConverter.validatePDFTextContent(config);
 }
 
+/**
+ * Service level function for managing validation of PDF documents from a posted binary payload.
+ * Function streams file data to a temporary file, then reading the temporary file data to a Uint8Array
+ * that is passed to pdf.js.  While pdf.js processes it the file data is also passed to a hash function
+ * which calculates a hash (as required by infosec)
+ * @param request 
+ * @param registerTempFile 
+ * @returns 
+ */
 export async function validatePostedPDF(request: Request, registerTempFile: (filename: string) => void): Promise<ValidationResult> {
     const length = request.headers['content-length'] ? parseInt(request.headers['content-length']) : undefined;
     
@@ -62,6 +71,7 @@ export async function validatePostedPDF(request: Request, registerTempFile: (fil
             resolve();
         })
         .on('error', (err) => {
+            log.error(`Error streaming request payload to temporary file: ${err.message}`);
             reject(err);
         });
     });
@@ -74,7 +84,6 @@ export async function validatePostedPDF(request: Request, registerTempFile: (fil
         data
     }
 
-    
     // Start Validation Check
     const validPromise = imageConverter.validatePDFTextContent(config);
 
@@ -89,9 +98,10 @@ export async function validatePostedPDF(request: Request, registerTempFile: (fil
                 resolve(digest);
             })
             .on('error', (err) => {
-                reject(`Error calculating file hash: ${err.message}`)
+                log.error(`Error calculating file hash: ${err.message}`)
+                reject(err);
             })
-            .pipe(hash);
+            .pipe(hash)
     });
 
     // Wait for both Validation and Hash calculation to complete
@@ -136,8 +146,7 @@ export async function prerenderDocument(pdfName: string, pdfURL: URL, accepted: 
             // Destroy stream so that .close listeners fire
             stream.destroy();
         } catch (err) {
-            log.error(err.message);
-            console.error(err);
+            log.error(`Error prerendering document: ${err.message}`);
         }
     }
 } 

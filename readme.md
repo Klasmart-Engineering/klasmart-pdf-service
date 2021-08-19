@@ -9,6 +9,9 @@ JWT: `eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwibmFtZSI6IlRlc3QgVXNlc
 
 Sample cookie: `access=eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwibmFtZSI6IlRlc3QgVXNlciIsImlhdCI6MTUxNjIzOTAyMiwiaXNzIjoiY2FsbWlkLWRlYnVnIiwiaWQiOiJiMDQ1ZTgwMC05NjY4LTQ4ZDgtYmNmOC0yZTY2MWQ1YzgzZTYiLCJlbWFpbCI6ImRldnRlc3RAa2lkc2xvb3AubGl2ZSIsImV4cCI6MjU0Mzg5MTI0NzAwMH0.b-XOD5Jiss3bHhzVtneEsGRXSWylC5_YMQqMlP_RCIUniT28lRrDIz9-iL6Nts7gVzDv-9sasUqFrEn1N_9HIg; Path=/; Domain=localhost; Expires=Thu, 11 Aug 2022 07:18:52 GMT;`
 
+## API Documentation
+The API is documented using OpenAPI 3.0 specification and served at /pdf/api-docs.  For alpha documentation see [http://api.alpha.kidsloop.net/pdf/api-docs](http://api.alpha.kidsloop.net/pdf/api-docs) or run the server locally and open [http://localhost:32891/pdf/api-docs](http://localhost:32891/pdf/api-docs). Additionally some minor documentation is included in routes.md. 
+
 ## Environment
 ### App Environment
 - PORT - Port that application will listen on. Defaults to 32891.

@@ -7,22 +7,23 @@ import { S3Client } from '@aws-sdk/client-s3';
 import * as imageConverter from '../../src/image-converter';
 import { PDFDocumentProxy } from 'pdfjs-dist/types/src/display/api';
 import NodeCache from 'node-cache';
-import { Readable } from 'stream';
+import { Readable, Writable } from 'stream';
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import fs, { WriteStream } from 'fs';
+import fs, { ReadStream, WriteStream } from 'fs';
 import { PassThrough } from 'stream';
 import { JPEGStream } from 'canvas';
 import rewire from 'rewire';
 import createError from 'http-errors';
 import asyncTimeout from '../util/async-timeout';
+import { Request } from 'express';
 
 chai.use(chaiAsPromised);
 chai.should();
 
 const sandbox = sinon.createSandbox();
 let rewiredPdfService = rewire<typeof pdfService>('../../src/pdf-service');
-
+const textDecoder = new TextDecoder();
 
 describe('pdf-service', () => {
     // Helper parameter values
@@ -202,54 +203,6 @@ describe('pdf-service', () => {
 
             expect(fakeS3Service.readObject.getCalls().length).to.equal(2);
         });
-
-        // it('should resolve to second call of readObject if the first is undefined and the key is unregistered in the cache and second call is truthy', async () => {
-        //     const expected = Readable.from(Buffer.from('abc'.repeat(100)));
-        //     const unexpected = Readable.from(Buffer.from('nono'.repeat(100)));
-        //     fakeS3Service.readObject.onFirstCall().resolves(undefined);
-        //     fakeS3Service.readObject.onSecondCall().resolves(expected)
-        //     fakeS3Service.readObject.onThirdCall().resolves(unexpected);
-        //     fakeEntityManager.findOne.resolves({totalPages: 7})
-        //     fakeImageConverter.generatePageImage.resolves(Readable.from(Buffer.from('')))
-            
-            
-        //     await pdfService.getPDFPage(testPdfName, 1, testUrl)
-        //         .should.eventually.equal(expected);
-
-        //     expect(fakeS3Service.readObject.getCalls().length).to.equal(2);
-        // });
-
-        // it('should resolve to third call of readObject if the first two are undefined', async () => {
-        //     const expected = Readable.from(Buffer.from('abc'.repeat(100)));
-        //     fakeEntityManager.findOne.resolves({totalPages: 7})
-        //     fakeImageConverter.createDocumentFromStream.resolves({} as PDFDocumentProxy);
-        //     fakeImageConverter.generatePageImage.resolves(Readable.from(Buffer.from('')))
-        //     fakeS3Service.readObject.onFirstCall().resolves(undefined);
-        //     fakeS3Service.readObject.onSecondCall().resolves(undefined)
-        //     fakeS3Service.readObject.onThirdCall().resolves(expected);
-        //     cache.set(pdfService.mapPageKey(testUrl, testPdfName, 1), Promise.resolve());
-
-        //     await pdfService.getPDFPage(testPdfName, 1, testUrl)
-        //         .should.eventually.equal(expected);
-
-        //     expect(fakeS3Service.readObject.getCalls().length).to.equal(3);
-        // });
-
-        // it('should reject with 500 when readObject returns undefined after renderSinglePage resolves', async () => {
-        //     fakeEntityManager.findOne.resolves({totalPages: 7})
-        //     fakeImageConverter.createDocumentFromStream.resolves({} as PDFDocumentProxy);
-        //     fakeImageConverter.generatePageImage.resolves(Readable.from(Buffer.from('')))
-        //     fakeS3Service.readObject.onFirstCall().resolves(undefined);
-        //     fakeS3Service.readObject.onSecondCall().resolves(undefined)
-        //     fakeS3Service.readObject.onThirdCall().resolves(undefined);
-        //     cache.set(pdfService.mapPageKey(testUrl, testPdfName, 1), Promise.resolve());
-
-        //     await pdfService.getPDFPage(testPdfName, 1, testUrl)
-        //         .should.eventually.be.rejectedWith('Unable to retrieve object after write')
-        //         .and.be.an.instanceOf(Error)
-        //         .and.have.property('status', 500);
-
-        // });
 
         it('should reject with 404 when page request is greater than totalPages', async () => {
             const expected = Readable.from(Buffer.from('abc'.repeat(100)));
@@ -592,7 +545,6 @@ describe('pdf-service', () => {
                 return Promise.resolve(Readable.from(Buffer.from('')));
             });
 
-            console.log(count);
             await rewiredPdfService.prerenderDocument('somepdf', new URL('http://someurl.com'), () => {});
             await asyncTimeout(300);
             expect(count).to.equal(5);
@@ -647,4 +599,150 @@ describe('pdf-service', () => {
         });
     })
 
+    describe('validatePostedPDF', async () => {
+        // Utility to create a request object that has a streamable data payload
+        const createRequest = (data: Uint8Array): Request => { 
+            const readStream = Readable.from(data) as Request;
+            readStream.headers = {
+                'content-length': ''+data.byteLength
+            }
+            return readStream as Request;
+        }
+
+        let readFileStub: sinon.SinonStub;
+        let writeStreamPt: PassThrough;
+
+        beforeEach(() => {
+            fakeFs = sandbox.stub(fs);
+            readFileStub = sandbox.stub();
+            sandbox.stub(fs, 'promises').value({ readFile: readFileStub });
+            writeStreamPt = new PassThrough();
+            fakeFs.createWriteStream.callsFake(() => {
+                return writeStreamPt as unknown as WriteStream;
+            });
+            fakeFs.createReadStream.returns(ReadStream.from('readable data') as ReadStream);
+        });
+
+        afterEach(() => {
+            sandbox.reset();
+        });
+
+
+        it('should attempt to write temporary file from request payload', async () => {
+            readFileStub.returns(Buffer.from('filedata'));
+            const callbackStub = sandbox.stub();
+            const payload = 'Expected data payload';
+            const request = createRequest(Buffer.from(payload));
+            fakeImageConverter.validatePDFTextContent.resolves({
+                valid: true,
+                pages: 1
+            });
+
+            const result = rewiredPdfService.validatePostedPDF(request, callbackStub);
+            let wroteData = '';
+            writeStreamPt.on('data', (bytes) => wroteData = wroteData + bytes);
+            await result;
+
+            expect(wroteData).to.equal(payload);
+        });
+
+        it('it should call temp file register callback', async () => {
+            readFileStub.returns(Buffer.from('filedata'));
+            const callbackStub = sandbox.stub();
+            const payload = 'Expected data payload';
+            const request = createRequest(Buffer.from(payload));
+            fakeImageConverter.validatePDFTextContent.resolves({
+                valid: true,
+                pages: 1
+            });
+
+            const result = rewiredPdfService.validatePostedPDF(request, callbackStub);
+            let wroteData = '';
+            writeStreamPt.on('data', (bytes) => wroteData = wroteData + bytes);
+            await result;
+            expect(callbackStub.calledOnce).to.be.true;
+        });
+
+        it('should read file data and pass to validatePDFTextContent in config object', async () => {
+            const expectedReadData = 'data to be passed to imageConverter';
+            readFileStub.resolves(Buffer.from(expectedReadData));
+
+            const callbackStub = sandbox.stub();
+            const payload = 'Expected data payload';
+            const request = createRequest(Buffer.from(payload));
+            fakeImageConverter.validatePDFTextContent.resolves({
+                valid: true,
+                pages: 1
+            });
+
+            const result = rewiredPdfService.validatePostedPDF(request, callbackStub);
+            let wroteData = '';
+            writeStreamPt.on('data', (bytes) => wroteData = wroteData + bytes);
+            await result;
+
+            expect(fakeImageConverter.validatePDFTextContent.calledOnce).to.be.true;
+            /* This is sort of gross, but should give the most useful failure reporting
+               Grabs the first parameter of the first call to validatePDFTextContent - this should be buffer returned by 
+               readFileStub converted to a Uint8Array - the test case will decode this to its string value and compare it to the 
+               original input
+            */
+            expect(textDecoder.decode(fakeImageConverter.validatePDFTextContent.getCalls()[0].args[0].data as Uint8Array))
+                .to.equal(expectedReadData)
+        });
+
+        it('should reject when temp file write stream errors', async () => {
+            const expectedReadData = 'data to be passed to imageConverter';
+            readFileStub.resolves(Buffer.from(expectedReadData));
+
+            const callbackStub = sandbox.stub();
+            const payload = 'Expected data payload';
+            const request = createRequest(Buffer.from(payload));
+            fakeImageConverter.validatePDFTextContent.resolves({
+                valid: true,
+                pages: 1
+            });
+
+            const expectedError = new Error('test-error');
+
+            const result = rewiredPdfService.validatePostedPDF(request, callbackStub);
+            writeStreamPt.emit('error', expectedError);
+            await result.should.eventually.be.rejectedWith(expectedError.message);
+        });
+
+        it('should reject when hash read stream errors', async () => {
+            
+            // Stubs / Setup
+            const expectedReadData = 'data to be passed to imageConverter';
+            readFileStub.resolves(Buffer.from(expectedReadData));
+
+            const callbackStub = sandbox.stub();
+            fakeImageConverter.validatePDFTextContent.resolves({
+                valid: true,
+                pages: 1
+            });
+            
+            // Create a fake Request object with a readable data payload
+            const payload = 'Expected data payload';
+            const request = createRequest(Buffer.from(payload));
+            
+            // pipe first streams data so that the stream can complete, data is not needed for test so its forgotten 
+            writeStreamPt.on('data', (bytes) => bytes);
+            
+            const readToHashStream = new PassThrough();
+            fakeFs.createReadStream.callsFake(() => {
+                return readToHashStream as unknown as ReadStream;
+            });
+            
+            const result = rewiredPdfService.validatePostedPDF(request, callbackStub);
+            
+            // Provide some time for internal promises to resolve and reach the point where the stream to hash pipeline is hooked up
+            await asyncTimeout(30);
+            
+            // Error that the stream should throw and should bubble up and cause a rejection of the testing function
+            const expectedError = new Error('hashing-test-error');
+            readToHashStream.emit('error', expectedError);
+
+            await result.should.eventually.be.rejectedWith(expectedError);
+        });
+    })
 });

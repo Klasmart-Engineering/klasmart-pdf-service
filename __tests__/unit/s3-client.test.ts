@@ -52,31 +52,6 @@ describe('s3-client', () => {
         });
     });
 
-    // describe('uploadObject', () => {
-    //     const mockS3Client = new S3Client({});
-    //     s3Service.initialize(mockS3Client);
-    //     const s3ClientSendStub = sandbox.stub(mockS3Client, 'send');
-
-    //     afterEach(() => {
-    //         s3ClientSendStub.reset();
-    //     })
-
-    //     it('should reject with 500 when update rejects', async () => {
-    //         s3ClientSendStub.rejects(new Error('test-error'));
-    //         await s3Service.uploadObject('key', Readable.from(Buffer.from('ldajflkdjlksf')))
-    //             .should.eventually.rejectedWith(Error)
-    //             .and.have.property('status', 500);
-    //     });
-
-    //     it('should resolve when send resolves', async () => {
-    //         s3ClientSendStub.resolves({
-    //             UploadId: 9999
-    //         });
-    //         await s3Service.uploadObject('key', Readable.from(Buffer.from('ldajflkdjlksf')))
-    //             .should.eventually.be.undefined;
-    //     })
-    // })
-
     describe('readObject', () => {
         const mockS3Client = new S3Client({});
         s3Service.initialize(mockS3Client);
