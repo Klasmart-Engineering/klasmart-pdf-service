@@ -12,5 +12,8 @@ chai (chai-as-promised) - assertion library
 sinon - stubbing/mocking library
 rewired - Powerful mocking/module rewiring library
 
+Alternative for unit testing:
+jest
+
 For integration testing:
 supertest

@@ -35,8 +35,8 @@ export function Authorized(...types: AuthType[]) {
         }
 
         const errorCode = response.locals.authType === AuthType.Anonymous 
-            ? 403
-            : 401;
+            ? 401
+            : 403;
 
         next(createError(errorCode));        
     }

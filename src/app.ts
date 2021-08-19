@@ -12,6 +12,8 @@ import cookieParser from 'cookie-parser';
 import { kidsloopAuthMiddleware } from './middleware/kidsloop-auth-middleware';
 import { cleanupTempFile } from './middleware/temp-file-cleanup';
 import { contentLengthFilter } from './middleware/content-length-filter';
+import swaggerUi from 'swagger-ui-express';
+import YAML from 'yamljs';
 
 const log = withLogger('app');
 
@@ -60,6 +62,9 @@ if (process.env.EXPOSE_TESTING_PDFS == 'EXPOSE') {
     log.warn(`Exposing testing pdfs`)
     app.use(express.static(__dirname + '/testing-pdfs'));
 }
+
+const swaggerDocument = YAML.load('./api-def.yaml');
+app.use('/pdf/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, {customSiteTitle: 'Kidsloop PDF Service API Docs'}))
 
 app.use(cleanupTempFile());
 

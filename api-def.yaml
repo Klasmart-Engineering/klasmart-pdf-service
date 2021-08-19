@@ -1,0 +1,231 @@
+openapi: 3.0.0
+info:
+  title: Kidsloop PDF Service API Docs
+  version: "1.0"
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: access
+tags:
+- name: "pdf"
+  description: "Primary service route"
+- name: "Health Check"
+  description: "Endpoint(s) provided for automated health checks"
+paths:
+  /pdf/validate:
+    post:
+      tags:
+      - "pdf"
+      description: "Validates a posted PDF document and returns a validation status. Note: Although the cookie is documented here, Swagger UI does not support embedding a cookie in the 'Try It Out' feature. At the time of this being documented attempts from the UI will always be Unauthorized!" 
+      security:
+        - cookieAuth: []
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  description: The PDF Document
+                  type: string
+                  format: binary
+              required:
+                - file
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - authcookie
+                properties:
+                  valid:
+                    type: boolean
+                    description: Validation result of the document.
+                  pages:
+                    type: number
+                    description: Number of pages in PDF. Not included when PDF is invalid
+                  length:
+                    type: number
+                    description: Byte length of file
+                  hash:
+                    type: string
+                    description: MD5 hash of file
+        "401":
+          description: Unauthorized - Your credentials are undefined, invalid, or expired.
+            Get new authentication credentials and try again
+        "403":
+          description: Forbidden - Your credentials do not authorize you to view this
+            resource.
+        "413":
+          description: Payload Too Large - Post body exceeds maximum file size of 500mb
+        "500":
+          description: Internal Server Error
+  /pdf/{pdfName}/view.html:
+    get:
+      tags:
+      - "pdf"
+      parameters:
+        - in: path
+          name: pdfName
+          schema:
+            type: string
+          required: true
+          description: Keyname used to identify PDF in storage.
+      description: "Serves an HTML document that contains links to rendered images of pages within the PDF document" 
+      responses:
+        "200":
+          description: OK
+          content:
+            text/html:
+              schema:
+                type: string
+                format: text/html
+        "404":
+          description: Not Found - The pdf defined in {pdfName} does not exist.
+        "500":
+          description: Internal Server Error
+  /pdf/{pdfName}/prerender:
+    get:
+      tags:
+      - "pdf"
+      parameters:
+        - in: path
+          name: pdfName
+          schema:
+            type: string
+          required: true
+          description: Keyname used to identify PDF in storage.
+      description: "Attempts to prerender a PDFs pages and store them prior to attempts to view them. This method is intended to be consumed by webhooks that can alert the service when new PDF content has been added." 
+      responses:
+        "202":
+          description: No Content - Server has accepted the request and will begin prerendering pages.
+        "404":
+          description: Not Found - The pdf defined in {pdfName} does not exist.
+        "500":
+          description: Internal Server Error
+  /pdf/{pdfName}/validate:
+    get:
+      tags:
+      - "pdf"
+      parameters:
+        - in: path
+          name: pdfName
+          schema:
+            type: string
+          required: true
+          description: Keyname used to identify PDF in storage.
+      description: "Attempts to validate a stored PDF document. Consumers should prefer the POST method for client-facing operation. This function is defined to provide a convenient interface to batch validate and report performance metadata" 
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - authcookie
+                properties:
+                  valid:
+                    type: boolean
+                    description: Validation result of the document.
+                  pages:
+                    type: number
+                    description: Number of pages in PDF. Not included when PDF is invalid
+                  processingTime:
+                    type: number
+                    description: Time in milliseconds required to process the validation
+        "404":
+          description: Not Found - The pdf defined in {pdfName} does not exist.
+        "500":
+          description: Internal Server Error
+
+  /pdf/{pdfName}/{page}:
+    get:
+      tags:
+      - "pdf"
+      parameters:
+        - in: path
+          name: pdfName
+          schema:
+            type: string
+          required: true
+          description: Keyname used to identify PDF in storage.
+        - in: path
+          name: page
+          schema:
+            type: number
+          required: true
+          description: Page number of PDF to be served
+      description: "Serves an image render of a single page of a PDF document identified by the {pdfName} and {page} path parameters." 
+      responses:
+        "200":
+          description: OK
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+        "400":
+          description: Request Error - See response for error details
+          content:
+            text:
+              schema:
+                type: string
+        "404":
+          description: Not Found - The pdf defined in {pdfName} does not exist.
+        "500":
+          description: Internal Server Error
+  
+  /pdf/{pdfName}/render-page/{page}:
+    get:
+      tags:
+      - "pdf"
+      parameters:
+        - in: path
+          name: pdfName
+          schema:
+            type: string
+          required: true
+          description: Keyname used to identify PDF in storage.
+        - in: path
+          name: page
+          schema:
+            type: number
+          required: true
+          description: Page number of PDF to be served
+      description: "This is a utility function that bypasses all storage mechanisms and directly renders a fresh image from a PDF document and serves it.  Note: This endpoint is only available when the service is launched with a NODE_ENV value of development." 
+      responses:
+        "200":
+          description: OK
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+        "400":
+          description: Request Error - See response for error details
+          content:
+            text:
+              schema:
+                type: string
+        "404":
+          description: Not Found - The pdf defined in {pdfName} does not exist.
+        "500":
+          description: Internal Server Error
+  /.well-known/express/server-health:
+    get:
+      tags:
+      - "Health Check"
+      description: "Endpoint consumed by AWS ECS automated healthchecks. If this endpoint stops responding then ECS will shut down tasks assuming that their state has become unhealthy."
+      responses:
+        "200":
+          description: OK
+servers:
+  - url: http://localhost:32891
+  - url: http://api.alpha.kidsloop.net
