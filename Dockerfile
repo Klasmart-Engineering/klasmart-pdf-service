@@ -12,5 +12,6 @@ COPY ./node_modules ./node_modules
 COPY --from=pdf-build /root/app/node_modules/pdfjs-dist ./node_modules/pdfjs-dist
 COPY tsconfig.json tsconfig.json
 COPY ./package*.json ./
+COPY ./api.yaml ./api.yaml
 COPY src/ src/
 ENTRYPOINT ["npx", "ts-node", "./src/app.ts"]
