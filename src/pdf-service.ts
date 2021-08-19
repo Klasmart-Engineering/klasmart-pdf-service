@@ -44,6 +44,15 @@ export async function validateCMSPDF(pdfName: string) : Promise<ValidationResult
     return imageConverter.validatePDFTextContent(config);
 }
 
+/**
+ * Service level function for managing validation of PDF documents from a posted binary payload.
+ * Function streams file data to a temporary file, then reading the temporary file data to a Uint8Array
+ * that is passed to pdf.js.  While pdf.js processes it the file data is also passed to a hash function
+ * which calculates a hash (as required by infosec)
+ * @param request 
+ * @param registerTempFile 
+ * @returns 
+ */
 export async function validatePostedPDF(request: Request, registerTempFile: (filename: string) => void): Promise<ValidationResult> {
     const length = request.headers['content-length'] ? parseInt(request.headers['content-length']) : undefined;
     
