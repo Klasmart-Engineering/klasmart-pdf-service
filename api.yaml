@@ -77,6 +77,7 @@ paths:
             type: string
           required: true
           description: Keyname used to identify PDF in storage.
+          example: 60b97f038c3d41f51ca07ea0.pdf
       description: "Serves an HTML document that contains links to rendered images of pages within the PDF document" 
       responses:
         "200":
@@ -101,6 +102,7 @@ paths:
             type: string
           required: true
           description: Keyname used to identify PDF in storage.
+          example: 60b97f038c3d41f51ca07ea0.pdf
       description: "Attempts to prerender a PDFs pages and store them prior to attempts to view them. This method is intended to be consumed by webhooks that can alert the service when new PDF content has been added." 
       responses:
         "202":
@@ -120,6 +122,7 @@ paths:
             type: string
           required: true
           description: Keyname used to identify PDF in storage.
+          example: 60b97f038c3d41f51ca07ea0.pdf
       description: "Attempts to validate a stored PDF document. Consumers should prefer the POST method for client-facing operation. This function is defined to provide a convenient interface to batch validate and report performance metadata" 
       responses:
         "200":
@@ -145,7 +148,7 @@ paths:
         "500":
           description: Internal Server Error
 
-  /pdf/{pdfName}/{page}:
+  /pdf/{pdfName}/page/{page}:
     get:
       tags:
       - "pdf"
@@ -156,12 +159,14 @@ paths:
             type: string
           required: true
           description: Keyname used to identify PDF in storage.
+          example: 60b97f038c3d41f51ca07ea0.pdf
         - in: path
           name: page
           schema:
             type: number
           required: true
           description: Page number of PDF to be served
+          example: 1
       description: "Serves an image render of a single page of a PDF document identified by the {pdfName} and {page} path parameters." 
       responses:
         "200":
@@ -193,12 +198,14 @@ paths:
             type: string
           required: true
           description: Keyname used to identify PDF in storage.
+          example: 60b97f038c3d41f51ca07ea0.pdf
         - in: path
           name: page
           schema:
             type: number
           required: true
           description: Page number of PDF to be served
+          example: 1
       description: "This is a utility function that bypasses all storage mechanisms and directly renders a fresh image from a PDF document and serves it.  Note: This endpoint is only available when the service is launched with a NODE_ENV value of development." 
       responses:
         "200":
