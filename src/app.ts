@@ -63,7 +63,7 @@ if (process.env.EXPOSE_TESTING_PDFS == 'EXPOSE') {
     app.use(express.static(__dirname + '/testing-pdfs'));
 }
 
-const swaggerDocument = YAML.load('./api-def.yaml');
+const swaggerDocument = YAML.load('./api.yaml');
 app.use('/pdf/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, {customSiteTitle: 'Kidsloop PDF Service API Docs'}))
 
 app.use(cleanupTempFile());
