@@ -20,6 +20,8 @@ const log = withLogger('app');
 log.info(`Starting in node environtment: ${process.env.NODE_ENV}`)
 
 const app = express();
+app.disable('x-powered-by');
+
 const port = process.env.PORT || 32891;
 
 const routePrefix = process.env.ROUTE_PREFIX || '/pdf';
