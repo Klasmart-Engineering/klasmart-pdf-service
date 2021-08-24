@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { Authorized, AuthType } from '../../src/middleware/Access';
+import { Authorized, AuthType } from '../../../src/middleware/Access';
 import Sinon, { assert } from 'sinon';
 import { expect } from 'chai';
 import { HttpError } from 'http-errors';
