@@ -66,7 +66,7 @@ describe('Access', () => {
             ];
 
             inputs.forEach(types => {
-                it(``, () => {
+                it(`[${types}]`, () => {
                     const testFunction = Authorized(...types);
                     testFunction(request, response, next);
                     expect(response.locals.authChecked).to.be.true;
