@@ -15,6 +15,7 @@ appRouter.post(`/validate`,
     AllowedContentTypes('application/pdf'),
     async (request: Request, response: Response, next: NextFunction) => {
         try {
+            console.log(response.locals.token);
             const registerTempFile = (filename: string) => response.locals.tempFiles = filename;
             log.debug(`Request to validate posted file of length ${request.headers['content-length']} from user: ${response.locals.token.id} (${response.locals.token.email})`)
             const valid = await pdfService.validatePostedPDF(request, registerTempFile);

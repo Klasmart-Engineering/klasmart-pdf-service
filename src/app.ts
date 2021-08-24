@@ -9,7 +9,7 @@ import * as s3Service from './s3-client';
 import { errorHandler } from './util/error-handler';
 import { appRouter } from './routers/app.router';
 import cookieParser from 'cookie-parser';
-import { kidsloopAuthMiddleware } from './middleware/kidsloop-auth-middleware';
+import { kidsloopAuthMiddleware } from 'kidsloop-token-validation'
 import { cleanupTempFile } from './middleware/temp-file-cleanup';
 import { contentLengthFilter } from './middleware/content-length-filter';
 import swaggerUi from 'swagger-ui-express';
