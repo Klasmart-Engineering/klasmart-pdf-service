@@ -5,7 +5,6 @@ import { expect } from 'chai';
 import { HttpError } from 'http-errors';
 
 describe('Access', () => {
-    
     const createResponse = () => ({
         locals: { }
     } as unknown as Response);
@@ -20,12 +19,11 @@ describe('Access', () => {
         request = createRequest();
         response = createResponse();
         next.resetHistory();
-    })
+    });
 
     const authTypes = [AuthType.Anonymous, AuthType.Any, AuthType.Authenticated, AuthType.Cloudfront];
 
     describe('Authorized', () => {
-
         it('should call next with non-HTTP error when user has authType registered as Any', () => {
             const testFunction = Authorized(AuthType.Authenticated);
             response.locals.authType = AuthType.Any;
@@ -91,8 +89,8 @@ describe('Access', () => {
                         testFunction(request, response, next);
                         expect(next.calledOnce).to.be.true;
                     });
-                })
-            })
+                });
+            });
         });
 
         describe ('should call next when types includes set authType', () => {
@@ -116,10 +114,10 @@ describe('Access', () => {
                             response.locals.authType = type;
                             testFunction(request, response, next);
                             expect(next.calledOnce).to.be.true;
-                        })
-                    })
-                })
-            })
+                        });
+                    });
+                });
+            });
         });
 
         describe('should error when authType, does not include Any, and is defined but not included in types', async () => {
@@ -143,10 +141,10 @@ describe('Access', () => {
                             testFunction(request, response, next);
                             expect(next.calledOnce).to.be.true;
                             expect(next.getCalls()[0].args[0]).to.be.instanceOf(HttpError, 'next should be called with an Error type');
-                        })
-                    })
-                })
-            })
+                        });
+                    });
+                });
+            });
         });
 
         describe('should throw error with status 401 when access is denied and authType is Anonymous', () => {
@@ -165,8 +163,8 @@ describe('Access', () => {
                     expect(next.getCalls()[0].firstArg)
                         .to.be.instanceOf(HttpError, 'next should be called with an Error type')
                         .and.to.haveOwnProperty('message').equals('Unauthorized', 'Message should be equivalent to that of a 401 error');
-                })
-            })
+                });
+            });
         });
 
         it('should throw error with status 401 when access is denied and authType is not Anonymous', () => {
@@ -177,7 +175,6 @@ describe('Access', () => {
             expect(next.firstCall.firstArg)
                 .to.be.instanceOf(HttpError, 'next should be called with an Error type')
                 .and.to.haveOwnProperty('message').equals('Forbidden', 'Message should be equivalent to that of a 403 error');
-
         });
     });
 });
