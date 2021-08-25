@@ -5,11 +5,14 @@ import Readable from 'stream';
 import pug from 'pug';
 import { withLogger } from '../logger';
 import { Authorized, AuthType } from '../middleware/Access';
+import { AllowedContentTypes } from '../middleware/ContentTypeFilter';
 
 export const appRouter = Router();
 const log = withLogger('app.router');
 
-appRouter.post(`/validate`, Authorized(AuthType.Authenticated), 
+appRouter.post(`/validate`, 
+    Authorized(AuthType.Authenticated), 
+    AllowedContentTypes('application/pdf'),
     async (request: Request, response: Response, next: NextFunction) => {
         try {
             const registerTempFile = (filename: string) => response.locals.tempFiles = filename;

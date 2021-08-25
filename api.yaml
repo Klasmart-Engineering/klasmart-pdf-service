@@ -64,6 +64,8 @@ paths:
             resource.
         "413":
           description: Payload Too Large - Post body exceeds maximum file size of 500mb
+        "415":
+          description: "Unsupported Media Type - This route only accepts requests that report their content-type as 'application/pdf'.  Requests with any other mime type will be rejected."
         "500":
           description: Internal Server Error
   /pdf/{pdfName}/view.html:
