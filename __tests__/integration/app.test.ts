@@ -5,7 +5,7 @@ import { errorHandler } from '../../src/util/error-handler';
 import sinon from 'sinon';
 import * as pdfService from '../../src/pdf-service';
 import createError from 'http-errors';
-import { assert } from 'chai';
+import { assert, expect } from 'chai';
 import { Readable } from 'stream';
 import { kidsloopAuthMiddleware } from 'kidsloop-token-validation';
 import cookieParser from 'cookie-parser';
@@ -149,6 +149,23 @@ describe('app.router', () => {
                 .get('/pdf/some.pdf/prerender')
                 .expect(406);
         })
+    });
+
+    describe('GET /:prefix/:pdfName/validate', () => {
+        it('should respond with 200 and json body', async () => {
+            serviceStub.validateCMSPDF.resolves({valid: true})
+            await request(app)
+                .get('/pdf/some.pdf/validate')
+                .expect(200)
+                .expect('content-type', /application\/json/);
+        });
+
+        it('should delegate error handling to error middleware', async () => {
+            serviceStub.validateCMSPDF.rejects(createError(413));
+            await request(app)
+                .get('/pdf/some.pdf/validate')
+                .expect(413);
+        });
     });
 
     describe('GET /:prefix/:pdfName/view.html', () => {
@@ -353,5 +370,67 @@ describe('app.router', () => {
                 });
             });
         });   
+    });
+
+    describe('dev endpoints:', () => {
+        const withEnv = (async (env: string, f: Function) => {
+            let originalEnv = process.env.NODE_ENV;
+            process.env.NODE_ENV = env;
+            await f();
+            process.env.NODE_ENV = originalEnv;
+        })
+
+        describe('/:pdfName/render-page/:page', () => {
+            it('should return 404 when not in development mode', async () => {
+                await withEnv('not-dev', async () => {
+                    await request(app)
+                        .get('/pdf/some.pdf/render-page/1')
+                        .expect(404);
+                });
+            });
+
+            it('should respond with 400 in dev mode with a non-numeric page number', async () => {
+                await withEnv('development', async () => {
+                    await request(app)
+                        .get('/pdf/some.pdf/render-page/a')
+                        .expect(400);
+                });
+            });
+
+            it('should respond with 400 in dev mode with a non-whole page number', async () => {
+                await withEnv('development', async () => {
+                    await request(app)
+                        .get('/pdf/some.pdf/render-page/1.23')
+                        .expect(400);
+                });
+            });
+
+            it('should respond with 400 in dev mode with a non-positive page number', async () => {
+                await withEnv('development', async () => {
+                    await request(app)
+                        .get('/pdf/some.pdf/render-page/0')
+                        .expect(400);
+                });
+            });
+
+            it('should return an image when in dev mode and page a valid positive whole number', async () => {
+                serviceStub.getDirectPageRender.resolves(Readable.from(Buffer.from(`datadatadata`)));
+                await withEnv('development', async () => {
+                    await request(app)
+                        .get('/pdf/some.pdf/render-page/10')
+                        .expect(200)
+                        .expect('content-type', /image\/jpeg/);
+                });
+            });
+
+            it('should delegate to error handler', async () => {
+                serviceStub.getDirectPageRender.rejects(createError(415));
+                await withEnv('development', async () => {
+                    await request(app)
+                        .get('/pdf/some.pdf/render-page/100')
+                        .expect(415);
+                });
+            });
+        });
     });
 });
