@@ -7,14 +7,58 @@ import * as pdfService from '../../src/pdf-service';
 import createError from 'http-errors';
 import { assert } from 'chai';
 import { Readable } from 'stream';
+import { kidsloopAuthMiddleware } from 'kidsloop-token-validation';
+import cookieParser from 'cookie-parser';
+import * as jwt from 'jsonwebtoken';
 
 const app = express();
 
+app.use(cookieParser());
+app.use(kidsloopAuthMiddleware());
+app.use(express.json());
+app.use(express.static(__dirname + '/static'));
 app.use('/pdf', appRouter);
 app.use(errorHandler);
 
 const sandbox = sinon.createSandbox();
 const serviceStub = sandbox.stub(pdfService);
+
+const pdfData = `%PDF-1.0
+1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj 2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj 3 0 obj<</Type/Page/MediaBox[0 0 3 3]>>endobj
+xref
+0 4
+0000000000 65535 f
+0000000010 00000 n
+0000000053 00000 n
+0000000102 00000 n
+trailer<</Size 4/Root 1 0 R>>
+startxref
+149
+%EOF`;
+
+const validJwt = jwt.sign({
+    id: '01234567-1234-1234-1234-123456789012',
+    email: 'pdf-test-email@test.com',
+}, process.env.DEV_JWT_SECRET, {
+    algorithm: 'HS256',
+    issuer: 'calmid-debug',
+    expiresIn: '10m'
+});
+
+const expiringJwt = jwt.sign({
+    id: '01234567-1234-1234-1234-123456789012',
+    email: 'pdf-test-email@test.com',
+}, process.env.DEV_JWT_SECRET, {
+    algorithm: 'HS256',
+    issuer: 'calmid-debug',
+    expiresIn: '0ms'
+});
+
+const cookies = {
+    authorizingCookie: `access=${validJwt}`,
+    invalidCookie: `access=kdsafslflksdhasfhsdkfjbkadfhekjdsbviuabkjbdfsfdsfdfakjhjkewuivbcjxba`,
+    expiredJwt: `access=${expiringJwt}`
+};
 
 describe('app.router', () => {
     let oldCmsEndpoint = process.env.CMS_BASE_URL;
@@ -26,6 +70,55 @@ describe('app.router', () => {
         if (oldCmsEndpoint) process.env.CMS_BASE_URL = oldCmsEndpoint;
         else delete process.env.CMS_BASE_URL;
         sandbox.reset();
+    });
+
+    describe('POST /:prefix/validate', () => {
+        serviceStub.validatePostedPDF.resolves({ valid: true });
+        it('should return a 401 when an access token is not included', async () => {
+            await request(app)
+                .post('/pdf/validate')
+                .set('content-type', 'application/pdf')
+                .send(pdfData)
+                .expect(401);
+        });
+
+        it('should return a 401 when an access token is included but expired', async () => {
+            await request(app)
+                .post('/pdf/validate')
+                .set('content-type', 'application/pdf')
+                .set('Cookie', cookies.expiredJwt)
+                .send(pdfData)
+                .expect(401);
+        });
+
+        it('should return a 401 when an access token is included but expired', async () => {
+            await request(app)
+                .post('/pdf/validate')
+                .set('content-type', 'application/pdf')
+                .set('Cookie', cookies.invalidCookie)
+                .send(pdfData)
+                .expect(401);
+        });
+
+        it('should respond with 200, application/json when valid cookie and content-type are supplied', async () => {
+            await request(app)
+                .post('/pdf/validate')
+                .set('content-type', 'application/pdf')
+                .set('Cookie', cookies.authorizingCookie)
+                .send(pdfData)
+                .expect(200)
+                .expect('content-type', /application\/json/);
+        });
+
+        it('should respond with 415 when a valid token is supplied but the content-type is not application/pdf', async () => {
+            const result = await request(app)
+                .post('/pdf/validate')
+                .set('content-type', 'text/css')
+                .set('Cookie', cookies.authorizingCookie)
+                .send(pdfData);
+
+            console.log(result);
+        });
     });
 
     describe('GET /:prefix/:pdfName/view.html', () => {
