@@ -30,8 +30,6 @@ describe('contentLengthFilter', () => {
         nextStub.resetHistory();
     });
 
-
-
     it('should return a function', () => {
         expect(contentLengthFilter({ maxLength: 1_000_000 })).to.be.instanceOf(Function);
     });
