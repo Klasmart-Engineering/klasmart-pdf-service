@@ -111,14 +111,44 @@ describe('app.router', () => {
         });
 
         it('should respond with 415 when a valid token is supplied but the content-type is not application/pdf', async () => {
-            const result = await request(app)
+            await request(app)
                 .post('/pdf/validate')
                 .set('content-type', 'text/css')
                 .set('Cookie', cookies.authorizingCookie)
-                .send(pdfData);
-
-            console.log(result);
+                .send(pdfData)
+                .expect(415);
         });
+
+        it('should delegate propagated errors to the error handler', async () => {
+            serviceStub.validatePostedPDF.rejects(createError(406));
+
+            await request(app)
+                .post('/pdf/validate')
+                .set('content-type', 'application/pdf')
+                .set('Cookie', cookies.authorizingCookie)
+                .send(pdfData)
+                .expect(406);
+        });
+    });
+
+    describe('GET /:prefix/:pdfName/prerender', () => {
+        it('should resolve with 202 when accepted callback is invoked', async () => {
+            serviceStub.prerenderDocument.callsFake(async (name: string, url: URL, accepted) => {
+                accepted();
+            });
+
+            await request(app)
+                .get('/pdf/some.pdf/prerender')
+                .expect(202);
+        });
+
+        it('should delegate to error handler', async () => {
+            serviceStub.prerenderDocument.callsFake(async (name, url, accepted, reject) => reject(createError(406)))
+            
+            await request(app)
+                .get('/pdf/some.pdf/prerender')
+                .expect(406);
+        })
     });
 
     describe('GET /:prefix/:pdfName/view.html', () => {

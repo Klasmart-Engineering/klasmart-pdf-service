@@ -65,13 +65,11 @@ appRouter.get(`/:pdfName/prerender`, Authorized(AuthType.Any),
 
     // Provide a callback function for the service to call to write the response
     const accepted = () => response.sendStatus(202);
+    const reject = (err: Error) => next(err);
 
-    try {
-        pdfService.prerenderDocument(pdfName, pdfUrl, accepted);
-    } catch (err) {
-        next(err);
-        return;
-    }
+    // Error handling is delegated in the callback method, rather than try block
+    // due to not wanting to wait for this method to resolve prior to responding to client
+    pdfService.prerenderDocument(pdfName, pdfUrl, accepted, reject);
 });
 
 appRouter.get(`/:pdfName/validate`, async (request: Request, response: Response, next: NextFunction) => {
