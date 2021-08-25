@@ -24,7 +24,7 @@ export function cleanupTempFile() {
                 await fs.promises.rm(response.locals.tempFiles);
             } catch (err) {
                 log.error(`Error attempting to cleanup temp file ${response.locals.tempFiles}: ${err.message}`);
-                console.log(err);
+                log.error(err.stack)
             }
             next();
             return;
@@ -38,9 +38,9 @@ export function cleanupTempFile() {
 
         try {
             await Promise.all(promises);
-        } catch (err) {
+        } catch (err) /* istanbul ignore next */ {
             log.error(`Error attemping to cleanup temp files: ${response.locals.tempFiles}: ${err.message}`);
-            console.log(err);
+            log.error(err.stack)
         }
         next();
         return;
