@@ -40,7 +40,9 @@ app.get(`/.well-known/express/server-health`, (_, response: Response) => {
 });
 
 app.use(cookieParser());
-app.use(kidsloopAuthMiddleware());
+app.use(kidsloopAuthMiddleware({
+    logger: withLogger('kidsloopAuthMiddleware')
+}));
 app.use(contentLengthFilter({ maxLength: 524_288_000 }))
 
 app.use((_, response: Response, next: NextFunction) => {
