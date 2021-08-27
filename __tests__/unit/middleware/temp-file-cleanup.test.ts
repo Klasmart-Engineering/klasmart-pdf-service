@@ -6,11 +6,11 @@ import { cleanupTempFile } from '../../../src/middleware/temp-file-cleanup';
 
 describe('temp-file-cleanup', () => {
     const sandbox = Sinon.createSandbox();
-    const rmStub = sandbox.stub();
     const nextStub = sandbox.stub();
-
-    sandbox.stub(fs, 'promises').value({ rm: rmStub })
     const testFunction = cleanupTempFile();
+    
+    const rmStub = sandbox.stub();
+    sandbox.stub(fs, 'promises').value({ rm: rmStub });
 
     const request = {} as unknown as Request;
     let response: Response;
@@ -49,7 +49,7 @@ describe('temp-file-cleanup', () => {
         expect(rmStub.calledOnce, 'Passing a string should call rmStub exactly once').to.be.true;
         expect(rmStub.calledOnceWithExactly(filename), 'Method should attempt to delete file with same name as temp file').to.be.true;
         expect(nextStub.calledOnce).to.be.true;
-    })
+    });
 
     it('should call fs.promises.rm on all files when tempFiles is an array', async () => {
         const files = ['a.txt', 'b.txt', 'c.txt'];
@@ -62,4 +62,4 @@ describe('temp-file-cleanup', () => {
         expect(nextStub.calledOnce).to.be.true;
     });
 
-})
+});

@@ -5,7 +5,7 @@ import { errorHandler } from '../../src/util/error-handler';
 import sinon from 'sinon';
 import * as pdfService from '../../src/pdf-service';
 import createError from 'http-errors';
-import { assert, expect } from 'chai';
+import { assert } from 'chai';
 import { Readable } from 'stream';
 import { kidsloopAuthMiddleware } from 'kidsloop-token-validation';
 import cookieParser from 'cookie-parser';
@@ -153,7 +153,7 @@ describe('app.router', () => {
 
     describe('GET /:prefix/:pdfName/validate', () => {
         it('should respond with 200 and json body', async () => {
-            serviceStub.validateCMSPDF.resolves({valid: true})
+            serviceStub.validateCMSPDF.resolves({valid: true});
             await request(app)
                 .get('/pdf/some.pdf/validate')
                 .expect(200)
@@ -169,7 +169,6 @@ describe('app.router', () => {
     });
 
     describe('GET /:prefix/:pdfName/view.html', () => {
-        
         it('should render an HTML document when getPDFPages resolves', async () => {
             serviceStub.getPDFPages.onFirstCall().resolves(3);
             await request(app)
@@ -217,43 +216,6 @@ describe('app.router', () => {
         })
     });
 
-    describe('GET /:prefix/:pdfName/pages', () => {
-        it('should respond with 400 if pdfURL is not provided', async () => {
-            await request(app)
-                .get(`/pdf/some-file.pdf/pages`)
-                .expect(400);
-        });
-
-        it('should respond with 200 and json payload that includes pages', async () => {
-            serviceStub.getPDFPages.resolves(3);
-            await request(app)
-                .get(`/pdf/correct-file.pdf/pages?pdfURL=http://aboslute.com/somepdf.pdf`)
-                .expect(200)
-                .expect('Content-Type', /application\/json/)
-                .then(response => { assert(!!response.body.pages);}  );
-        });
-
-        it('should respond with 500 if getPDFPages rejects with a non-http error', async () => {
-            serviceStub.getPDFPages.rejects(new Error('misc-test-error'));
-            await request(app)
-                .get(`/pdf/correct-file.pdf/pages?pdfURL=http://aboslute.com/somepdf.pdf`)
-                .expect(500);
-        })
-
-        describe('should respond with a corresponding error code when getPDFPages rejects with an http error', () => {
-            const errors = [400, 401, 403, 404, 416, 500, 501, 502];
-            errors.forEach(e => {
-                it(''+e, async () => {
-                    const error = createError(e, `http-error-${e}`);
-                    serviceStub.getPDFPages.rejects(error);
-                    await request(app)
-                        .get(`/pdf/correct-file.pdf/pages?pdfURL=http://aboslute.com/somepdf.pdf`)
-                        .expect(e);
-                });
-            });
-        });
-    });
-
     describe('GET /:prefix/:pdfName/page/:page', () => {
         it('Should respond with 400 if page is a non-numeric string value', async () => {
             serviceStub.getPDFPage.resolves(Readable.from(Buffer.from('img data')));
@@ -294,7 +256,7 @@ describe('app.router', () => {
                     assert(
                         response.body.toString() === data,
                         'Should contain streamable data equivalent to that provided by getPDFPage'
-                    )
+                    );
                 });
         });
 
@@ -317,59 +279,6 @@ describe('app.router', () => {
                 });
             });
         });    
-    });
-
-    describe('GET /:pdfName/pages/:page', () => {
-        serviceStub.getPDFPage.resolves(Readable.from(Buffer.from('some data')));
-
-        it('should respond with 400 when no pdfURL query parameter is provided', async () => {
-            serviceStub.getPDFPage.rejects(new Error('misc-test-error'));
-            await request(app)
-                .get('/pdf/some.pdf/pages/1')
-                .expect(400);
-        });
-
-        it('should respond with 400 when pdfURL value cannot be parsed to a URL', async () => {
-            serviceStub.getPDFPage.rejects(new Error('misc-test-error'));
-            await request(app)
-                .get('/pdf/some.pdf/pages/1?pdfURL=./not-a-url')
-                .expect(400);
-        });
-
-        it('Should respond with 200, content-type image/jpeg, and file data on success', async () => {
-            const data = 'img data';
-            serviceStub.getPDFPage.resolves(Readable.from(Buffer.from(data)));
-            await request(app)
-                .get('/pdf/some.pdf/pages/1/?pdfURL=https://some-site.com/file.pdf')
-                .expect(200)
-                .expect('Content-Type', /image\/jpeg/)
-                .then(response => {
-                    assert(
-                        response.body.toString() === data,
-                        'Should contain streamable data equivalent to that provided by getPDFPage'
-                    )
-                });
-        });
-
-        it('should respond with 500 if getPDFPage rejects with a non-http error', async () => {
-            serviceStub.getPDFPage.rejects(new Error('misc-test-error'));
-            await request(app)
-                .get('/pdf/some.pdf/pages/1?pdfURL=https://some-site.com/file.pdf')
-                .expect(500);
-        })
-
-        describe('should respond with a corresponding error code when getPDFPage rejects with an http error', () => {
-            const errors = [400, 401, 403, 404, 416, 500, 501, 502];
-            errors.forEach(e => {
-                it(''+e, async () => {
-                    const error = createError(e, `http-error-${e}`);
-                    serviceStub.getPDFPage.rejects(error);
-                    await request(app)
-                        .get('/pdf/some.pdf/pages/1?pdfURL=https://some-site.com/file.pdf')
-                        .expect(e);
-                });
-            });
-        });   
     });
 
     describe('dev endpoints:', () => {
