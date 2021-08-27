@@ -9,7 +9,7 @@ import * as s3Service from './s3-client';
 import { errorHandler } from './util/error-handler';
 import { appRouter } from './routers/app.router';
 import cookieParser from 'cookie-parser';
-import { kidsloopAuthMiddleware } from './middleware/kidsloop-auth-middleware';
+import { kidsloopAuthMiddleware } from 'kidsloop-token-validation'
 import { cleanupTempFile } from './middleware/temp-file-cleanup';
 import { contentLengthFilter } from './middleware/content-length-filter';
 import swaggerUi from 'swagger-ui-express';
@@ -40,7 +40,9 @@ app.get(`/.well-known/express/server-health`, (_, response: Response) => {
 });
 
 app.use(cookieParser());
-app.use(kidsloopAuthMiddleware());
+app.use(kidsloopAuthMiddleware({
+    logger: withLogger('kidsloopAuthMiddleware')
+}));
 app.use(contentLengthFilter({ maxLength: 524_288_000 }))
 
 app.use((_, response: Response, next: NextFunction) => {

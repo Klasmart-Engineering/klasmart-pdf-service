@@ -65,13 +65,11 @@ appRouter.get(`/:pdfName/prerender`, Authorized(AuthType.Any),
 
     // Provide a callback function for the service to call to write the response
     const accepted = () => response.sendStatus(202);
+    const reject = (err: Error) => next(err);
 
-    try {
-        pdfService.prerenderDocument(pdfName, pdfUrl, accepted);
-    } catch (err) {
-        next(err);
-        return;
-    }
+    // Error handling is delegated in the callback method, rather than try block
+    // due to not wanting to wait for this method to resolve prior to responding to client
+    pdfService.prerenderDocument(pdfName, pdfUrl, accepted, reject);
 });
 
 appRouter.get(`/:pdfName/validate`, async (request: Request, response: Response, next: NextFunction) => {
@@ -124,93 +122,40 @@ appRouter.get(`/:pdfName/page/:page`, async (request: Request, response: Respons
     Utility endpoint which will bypass all FS/S3 workflows to directly render and display an image
     Note: This route is for dev/test purposes and is only made available when the NODE_ENV environment is set to dev
 */
-if (process.env.NODE_ENV === 'development') {
-    appRouter.get(`/:pdfName/render-page/:page`, async (request: Request, response: Response, next: NextFunction) => {
-        const { pdfName, page } = request.params;
-        log.debug(`Request for page ${page}`)
-        // ? Note: +num is being used rather than parseInt due to parseInt interpreting 0 lead ints as binary
-        // ? while +num will drop the 0, a more inuitive behavior to service consumers
-    
-        if (isNaN(+page)) {
-            next(createError(400, 'Page must be numeric'));
-            return;
-        }
-    
-        // Validate page is a natural number
-        if (page.split('.').length > 1) {
-            next(createError(400, 'Page may not contain a decimal portion'));
-            return;
-        }
-    
-        if (+page < 1) {
-            next(createError(400, 'Page must be a positive value'));
-            return;
-        }
-    
-        // doRender()
-
-        const pdfURL = new URL(`/assets/${pdfName}`, process.env.CMS_BASE_URL);
-        
-        response.contentType('image/jpeg')
-        try {
-            const stream: Readable = await pdfService.getDirectPageRender(+page, pdfURL)
-            stream.pipe(response)
-        } catch (err) {
-            next(err);
-            return;
-        }
-    });
-}
-
-/* Retrieves total number of pages */
-// ! Deprecated
-appRouter.get(`/:pdfName/pages`, async (request: Request, response: Response, next: NextFunction) => {
-    log.warn(`Note: This handler is deprecated. This handler is being replaced by an updated endpoint which does not require a query parameter.  Update code to send requests to: pdf-service://pdf/{pdf-file.pdf}/view.html`);
-    
-    if (!request.query.pdfURL){
-        next(createError(400, `Missing query parameters: [pdfURL]`))
-        return;
+appRouter.get(`/:pdfName/render-page/:page`, async (request: Request, response: Response, next: NextFunction) => {
+    if (process.env.NODE_ENV !== 'development') {
+        response.sendStatus(404);
     }
-    log.silly(request.query.pdfURL);
-    const pdfURL = new URL(decodeURI(request.query.pdfURL as string))
-    log.silly(pdfURL);
-    log.silly(pdfURL.toString());
-    try {
-        const pages = await pdfService.getPDFPages(pdfURL);
-        response
-            .json({pages});
-        next();
-    } catch (err) {
-        next(err);
-    }
-});
 
-// ! Deprecated
-appRouter.get(`/:pdfName/pages/:page`, async (request: Request, response: Response, next: NextFunction) => {
-    log.warn(`Note: This handler is deprecated. This handler is being replaced by an updated endpoint which does not require a query parameter.  Update code to send requests to: pdf-service://pdf/{pdf-file.pdf}/view.html`);
     const { pdfName, page } = request.params;
+    log.debug(`Request for page ${page}`)
+    // ? Note: +num is being used rather than parseInt due to parseInt interpreting 0 lead ints as binary
+    // ? while +num will drop the 0, a more inuitive behavior to service consumers
+
+    if (isNaN(+page)) {
+        next(createError(400, 'Page must be numeric'));
+        return;
+    }
+
+    // Validate page is a natural number
+    if (page.split('.').length > 1) {
+        next(createError(400, 'Page may not contain a decimal portion'));
+        return;
+    }
+
+    if (+page < 1) {
+        next(createError(400, 'Page must be a positive value'));
+        return;
+    }
+
+    const pdfURL = new URL(`/assets/${pdfName}`, process.env.CMS_BASE_URL);
     
-    if (!request.query.pdfURL){
-        next(createError(400, `Missing query parameters: [pdfURL]`))
-        return;
-    }
-
-    let pdfURL;
+    response.contentType('image/jpeg')
     try {
-        pdfURL = new URL(decodeURI(request.query.pdfURL as string));
-    } catch (err) {
-        next(createError(400, 'URL is invalid'));
-        return;
-    }
-
-    let stream: Readable;
-    try {
-        stream = await pdfService.getPDFPage(pdfName, +page, pdfURL)
+        const stream: Readable = await pdfService.getDirectPageRender(+page, pdfURL)
+        stream.pipe(response)
     } catch (err) {
         next(err);
         return;
     }
-
-    response.contentType('image/jpeg');
-    stream.pipe(response);
 });

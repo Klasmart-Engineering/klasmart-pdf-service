@@ -3,11 +3,10 @@ import * as typeorm from 'typeorm';
 import * as s3Service from '../../src/s3-client';
 import { MockManager } from '../util/MockManager';
 import sinon from 'sinon';
-import { S3Client } from '@aws-sdk/client-s3';
 import * as imageConverter from '../../src/image-converter';
 import { PDFDocumentProxy } from 'pdfjs-dist/types/src/display/api';
 import NodeCache from 'node-cache';
-import { Readable, Writable } from 'stream';
+import { Readable } from 'stream';
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import fs, { ReadStream, WriteStream } from 'fs';
@@ -38,11 +37,9 @@ describe('pdf-service', () => {
     let fakeFs: sinon.SinonStubbedInstance<typeof fs>;
 
     const transactionMockImpl = async (fn: (args: any[]) => Promise<any>) => await fn(fakeEntityManager as any);
-
-    const mockS3Client = new S3Client({});
+    const rejectStub = sandbox.stub();
 
     let cache: NodeCache;
-
 
     beforeEach(() => {
         rewiredPdfService = rewire<typeof pdfService>('../../src/pdf-service');
@@ -545,11 +542,11 @@ describe('pdf-service', () => {
                 return Promise.resolve(Readable.from(Buffer.from('')));
             });
 
-            await rewiredPdfService.prerenderDocument('somepdf', new URL('http://someurl.com'), () => {});
+            await rewiredPdfService.prerenderDocument('somepdf', new URL('http://someurl.com'), () => {}, rejectStub);
             await asyncTimeout(300);
             expect(count).to.equal(5);
         });
-        it('should propagate error thrown by getPDFPages', async () => {
+        it('should propragate error by calling reject callback', async () => {
             let count = 0;
             const expected = new Error('prerender-test-error');
 
@@ -559,10 +556,9 @@ describe('pdf-service', () => {
                 return Promise.resolve(Readable.from(Buffer.from('')));
             });
 
-            await rewiredPdfService.prerenderDocument('somepdf', new URL('http://someurl.com'), () => {})
-                .should.eventually.be.rejectedWith(expected.message);
-            await asyncTimeout(300);
-            expect(count).to.equal(0);
+            await rewiredPdfService.prerenderDocument('somepdf', new URL('http://someurl.com'), () => {}, rejectStub)
+            expect(rejectStub.calledOnce).be.true;
+            expect(rejectStub.firstCall.firstArg).to.equal(expected);
         });
         it('should continue rendering pages even if an error occurs in one page', async () => {
             let count = 0;
@@ -574,7 +570,7 @@ describe('pdf-service', () => {
                 return Promise.resolve(Readable.from(Buffer.from('')));
             });
 
-            await rewiredPdfService.prerenderDocument('somepdf', new URL('http://someurl.com'), () => {});
+            await rewiredPdfService.prerenderDocument('somepdf', new URL('http://someurl.com'), () => {}, rejectStub);
             await asyncTimeout(300);
             expect(count).to.equal(3);
         });
@@ -587,7 +583,7 @@ describe('pdf-service', () => {
                 return Promise.resolve(Readable.from(Buffer.from('')));
             });
 
-            rewiredPdfService.prerenderDocument('somepdf', new URL('http://someurl.com'), acceptedStub);
+            rewiredPdfService.prerenderDocument('somepdf', new URL('http://someurl.com'), acceptedStub, rejectStub);
             // Although prerenderDocument has resolved, getPDFPage should not have resolved yet
             expect(acceptedStub.calledOnce).to.equal(false);
             

@@ -26,25 +26,24 @@ export interface ValidationResult {
 }
 
 export const createDocumentFromStream = async (pdfUrl: string): Promise<PDFDocumentProxy> => {
-    log.debug('creating document');
-    try {
-        // ? Note: await here allows for exceptions thrown by the promise to be caught in the catch block
-        return await pdf.getDocument({
-            url: pdfUrl,
-            cMapUrl: CMAP_URL,
-            cMapPacked: CMAP_PACKED,
-            standardFontDataUrl: STANDARD_FONT_DATA_URL,
-        }).promise;
-    } catch (err) {
-        console.log(err);
-        log.error(`Error creating PDF document proxy: ${err.message}`);
-        log.error(err);
+  log.debug('creating document');
+  try {
+    // ? Note: await here allows for exceptions thrown by the promise to be caught in the catch block
+    return await pdf.getDocument({
+      url: pdfUrl,
+      cMapUrl: CMAP_URL,
+      cMapPacked: CMAP_PACKED,
+      standardFontDataUrl: STANDARD_FONT_DATA_URL,
+    }).promise;
+  } catch (err) {
+    log.error(`Error creating PDF document proxy: ${err.message}`);
+    log.error(err.stack);
 
-        if (err.name === `InvalidPDFException`) createHttpError(500, 'Document is not a valid PDF');
-        if (err.name === `MissingPDFException`) throw createHttpError(404, 'PDF with provided key not found');
+    if (err.name === `InvalidPDFException`) createHttpError(500, 'Document is not a valid PDF');
+    if (err.name === `MissingPDFException`) throw createHttpError(404, 'PDF with provided key not found');
      
-        throw createHttpError(500, 'Error encountered creating PDF document');
-    }
+    throw createHttpError(500, 'Error encountered creating PDF document');
+  }
 }
 
 /**

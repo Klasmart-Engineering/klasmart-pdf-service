@@ -137,9 +137,16 @@ export async function getPDFPages(pdfURL: URL):Promise<number> {
  * @param pdfURL
  * @param accepted - Function, call when the response is ready to be accepted 
  */
-export async function prerenderDocument(pdfName: string, pdfURL: URL, accepted: () => void): Promise<void> {
-    const pages = await getPDFPages(pdfURL);
-    accepted();
+export async function prerenderDocument(pdfName: string, pdfURL: URL, accepted: () => void, reject: (err: Error) => void): Promise<void> {
+    let pages: number;
+    try {
+        pages = await getPDFPages(pdfURL);
+        accepted();
+    } catch(err) {
+        // PDF document is invalid or missing, fail fast and alert user
+        reject(err);
+        return;
+    }
     for(let i = 1; i <= pages; i++) {
         try {
             const stream = await getPDFPage(pdfName, i, pdfURL);

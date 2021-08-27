@@ -17,11 +17,10 @@ const log = withLogger('error-handler');
  * @returns 
  */
 export const errorHandler = (error: | HttpError | (Error & {status?: number}), request: Request, response: Response, next: NextFunction): void => {
-    
-    log.error(error);
 
     // In the case of an HttpError, map directly to an HTTP response
     if (error instanceof HttpError) {
+        log.silly(error.stack);
         response.status(error.statusCode ?? error.status).send(error.message);
         next();
         return;
@@ -29,11 +28,14 @@ export const errorHandler = (error: | HttpError | (Error & {status?: number}), r
 
     // In the Error message has a numeric status field, send that as the http response
     if (error.status && typeof error.status === 'number') {
+        log.silly(error.stack);
         response.status(error.status).send(error.message);
         next();
         return;
     }
 
+    // Log stack trace for unhandled, likely unexpected errors
+    log.error(error.stack);
     // Otherwise respond with a 500
     response.status(500).send(error.message);
     next();

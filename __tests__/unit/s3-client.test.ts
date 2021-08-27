@@ -10,8 +10,6 @@ chai.use(chaiAsPromised);
 chai.should();
 
 describe('s3-client', () => {
-    const rewiredLibStorage = rewire('@aws-sdk/lib-storage');
-
     const testKey = 'some-key/file.pdf';
     const sandbox = sinon.createSandbox();
     afterEach(() => {

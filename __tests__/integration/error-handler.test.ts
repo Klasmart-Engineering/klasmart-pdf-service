@@ -1,13 +1,8 @@
 import request from 'supertest';
 import express, { NextFunction } from 'express';
-import { appRouter } from '../../src/routers/app.router';
 import { errorHandler } from '../../src/util/error-handler';
 import sinon from 'sinon';
-import * as pdfService from '../../src/pdf-service';
 import createError from 'http-errors';
-import { assert } from 'chai';
-import { Readable } from 'stream';
-import { NoVersionOrUpdateDateColumnError } from 'typeorm';
 
 const app = express();
 const sandbox = sinon.createSandbox();
