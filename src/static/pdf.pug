@@ -8,4 +8,4 @@ html(lang="en")
         div(id="viewerContainer")
             img(src='/pdf/'+pdfName+'/page/'+1, data-page-num=1, class='pdf-page-img')
             each page, k in pages
-                img(src='/pdf/'+pdfName+'/page/'+(k+2), loading='lazy', data-page-num=k+2, class='pdf-page-img')
+                img(src='/pdf/'+pdfName+'/page/'+(k+2), data-page-num=k+2, class='pdf-page-img')

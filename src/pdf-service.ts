@@ -255,7 +255,7 @@ async function renderSinglePage(pageKey: string, pdfURL: URL, page: number): Pro
         log.info('Sending data to S3');
         
         try {
-            await s3Service.uploadObject(pageKey, readStream);
+            await s3Service.simpleWriteObject(pageKey, readStream);
         } catch (err) {
             // ! Note: HttpErrors will be propagated, but any other error types will only be
             // ! logged, as the requested image can still be successfully served from the temp

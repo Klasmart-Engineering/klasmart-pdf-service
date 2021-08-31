@@ -1,5 +1,4 @@
-import { GetObjectCommand, GetObjectRequest, S3Client } from '@aws-sdk/client-s3';
-import * as libStorage from '@aws-sdk/lib-storage';
+import { GetObjectCommand, GetObjectRequest, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 
 import { Readable } from 'stream';
 import { JPEGStream } from 'canvas';
@@ -60,31 +59,19 @@ export const initialize = async (providedS3Client?: S3Client): Promise<void> => 
     log.info('S3 initialization complete');
 }
 
-/**
- * Uploads data to S3 using lib-storage Upload utility function.
- * @param key - s3 object key
- * @param stream - data stream to be stored
- */
-export const uploadObject = async (key: string, stream: JPEGStream): Promise<void> => {
+export const simpleWriteObject = async (key: string, stream: JPEGStream): Promise<void> => {
     try {
-        const s3Upload = new libStorage.Upload({
-            client: s3Client,
-            params: {
-                Bucket: process.env.AWS_BUCKET,
-                Key: key,
-                Body: stream
-            }
+        const uploadCommand = new PutObjectCommand({
+            Bucket: process.env.AWS_BUCKET,
+            Key: key,
+            ContentType: 'image/jpeg',
+            Body: stream
         });
 
-        s3Upload.on('httpUploadProgress', (progress) => {
-            log.debug(JSON.stringify(progress));
-        })
-
-        await s3Upload.done();
+        await s3Client.send(uploadCommand);
     } catch (err) {
-        console.log(err);
-        log.error(`Object upload error: ${JSON.stringify(err)}`);
-        throw createError(500, `Error uploading file to S3: ${JSON.stringify(err)}`)
+        log.error(err.stack);
+        throw createError(5500, `Error sending PutObjectCommand to S3: ${JSON.stringify(err)}`);
     }
 }
 
