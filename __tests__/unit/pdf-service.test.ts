@@ -273,7 +273,7 @@ describe('pdf-service', () => {
             // Force all shortcuts to fail, forcing the service to render the page
             fakeS3Service.readObject.onFirstCall().resolves(undefined);
             fakeS3Service.readObject.onSecondCall().resolves(undefined)
-            fakeS3Service.uploadObject.onFirstCall().resolves();
+            fakeS3Service.simpleWriteObject.onFirstCall().resolves();
             cache.set(pdfService.mapPageKey(testUrl, testPdfName, 10), Promise.resolve());
             
             // Fake the image data produced by pdf.js
@@ -312,7 +312,7 @@ describe('pdf-service', () => {
             // Force all shortcuts to fail, forcing the service to render the page
             fakeS3Service.readObject.onFirstCall().resolves(undefined);
             fakeS3Service.readObject.onSecondCall().resolves(undefined)
-            fakeS3Service.uploadObject.onFirstCall().resolves();
+            fakeS3Service.simpleWriteObject.onFirstCall().resolves();
             cache.set(pdfService.mapPageKey(testUrl, testPdfName, 10), Promise.resolve());
             
             // Fake the image data produced by pdf.js
@@ -457,7 +457,7 @@ describe('pdf-service', () => {
             } as any);
             fakeFs.createWriteStream.returns({} as any);
             fakeFs.createReadStream.onSecondCall().returns(undefined as any);
-            fakeS3Service.uploadObject.rejects(createError(411));
+            fakeS3Service.simpleWriteObject.rejects(createError(411));
 
 
             fakeImageConverter.createDocumentFromStream.resolves(undefined);
@@ -487,7 +487,7 @@ describe('pdf-service', () => {
             } as any);
             fakeFs.createWriteStream.returns({} as any);
             fakeFs.createReadStream.onSecondCall().returns(undefined as any);
-            fakeS3Service.uploadObject.rejects(new Error('non-http error'));
+            fakeS3Service.simpleWriteObject.rejects(new Error('non-http error'));
 
 
             fakeImageConverter.createDocumentFromStream.resolves(undefined);
@@ -515,7 +515,7 @@ describe('pdf-service', () => {
             } as any);
             fakeFs.createWriteStream.returns({} as any);
             fakeFs.createReadStream.onSecondCall().returns(undefined as any);
-            fakeS3Service.uploadObject.resolves();
+            fakeS3Service.simpleWriteObject.resolves();
 
             fakeImageConverter.createDocumentFromStream.resolves(undefined);
             fakeImageConverter.generatePageImage.resolves(Readable.from(Buffer.from('data')));
