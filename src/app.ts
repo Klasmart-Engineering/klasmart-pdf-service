@@ -14,10 +14,12 @@ import { cleanupTempFile } from './middleware/temp-file-cleanup';
 import { contentLengthFilter } from './middleware/content-length-filter';
 import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
+import { version } from '../package.json';
 
 const log = withLogger('app');
 
 log.info(`Starting in node environtment: ${process.env.NODE_ENV}`)
+log.info(`Running pdf-service v${version}`)
 
 const app = express();
 app.disable('x-powered-by');
