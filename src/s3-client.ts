@@ -71,7 +71,7 @@ export const simpleWriteObject = async (key: string, stream: JPEGStream): Promis
         await s3Client.send(uploadCommand);
     } catch (err) {
         log.error(err.stack);
-        throw createError(5500, `Error sending PutObjectCommand to S3: ${JSON.stringify(err)}`);
+        throw createError(500, `Error sending PutObjectCommand to S3: ${JSON.stringify(err)}`);
     }
 }
 

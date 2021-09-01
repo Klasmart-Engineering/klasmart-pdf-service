@@ -3,8 +3,9 @@ import sinon from 'sinon';
 import rewire from 'rewire';
 import * as s3Service from '../../src/s3-client';
 import { S3Client } from '@aws-sdk/client-s3';
-import { PassThrough } from 'stream';
+import { PassThrough, Readable } from 'stream';
 import chaiAsPromised from 'chai-as-promised';
+import { HttpError } from 'http-errors';
 
 chai.use(chaiAsPromised);
 chai.should();
@@ -12,6 +13,11 @@ chai.should();
 describe('s3-client', () => {
     const testKey = 'some-key/file.pdf';
     const sandbox = sinon.createSandbox();
+
+    const mockS3Client = new S3Client({});
+    s3Service.initialize(mockS3Client);
+    const s3ClientSendStub = sandbox.stub(mockS3Client, 'send');
+
     afterEach(() => {
         sandbox.reset();
     })
@@ -51,13 +57,6 @@ describe('s3-client', () => {
     });
 
     describe('readObject', () => {
-        const mockS3Client = new S3Client({});
-        s3Service.initialize(mockS3Client);
-        const s3ClientSendStub = sandbox.stub(mockS3Client, 'send');
-
-        afterEach(() => {
-            s3ClientSendStub.reset();
-        })
 
         it('should reject bubbling error when send throws with a non-404 error', async () => {
             const expectedError = new Error('rejected-standard-testing-error');
@@ -85,5 +84,22 @@ describe('s3-client', () => {
             await s3Service.readObject(testKey)
                 .should.eventually.equal(expected);
         });
+    });
+
+    describe('simpleWriteObject', () => {
+
+        it('should resolve when s3Client.send resolves', async () => {
+            s3ClientSendStub.resolves();
+            await s3Service.simpleWriteObject('key', Readable.from(Buffer.from('')))
+                .should.eventually.be.undefined;
+        });
+
+        it('should reject with HttpError and status 500 when send rejects', async () => {
+            s3ClientSendStub.rejects(new Error('some-error'));
+            await s3Service.simpleWriteObject('key', Readable.from(Buffer.from('')))
+                .should.eventually.be.rejectedWith(HttpError)
+                .and.should.eventually.have.property('status').that.equals(500);
+        });
     })
+
 })
