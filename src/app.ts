@@ -49,6 +49,7 @@ app.use(contentLengthFilter({ maxLength: 524_288_000 }))
 
 app.use((_, response: Response, next: NextFunction) => {
     response.set(`Access-Control-Allow-Origin`, `*`);
+    response.set(`Access-Control-Allow-Headers`, `Content-Type`);
     next();
 });
 
