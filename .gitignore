@@ -9,3 +9,4 @@ coverage
 src/core
 test/**
 lambda.zip
+newrelic_agent.log
