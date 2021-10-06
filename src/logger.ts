@@ -1,3 +1,4 @@
+import newrelicFormatter from '@newrelic/winston-enricher';
 import winston, { Logger } from 'winston';
 
 type NPMLoggingLevels = 'silly' | 'debug' | 'verbose' | 'http' | 'info' | 'warn' | 'error';
@@ -48,7 +49,7 @@ const createJsonLogger = (label: string, level?: NPMLoggingLevels) => {
         format: winston.format.combine(
             winston.format.label({ label }),
             winston.format.timestamp(),
-            winston.format.json(),
+            newrelicFormatter()
         ),
         transports: [
             new winston.transports.Console()
