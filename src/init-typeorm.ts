@@ -1,5 +1,5 @@
 import { Connection, createConnection } from 'typeorm';
-import { withLogger } from './logger';
+import { withLogger } from 'kidsloop-nodejs-logger';
 import { PDFMetadata } from './models/PDFMetadata';
 
 const log = withLogger('init-typeorm');

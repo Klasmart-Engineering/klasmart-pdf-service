@@ -2,8 +2,8 @@ import Canvas, { JPEGStream } from 'canvas';
 import createHttpError from 'http-errors';
 import * as pdf from 'pdfjs-dist/legacy/build/pdf.js';
 import { PDFDocumentProxy, } from 'pdfjs-dist/types/src/display/api';
-import { withLogger } from './logger';
 import { DocumentInitParameters } from 'pdfjs-dist/types/src/display/api';
+import { withCorrelation, withLogger } from 'kidsloop-nodejs-logger';
 
 const DEFAULT_SCALE = 3;
 const DEFAULT_JPEG_IMAGE_QUALITY = 0.99;
@@ -34,6 +34,9 @@ export const createDocumentFromStream = async (pdfUrl: string): Promise<PDFDocum
       cMapUrl: CMAP_URL,
       cMapPacked: CMAP_PACKED,
       standardFontDataUrl: STANDARD_FONT_DATA_URL,
+      httpHeaders: {
+        "x-correlation-id": withCorrelation()
+      }
     }).promise;
   } catch (err) {
     log.error(`Error creating PDF document proxy: ${err.message}`);
@@ -62,6 +65,9 @@ export const validatePDFTextContent = async (config: DocumentInitParameters): Pr
     cMapPacked: CMAP_PACKED,
     standardFontDataUrl: STANDARD_FONT_DATA_URL,
     stopAtErrors: true,
+    Headers: {
+      "x-correlation-id": withCorrelation()
+    },
     ...config
   };
   try {
