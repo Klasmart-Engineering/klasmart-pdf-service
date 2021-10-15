@@ -2,8 +2,8 @@ import Canvas, { JPEGStream } from 'canvas';
 import createHttpError from 'http-errors';
 import * as pdf from 'pdfjs-dist/legacy/build/pdf.js';
 import { PDFDocumentProxy, } from 'pdfjs-dist/types/src/display/api';
-import { withLogger } from './logger';
 import { DocumentInitParameters } from 'pdfjs-dist/types/src/display/api';
+import { withLogger } from 'kidsloop-nodejs-logger';
 
 const DEFAULT_SCALE = 3;
 const DEFAULT_JPEG_IMAGE_QUALITY = 0.99;

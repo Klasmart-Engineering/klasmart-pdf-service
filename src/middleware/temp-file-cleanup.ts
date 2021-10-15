@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 import fs from 'fs';
-import { withLogger } from '../logger';
+import { withLogger } from 'kidsloop-nodejs-logger';
 
 const log = withLogger('temp-file-cleanup');
 

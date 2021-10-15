@@ -5,7 +5,6 @@ import 'regenerator-runtime/runtime'
 import express, { NextFunction, Response } from 'express';
 import * as typeormConfig from './init-typeorm';
 import * as pdfService from './pdf-service';
-import { withLogger } from './logger';
 import * as s3Service from './s3-client';
 import { errorHandler } from './util/error-handler';
 import { appRouter } from './routers/app.router';
@@ -16,6 +15,8 @@ import { contentLengthFilter } from './middleware/content-length-filter';
 import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
 import { version } from '../package.json';
+import { correlationMiddleware, withLogger } from 'kidsloop-nodejs-logger';
+
 
 const log = withLogger('app');
 
@@ -43,6 +44,7 @@ app.get(`/.well-known/express/server-health`, (_, response: Response) => {
 });
 
 app.use(cookieParser());
+app.use(correlationMiddleware());
 app.use(kidsloopAuthMiddleware({
     logger: withLogger('kidsloopAuthMiddleware')
 }));
