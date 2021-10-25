@@ -36,7 +36,7 @@
     "core-js": "^3.14.0",
     "express": "^4.17.1",
     "http-errors": "^1.8.0",
-    "kidsloop-nodejs-logger": "bitbucket:calmisland/kidsloop-nodejs-logger#v0.1.13",
+    "kidsloop-nodejs-logger": "bitbucket:calmisland/kidsloop-nodejs-logger#v0.1.14",
     "kidsloop-token-validation": "bitbucket:calmisland/kidsloop-token-validation#v1.2.2",
     "newrelic": "^8.5.0",
     "node-cache": "^5.1.2",
