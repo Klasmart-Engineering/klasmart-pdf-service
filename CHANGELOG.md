@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.3.6](https://bitbucket.org/calmisland/kidsloop-pdf-service/compare/v0.3.5...v0.3.6) (2021-10-25)
+
+
+### Bug Fixes
+
+* regenerate package-lock ([342ebac](https://bitbucket.org/calmisland/kidsloop-pdf-service/commit/342ebac3c8be76d0644ea786224490d8acde3dc6))
+
 ### [0.3.5](https://bitbucket.org/calmisland/kidsloop-pdf-service/compare/v0.3.3...v0.3.5) (2021-10-25)
 
 
