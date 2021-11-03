@@ -31,7 +31,7 @@ pipelines:
         image: node:lts
         script:
           - npm ci --only=production
-          - npm audit fix
+          - npm audit fix --production
         caches:
           - nodemodules
         artifacts:
