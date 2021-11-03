@@ -14,4 +14,5 @@ COPY tsconfig.json tsconfig.json
 COPY ./package*.json ./
 COPY ./api.yaml ./api.yaml
 COPY src/ src/
-ENTRYPOINT ["npx", "ts-node", "./src/app.ts"]
+COPY docker-startup.sh ./
+ENTRYPOINT ["sh", "./docker-startup.sh"]
