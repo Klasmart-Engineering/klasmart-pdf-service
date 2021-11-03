@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.3.12](https://bitbucket.org/calmisland/kidsloop-pdf-service/compare/v0.3.11...v0.3.12) (2021-11-03)
+
+
+### Bug Fixes
+
+* **pipeline:** add production flag to audit fix ([7b96f1c](https://bitbucket.org/calmisland/kidsloop-pdf-service/commit/7b96f1ce4eab5c63cdaa3a200c4111bf19ce586b))
+
 ### [0.3.11](https://bitbucket.org/calmisland/kidsloop-pdf-service/compare/v0.3.10...v0.3.11) (2021-11-03)
 
 ### [0.3.10](https://bitbucket.org/calmisland/kidsloop-pdf-service/compare/v0.3.9...v0.3.10) (2021-10-29)
