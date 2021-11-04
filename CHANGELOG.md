@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.3.16](https://bitbucket.org/calmisland/kidsloop-pdf-service/compare/v0.3.15...v0.3.16) (2021-11-04)
+
+
+### Bug Fixes
+
+* bumped logger version to consistently provide entity.guid value in logs ([f47419a](https://bitbucket.org/calmisland/kidsloop-pdf-service/commit/f47419ac688a6926436794dbf7c3701a8d419498))
+
 ### [0.3.15](https://bitbucket.org/calmisland/kidsloop-pdf-service/compare/v0.3.14...v0.3.15) (2021-11-04)
 
 
