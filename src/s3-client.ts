@@ -85,6 +85,7 @@ export const readObject = async (key: string): Promise<Readable | undefined> => 
     log.debug(`sending object request for: ${key}`);
     try {
         const response = await s3Client.send(command);
+        log.debug(`S3 object stream retrieved with Content-Length: ${response.ContentLength}`);
         return response.Body as Readable;
     } catch (error) {
         /* 

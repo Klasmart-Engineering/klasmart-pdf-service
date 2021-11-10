@@ -174,9 +174,11 @@ export async function getPDFPage(pdfName: string, page: number, pdfURL: URL): Pr
         // 404/403 errors are expected here, so don't rethrow these
         if (!(err instanceof HttpError)) {
             // We can probably continue here, this error may indicate a problem but won't prevent us from trying other things
-            log.warn(`Unexpected error in initial S3 request: ${err.message}`)
+            log.warn(`Unexpected error in initial S3 request: ${err.message}`);
         } else if (![403, 404].includes(err.status)) {
             throw err;
+        } else {
+            log.warn(`Unexpected HTTP error in initial S3 request: ${err.message}`);
         }
     }
 
