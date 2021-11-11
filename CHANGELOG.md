@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.3.18](https://bitbucket.org/calmisland/kidsloop-pdf-service/compare/v0.3.17...v0.3.18) (2021-11-11)
+
+
+### Bug Fixes
+
+* **KLL-1913:** add catch to deletion of tempFile in pdf-service to prevent crash due to async error ([0c96475](https://bitbucket.org/calmisland/kidsloop-pdf-service/commit/0c96475d9aee25d0b97d8df3c1b74b3ce1dfb479))
+
 ### [0.3.17](https://bitbucket.org/calmisland/kidsloop-pdf-service/compare/v0.3.16...v0.3.17) (2021-11-11)
 
 
