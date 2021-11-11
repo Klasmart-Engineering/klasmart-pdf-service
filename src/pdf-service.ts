@@ -1,4 +1,4 @@
-import { getManager, LessThanOrEqual } from 'typeorm';
+import { getManager } from 'typeorm';
 import { PDFMetadata } from './models/PDFMetadata'
 import * as imageConverter from './image-converter';
 import { ValidationResult } from './image-converter';
@@ -203,6 +203,9 @@ export async function getPDFPage(pdfName: string, page: number, pdfURL: URL): Pr
         stream.on('close', () => {
             log.debug(`Removing temporary file: ${tempFilename}`);
             fs.promises.rm(tempFilename)
+                .catch(err => {
+                    log.error(`Error removing temporary file. Caused by: ${err.stack}`);
+                })
         });
     } catch (err) {
         log.error(`Error rendering PDF page: ${err.message}`)
