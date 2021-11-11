@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.3.20](https://bitbucket.org/calmisland/kidsloop-pdf-service/compare/v0.3.19...v0.3.20) (2021-11-11)
+
+
+### Bug Fixes
+
+* **KLL-1913:** remove old testing code that wrote file to OS with potentially bad path ([5f99d61](https://bitbucket.org/calmisland/kidsloop-pdf-service/commit/5f99d61ed8d9e7af101e83ed14bc637475e6eeb8))
+
 ### [0.3.19](https://bitbucket.org/calmisland/kidsloop-pdf-service/compare/v0.3.18...v0.3.19) (2021-11-11)
 
 
