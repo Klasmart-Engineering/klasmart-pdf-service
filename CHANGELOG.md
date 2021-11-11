@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.3.17](https://bitbucket.org/calmisland/kidsloop-pdf-service/compare/v0.3.16...v0.3.17) (2021-11-11)
+
+
+### Bug Fixes
+
+* Add additional conditional log to catch silent errors and log content length from s3 responses ([864895c](https://bitbucket.org/calmisland/kidsloop-pdf-service/commit/864895c1756d4c0d3e4b80caefab7ca80c700c35))
+* Configure Dockerfile to use node:14.16 rather than lts to match build version of canvas via pdf.js ([d0608d2](https://bitbucket.org/calmisland/kidsloop-pdf-service/commit/d0608d21a9e9d27c703b68c56e30af7e037f55f1))
+
 ### [0.3.16](https://bitbucket.org/calmisland/kidsloop-pdf-service/compare/v0.3.15...v0.3.16) (2021-11-04)
 
 
