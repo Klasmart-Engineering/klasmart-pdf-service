@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.3.19](https://bitbucket.org/calmisland/kidsloop-pdf-service/compare/v0.3.18...v0.3.19) (2021-11-11)
+
+
+### Bug Fixes
+
+* update bitbucket pipeline node versions to match Dockerfile version ([061eb4d](https://bitbucket.org/calmisland/kidsloop-pdf-service/commit/061eb4d7104437a4effb25053a1a6771822774ab))
+
 ### [0.3.18](https://bitbucket.org/calmisland/kidsloop-pdf-service/compare/v0.3.17...v0.3.18) (2021-11-11)
 
 
