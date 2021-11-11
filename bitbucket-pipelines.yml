@@ -9,7 +9,7 @@ pipelines:
           script:
             - pipe: atlassian/git-secrets-scan:0.5.1
       - step:
-          image: 'node:lts'
+          image: 'node:14.16'
           name: 'Linter'
           script: 
             - npm config set dev true 
@@ -18,7 +18,7 @@ pipelines:
             - npx eslint . --ext .js,.jsx,.ts,.tsx
       - step:
           name: 'Test'
-          image: 'node:lts'
+          image: 'node:14.16'
           script:
             - npm i --no-progress
             - npm i -g gulp
@@ -28,7 +28,7 @@ pipelines:
     alpha:
     - step: 
         name: 'Fetch NPM dependencies'
-        image: node:lts
+        image: node:14.16
         script:
           - npm ci --only=production
           - npm audit fix --production
@@ -54,7 +54,7 @@ pipelines:
     production:
     - step: 
         name: 'Fetch NPM dependencies'
-        image: node:lts
+        image: node:14.16
         script:
           - npm ci --only=production
           - npm audit fix
