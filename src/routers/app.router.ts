@@ -3,7 +3,7 @@ import createError from 'http-errors';
 import * as pdfService from '../pdf-service';
 import Readable from 'stream';
 import pug from 'pug';
-import { withLogger, withCorrelation } from 'kidsloop-nodejs-logger';
+import { withLogger } from 'kidsloop-nodejs-logger';
 import { Authorized, AuthType } from '../middleware/Access';
 import { AllowedContentTypes } from '../middleware/ContentTypeFilter';
 

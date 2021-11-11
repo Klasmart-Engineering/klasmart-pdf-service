@@ -20,8 +20,8 @@ import { correlationMiddleware, withLogger } from 'kidsloop-nodejs-logger';
 
 const log = withLogger('app');
 
-log.info(`Starting in node environtment: ${process.env.NODE_ENV}`)
-log.info(`Running pdf-service v${version}`)
+log.info(`Starting in node environment: ${process.env.NODE_ENV}`)
+log.info(`Running pdf-service v${version} on Node ${process.version}`)
 
 const app = express();
 app.disable('x-powered-by');

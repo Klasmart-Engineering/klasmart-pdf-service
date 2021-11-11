@@ -1,4 +1,4 @@
-import { getManager } from 'typeorm';
+import { getManager, LessThanOrEqual } from 'typeorm';
 import { PDFMetadata } from './models/PDFMetadata'
 import * as imageConverter from './image-converter';
 import { ValidationResult } from './image-converter';
@@ -176,6 +176,7 @@ export async function getPDFPage(pdfName: string, page: number, pdfURL: URL): Pr
             // We can probably continue here, this error may indicate a problem but won't prevent us from trying other things
             log.warn(`Unexpected error in initial S3 request: ${err.message}`);
         } else if (![403, 404].includes(err.status)) {
+            log.silly(`Page render not found on S3.`);
             throw err;
         } else {
             log.warn(`Unexpected HTTP error in initial S3 request: ${err.message}`);
@@ -190,6 +191,8 @@ export async function getPDFPage(pdfName: string, page: number, pdfURL: URL): Pr
         log.debug('Resolved, page is prerendered');
         const stream = await s3Service.readObject(pageKey);
         if (stream) return stream;
+    } else {
+        log.silly(`Page key not found in cache.`);
     }
 
     let stream;
