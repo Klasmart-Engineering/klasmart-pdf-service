@@ -254,10 +254,6 @@ async function renderSinglePage(pageKey: string, pdfURL: URL, page: number): Pro
         }
 
         log.info('Reading temp file from file system');
-        fs.createReadStream(filename).pipe(
-            fs.createWriteStream(`rewrite-${filename}`)
-        );
-
         const readStream = fs.createReadStream(filename);
 
         log.info('Sending data to S3');
