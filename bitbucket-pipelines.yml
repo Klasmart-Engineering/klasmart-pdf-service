@@ -42,10 +42,13 @@ pipelines:
         script:
           - pip3 install -U awscli
           - export REPO=$DOCKER_REPO_URL/kidsloop-pdf-service
+          - export SEMVAR=$(node -e "const p = require('./package.json'); console.log(p.version);")
           - aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin $DOCKER_REPO_URL
           - docker build -f Dockerfile -t pdf-service --target build .
           - docker tag pdf-service:latest $REPO:alpha
+          - docker tag pdf-service:$SEMVAR $REPO:$SEMVAR
           - docker push $REPO:alpha
+          - docker push $REPO:$SEMVAR
         services:
           - docker
         caches:
@@ -70,10 +73,15 @@ pipelines:
           - export BRANCH_TAG=$(echo "$BITBUCKET_BRANCH" | sed -E 's/([^0-9a-zA-Z]+)/-/g' | awk '{print tolower($0)}')
           - export REPO=$DOCKER_REPO_URL/kidsloop-pdf-service
           - export COMMIT_TAG=$(echo $BITBUCKET_COMMIT | cut -c1-7)
+          - export SEMVAR=$(node -e "const p = require('./package.json'); console.log(p.version);")
           - aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin $DOCKER_REPO_URL
           - docker build -t pdf-service -f Dockerfile --target build .
           - docker tag pdf-service:latest $REPO:$BRANCH_TAG-$COMMIT_TAG
+          - docker tag pdf-service:latest $REPO:$SEMVAR-$COMMIT_TAG
+          - docker tag pdf-service:latest $REPO:$SEMVAR
           - docker push $REPO:$BRANCH_TAG-$COMMIT_TAG
+          - docker push $REPO:$SEMVAR-$COMMIT_TAG
+          - docker push $REPO:$SEMVAR
         services:
           - docker
         size: 2x
