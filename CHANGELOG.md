@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.3.21](https://bitbucket.org/calmisland/kidsloop-pdf-service/compare/v0.3.20...v0.3.21) (2021-11-23)
+
+
+### Bug Fixes
+
+* **pipeline:** replace node script for python script as when semvar is calculated pipeline is running in a python container ([3d2c033](https://bitbucket.org/calmisland/kidsloop-pdf-service/commit/3d2c033fc49a61a0987eefacdb6d252a2367caa0))
+
 ### [0.3.20](https://bitbucket.org/calmisland/kidsloop-pdf-service/compare/v0.3.19...v0.3.20) (2021-11-11)
 
 
