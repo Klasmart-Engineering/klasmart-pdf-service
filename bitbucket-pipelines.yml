@@ -42,12 +42,17 @@ pipelines:
         script:
           - pip3 install -U awscli
           - export REPO=$DOCKER_REPO_URL/kidsloop-pdf-service
-          - export SEMVAR=$(python3 -c "import json;f = open('package.json'); print(json.load(f)['version'])")
+          - export SEMVAR=$(git tag -l --contains HEAD)
           - aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin $DOCKER_REPO_URL
           - docker build -f Dockerfile -t pdf-service --target build .
           - docker tag pdf-service:latest $REPO:alpha
-          - docker tag pdf-service:$SEMVAR $REPO:$SEMVAR
           - docker push $REPO:alpha
+          - |
+            if [ "${#SEMVAR}" -ge 2 ]; then
+              docker tag pdf-service:latest $REPO:$SEMVAR
+              docker push $REPO:$SEMVAR 
+            fi
+          - docker tag pdf-service:latest $REPO:$SEMVAR
           - docker push $REPO:$SEMVAR
         services:
           - docker
