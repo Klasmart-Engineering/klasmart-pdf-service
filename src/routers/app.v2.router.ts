@@ -11,7 +11,7 @@ export const appRouterV2 = Router();
 const log = withLogger('app.v2.router');
 
 appRouterV2.post(`/validate`, 
-    // Authorized(AuthType.Authenticated), 
+    Authorized(AuthType.Authenticated), 
     AllowedContentTypes('application/pdf'),
     async (request: Request, response: Response, next: NextFunction) => {
         try {
@@ -26,7 +26,7 @@ appRouterV2.post(`/validate`,
 );
 
 appRouterV2.get(`/validate/:key`,
-    // Authorized(AuthType.Authenticated),
+    Authorized(AuthType.Authenticated),
     async (request: Request, response: Response, next: NextFunction) => {
         try {
             const key = request.params.key;
