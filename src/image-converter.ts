@@ -4,6 +4,7 @@ import * as pdf from 'pdfjs-dist/legacy/build/pdf.js';
 import { PDFDocumentProxy, } from 'pdfjs-dist/types/src/display/api';
 import { DocumentInitParameters } from 'pdfjs-dist/types/src/display/api';
 import { withCorrelation, withLogger } from 'kidsloop-nodejs-logger';
+import fs from 'fs';
 
 const DEFAULT_SCALE = 3;
 const DEFAULT_JPEG_IMAGE_QUALITY = 0.99;
@@ -25,8 +26,8 @@ export interface ValidationResult {
   length?: number;
 }
 
-export const createDocumentFromStream = async (pdfUrl: string): Promise<PDFDocumentProxy> => {
-  log.debug('creating document');
+export const createDocumentFromUrl = async (pdfUrl: string): Promise<PDFDocumentProxy> => {
+  log.debug('creating document from URL');
   try {
     // ? Note: await here allows for exceptions thrown by the promise to be caught in the catch block
     return await pdf.getDocument({
@@ -46,6 +47,24 @@ export const createDocumentFromStream = async (pdfUrl: string): Promise<PDFDocum
     if (err.name === `MissingPDFException`) throw createHttpError(404, 'PDF with provided key not found');
      
     throw createHttpError(500, 'Error encountered creating PDF document');
+  }
+}
+
+export async function createDocumentFromOS(path: string): Promise<PDFDocumentProxy> {
+  log.debug('Creating document from read stream');
+  const buffer = await fs.promises.readFile(path);
+  try {
+    return pdf.getDocument({
+      data: buffer,
+      cMapUrl: CMAP_URL,
+      cMapPacked: CMAP_PACKED,
+      standardFontDataUrl: STANDARD_FONT_DATA_URL,
+      stopAtErrors: true
+    }).promise;
+  } catch (err) {
+    const message = err instanceof Error ? err.stack : err;
+    log.error(`Error creating PDF document from file system: ${message}`);
+    throw err;
   }
 }
 

@@ -14,14 +14,24 @@ import createHttpError from 'http-errors';
 import { v4 as uuidV4 } from 'uuid';
 import { Request } from 'express';
 import { DocumentInitParameters } from 'pdfjs-dist/types/src/display/api';
+import { PDFDocumentProxy, } from 'pdfjs-dist/types/src/display/api';
+import { ValidationStatus } from './interfaces/validation-status';
 
 const log = withLogger('pdf-service');
 
 let pageResolutionCache: NodeCache;
 const defaultCacheProps = {
     stdTTL: 100,
-    checkperiod: 60
+    checkperiod: 60,
+    deleteOnExpire: true
 }
+
+const validationCache = new NodeCache({
+    stdTTL: 300,
+    checkperiod: 60 * 30,
+    useClones: false,
+    deleteOnExpire: true
+});
 
 /**
  * Provides configuration for the PDF service
@@ -29,12 +39,19 @@ const defaultCacheProps = {
  */
 export function initialize(cache: NodeCache = new NodeCache(defaultCacheProps)): void {
     pageResolutionCache = cache;
-
     if (process.env.CMS_BASE_URL) {
         log.info(`Registering CMS asset location: ${process.env.CMS_BASE_URL}`)
     } else {
         log.warn(`CMS_BASE_URL not configured! PDF resource locations may be unreachable!`);
     }
+
+    validationCache.on('expire', (key) => {
+        log.debug(`Validation status result with key ${key} has expired`);
+    })
+}
+
+export async function getAsyncValidationStatus(key: string): Promise<ValidationStatus | undefined> {
+    return validationCache.get(key);
 }
 
 export async function validateCMSPDF(pdfName: string) : Promise<ValidationResult> {
@@ -109,6 +126,90 @@ export async function validatePostedPDF(request: Request, registerTempFile: (fil
 
     // Return values
     return { ...valid, hash: hashString, length };
+}
+
+export async function validatePostedPDFAsync(request: Request): Promise<ValidationStatus> {
+    // Generate Key
+    const key = uuidV4();
+    
+    // Write PDF to temporary file
+    const fileLocation = `./${key}.pdf`;
+    await writeStreamToTempFile(fileLocation, request);
+    
+    // Get initial metadata
+    let document: PDFDocumentProxy;
+    try {   
+        document = await imageConverter.createDocumentFromOS(fileLocation);
+    } catch (err) {
+        // Immediate failure case
+        const failureStatus: ValidationStatus = { key, validationComplete: true, valid: false, totalPages: undefined, pagesValidated: undefined };
+        validationCache.set(key, failureStatus);
+        return failureStatus;
+    }
+
+    const totalPages = document.numPages;
+    const initialStatus: ValidationStatus = {
+        key,
+        pagesValidated: 0,
+        totalPages,
+        valid: undefined,
+        validationComplete: false
+    }
+
+    validationCache.set(key, initialStatus);
+    
+
+    // Trigger validation process
+    cachedValidatePDF(key, fileLocation, totalPages);
+
+    // Write response to client
+    return initialStatus;
+}
+
+async function cachedValidatePDF(key: string, fileLocation: string, pages: number) {
+    const documentReloadFrequency = 20;
+    let document: PDFDocumentProxy = await imageConverter.createDocumentFromOS(fileLocation);
+    const validationStatus: ValidationStatus = {
+        key,
+        pagesValidated: 0,
+        totalPages: pages,
+        valid: undefined,
+        validationComplete: false
+    };
+    log.verbose(`Beginning validation check of ${pages} pages for PDF with key ${key}`)
+
+    for(let i = 1; i <= pages; i++) {
+        log.silly(`Validating page ${i} for pdf with key: ${key}`)
+        if (i % documentReloadFrequency === 0) document = await imageConverter.createDocumentFromOS(fileLocation);
+        try {
+            await document.getPage(i);
+            validationStatus.pagesValidated = i;
+            validationCache.set(key, validationStatus);
+        } catch (err) {
+            validationStatus.valid = false;
+            validationStatus.validationComplete = true;
+            validationCache.set(key, validationStatus);
+            deleteTemporaryValidationPDF(key, fileLocation);
+            return;
+        }
+    }
+    validationStatus.valid = true;
+    validationStatus.validationComplete = true;
+    validationCache.set(key, validationStatus);
+    deleteTemporaryValidationPDF(key, fileLocation);
+
+}
+
+export async function deleteTemporaryValidationPDF(key: string, fileLocation: string): Promise<undefined> {
+    log.silly(`Validation check for PDF with key ${key} completed, deleting local file: ${fileLocation}.`)
+    try {
+        await fs.promises.rm(fileLocation);
+        log.verbose(`Deleted temporary file with key: ${key}`);
+    } catch (err) {
+        const message = err instanceof Error ? err.stack : err;
+        log.error(`Error deleting temporary file with key ${key} at ${fileLocation} following validationCache expired: ${message}`);
+    }
+    return;
 }
 
 export async function getPDFPages(pdfURL: URL):Promise<number> {
@@ -220,7 +321,7 @@ export async function getPDFPage(pdfName: string, page: number, pdfURL: URL): Pr
 }
 
 export async function getDirectPageRender(page: number, pdfURL: URL): Promise<JPEGStream> {
-    const document = await imageConverter.createDocumentFromStream(pdfURL.toString());
+    const document = await imageConverter.createDocumentFromUrl(pdfURL.toString());
     return imageConverter.generatePageImage(document, page);
 }
 
@@ -235,7 +336,7 @@ async function renderSinglePage(pageKey: string, pdfURL: URL, page: number): Pro
             throw createError(404, `Document does not contain page: ${page}`)
         }
         
-        const document = await imageConverter.createDocumentFromStream(pdfURL.toString());
+        const document = await imageConverter.createDocumentFromUrl(pdfURL.toString());
 
         const jpegStream = await imageConverter.generatePageImage(document, page);
 
@@ -307,7 +408,7 @@ async function writeStreamToTempFile (filename: string, stream: JPEGStream): Pro
 async function initializeMetadata(pdfURL: URL) {
     log.debug(`Creating document for pdf located at ${pdfURL.toString()}`); 
     try {
-        const document = await imageConverter.createDocumentFromStream(pdfURL.toString());
+        const document = await imageConverter.createDocumentFromUrl(pdfURL.toString());
         const pages = document.numPages;
         log.debug(`${pages} detected.`)
         const pdfMetadata = new PDFMetadata(pdfURL.toString().toLowerCase(), pages, 0);

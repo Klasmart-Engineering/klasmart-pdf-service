@@ -8,6 +8,7 @@ import * as pdfService from './pdf-service';
 import * as s3Service from './s3-client';
 import { errorHandler } from './util/error-handler';
 import { appRouter } from './routers/app.router';
+import { appRouterV2 } from './routers/app.v2.router';
 import cookieParser from 'cookie-parser';
 import { kidsloopAuthMiddleware } from 'kidsloop-token-validation'
 import { cleanupTempFile } from './middleware/temp-file-cleanup';
@@ -58,6 +59,8 @@ app.use(express.json());
 
 log.info(`Registering static file access to '/static'`);
 app.use(express.static(__dirname + '/static'));
+
+app.use(`${routePrefix}/v2`, appRouterV2);
 
 log.info(`Registering appRouter with prefix: ${routePrefix}`)
 app.use(routePrefix, appRouter);
