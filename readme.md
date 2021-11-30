@@ -20,7 +20,7 @@ The API is documented using OpenAPI 3.0 specification and served at /pdf/api-doc
 - CMS_BASE_URL - Base URL of CMS. PDFs will be loaded using a URL pattern with this URL as the base.
 - IMAGE_SCALE - (floating point value). Controls the image scale used to render PDF pages. This will affect the resulting size of image and can have significant effects on image quality, particular for JPEGs. If not defined the application will default to a scale of 3.0
 - JPEG_QUALITY - (floating point value between 0-1) Controls the level of quality/compression of the JPEG. Higher values reduce JPEG compression artifacts at the cost of additional file size. If not defined the application defaults to 0.99.
-
+- KL_DOMAIN - Root domain of Kidsloop Live. Used when configuring CORS to allow for subdomains of KLL
 ### S3 Environment Variables
 - AWS_SECRET_KEY_NAME - Name (ID) of AWS secret key with access to S3 bucket - Not needed for deployed services
 - AWS_SECRET_KEY - Secret key value with access to S3 bucket - Not needed for deployed services

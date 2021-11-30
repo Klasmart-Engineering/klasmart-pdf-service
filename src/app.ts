@@ -2,7 +2,7 @@ import 'newrelic';
 import 'reflect-metadata';
 import 'core-js/stable'
 import 'regenerator-runtime/runtime'
-import express, { NextFunction, Response } from 'express';
+import express, { Response } from 'express';
 import * as typeormConfig from './init-typeorm';
 import * as pdfService from './pdf-service';
 import * as s3Service from './s3-client';
@@ -16,6 +16,7 @@ import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
 import { version } from '../package.json';
 import { correlationMiddleware, withLogger } from 'kidsloop-nodejs-logger';
+import { corsMiddleware } from './middleware/cors-middleware';
 
 
 const log = withLogger('app');
@@ -29,6 +30,7 @@ app.disable('x-powered-by');
 const port = process.env.PORT || 32891;
 
 const routePrefix = process.env.ROUTE_PREFIX || '/pdf';
+
 
 /* #region Initialization */
 typeormConfig.initialize();
@@ -50,11 +52,7 @@ app.use(kidsloopAuthMiddleware({
 }));
 app.use(contentLengthFilter({ maxLength: 524_288_000 }))
 
-app.use((_, response: Response, next: NextFunction) => {
-    response.set(`Access-Control-Allow-Origin`, `*`);
-    response.set(`Access-Control-Allow-Headers`, `Content-Type`);
-    next();
-});
+app.use(corsMiddleware);
 
 app.use(express.json());
 
