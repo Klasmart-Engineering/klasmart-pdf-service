@@ -6,6 +6,10 @@ html(lang="en")
             include css/styles.css
     body
         div(id="viewerContainer")
-            img(src='/pdf/'+pdfName+'/page/'+1, data-page-num=1, class='pdf-page-img')
+            img(src='/pdf/'+pdfName+'/page/'+1, data-page-num=1, class='pdf-page-img', id='pdf-page-1')
             each page, k in pages
-                img(src='/pdf/'+pdfName+'/page/'+(k+2), loading='lazy', data-page-num=k+2, class='pdf-page-img')
+                img(data-src='/pdf/'+pdfName+'/page/'+(k+2), data-page-num=k+2, class='pdf-page-img', id='pdf-page-'+(k+2))
+        script
+            include js/image-size-adjuster.js
+        script(class='.rr-ignore')
+            include js/pdf-lazy-loader.js
