@@ -52,7 +52,7 @@ app.use(kidsloopAuthMiddleware({
 }));
 app.use(contentLengthFilter({ maxLength: 524_288_000 }))
 
-app.use(corsMiddleware);
+app.use(corsMiddleware());
 
 app.use(express.json());
 
