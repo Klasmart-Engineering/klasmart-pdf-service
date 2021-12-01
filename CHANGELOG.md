@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.3.22](https://bitbucket.org/calmisland/kidsloop-pdf-service/compare/v0.3.21...v0.3.22) (2021-12-01)
+
+
+### Features
+
+* **KLL-1935:** integrate intersection api to pug template for view.html ([ae426da](https://bitbucket.org/calmisland/kidsloop-pdf-service/commit/ae426da6f76c73e8e3753b3c3efccae7e033daac))
+
+
+### Bug Fixes
+
+* **KLL-2153:** Add configurable domain for validating CORS allowed origins ([bed1ebd](https://bitbucket.org/calmisland/kidsloop-pdf-service/commit/bed1ebd84b7716ece443dec6314da2e99862057d))
+* **lambda:** fix lambda logic to prevent premature termination of lambda session ([697a6b7](https://bitbucket.org/calmisland/kidsloop-pdf-service/commit/697a6b7e78380578df072b711936b8a2974efcf9))
+
 ### [0.3.21](https://bitbucket.org/calmisland/kidsloop-pdf-service/compare/v0.3.20...v0.3.21) (2021-11-23)
 
 
