@@ -18,6 +18,13 @@ const configureRequest = (origin: string): [Request, Response] => {
     ]
 }
 
+function withDomain(domain: string, test: () => void) {
+    const prevKlDomain = process.env.KL_DOMAIN;
+    process.env.KL_DOMAIN = domain;
+    test();
+    process.env.KL_DOMAIN = prevKlDomain;
+}
+
 let corsHandler: (request: Request, response: Response, next: NextFunction) => void;
 
 describe('cors-middleware', () => {
@@ -49,6 +56,15 @@ describe('cors-middleware', () => {
         corsHandler(request, response, () => {})
         expect(response.get('Access-Control-Allow-Origin')).to.equal(defaultOrigin);
     });
+
+    it('should work across different ports in the same domain', () => {
+        withDomain('localhost:23894', () => {
+            const origin = 'https://localhost:8080';
+            const [ request, response ] = configureRequest(origin);
+            corsMiddleware()(request, response, () => {});
+            expect(response.get(`Access-Control-Allow-Origin`)).to.equal(origin);
+        })
+    })
 
     describe('should subdomain address when subdomain is of origin', () => {
         const origins = ['api', 'h5p', 'auth', 'live', 'hub', 'app', 'test', 'dev', 'etc', 's3']

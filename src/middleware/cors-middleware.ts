@@ -24,7 +24,7 @@ export function corsMiddleware(): (request: Request, response: Response, next: N
             // Origin defined, webpage interaction
             log.silly(`Checking origin ${request.get('origin')} to path ${request.path} for allowed CORS usage in the configured environment: ${defaultServiceUrl.host} }`)
             const origin = new URL(request.get('origin') as string);
-            if (origin.hostname.endsWith(defaultServiceUrl.host)) {
+            if (origin.hostname.endsWith(defaultServiceUrl.hostname)) {
                 response.set(`Access-Control-Allow-Origin`, origin.origin);
             } else {
                 response.set(`Access-Control-Allow-Origin`, defaultServiceUrl.origin);
