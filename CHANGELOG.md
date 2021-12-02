@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.3.23](https://bitbucket.org/calmisland/kidsloop-pdf-service/compare/v0.3.22...v0.3.23) (2021-12-02)
+
+
+### Bug Fixes
+
+* **KLL-1935:** fix issue with image size adjustment script causing script execution to fail on page load ([08c532b](https://bitbucket.org/calmisland/kidsloop-pdf-service/commit/08c532b39be3eadfd692b6b1d31a797b445e5edc))
+
 ### [0.3.22](https://bitbucket.org/calmisland/kidsloop-pdf-service/compare/v0.3.21...v0.3.22) (2021-12-01)
 
 
