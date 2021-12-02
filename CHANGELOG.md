@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.3.25](https://bitbucket.org/calmisland/kidsloop-pdf-service/compare/v0.3.24...v0.3.25) (2021-12-02)
+
+
+### Bug Fixes
+
+* **KLL-1935:** set threshold to 0 to allow better flexibility for iframe usage ([d7cbac7](https://bitbucket.org/calmisland/kidsloop-pdf-service/commit/d7cbac7b15a503c1c839c7ec9209a3917c4be324))
+
 ### [0.3.24](https://bitbucket.org/calmisland/kidsloop-pdf-service/compare/v0.3.23...v0.3.24) (2021-12-02)
 
 
