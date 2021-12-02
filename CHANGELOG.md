@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.3.24](https://bitbucket.org/calmisland/kidsloop-pdf-service/compare/v0.3.23...v0.3.24) (2021-12-02)
+
+
+### Bug Fixes
+
+* **1935:** reorganize initialization logic for intersection api implementation ([0a4b1e7](https://bitbucket.org/calmisland/kidsloop-pdf-service/commit/0a4b1e7cabe470cc8768af1990af6bd4ca22527d))
+
 ### [0.3.23](https://bitbucket.org/calmisland/kidsloop-pdf-service/compare/v0.3.22...v0.3.23) (2021-12-02)
 
 
