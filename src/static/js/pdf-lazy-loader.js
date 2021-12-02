@@ -33,7 +33,7 @@ function initialize() {
 
     const intersectionObserver = new IntersectionObserver(handleIntersection, {
         rootMargin: viewportMargin,
-        threshold: 0.5
+        threshold: 0.0
     });
 
     pages.forEach(page => {
