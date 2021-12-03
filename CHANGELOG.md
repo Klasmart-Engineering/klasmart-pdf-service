@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.3.28](https://bitbucket.org/calmisland/kidsloop-pdf-service/compare/v0.3.27...v0.3.28) (2021-12-03)
+
+
+### Bug Fixes
+
+* **CMS-241:** Add Access-Control-Allow-Credentials CORS header to responses ([af55353](https://bitbucket.org/calmisland/kidsloop-pdf-service/commit/af5535319a1e0d24ef9c90397d35d96be3887411))
+
 ### [0.3.27](https://bitbucket.org/calmisland/kidsloop-pdf-service/compare/v0.3.26...v0.3.27) (2021-12-02)
 
 ### [0.3.26](https://bitbucket.org/calmisland/kidsloop-pdf-service/compare/v0.3.25...v0.3.26) (2021-12-02)
