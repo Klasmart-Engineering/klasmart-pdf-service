@@ -21,5 +21,7 @@ body {
   min-width: 500px;
   min-height: 500px;
   margin-bottom: 5px;
+  width: 100%;
+  height: auto;
 }
 
