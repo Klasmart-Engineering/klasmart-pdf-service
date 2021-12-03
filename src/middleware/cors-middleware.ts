@@ -19,7 +19,6 @@ export function corsMiddleware(): (request: Request, response: Response, next: N
         if (!request.get('origin')) {
             log.silly(`origin header not found`)
             response.set(`Access-Control-Allow-Origin`, defaultServiceUrl.origin);
-            response.set(`Access-Control-Allow-Headers`, `Content-Type`);
         } else {
             // Origin defined, webpage interaction
             log.silly(`Checking origin ${request.get('origin')} to path ${request.path} for allowed CORS usage in the configured environment: ${defaultServiceUrl.host} }`)
@@ -29,8 +28,9 @@ export function corsMiddleware(): (request: Request, response: Response, next: N
             } else {
                 response.set(`Access-Control-Allow-Origin`, defaultServiceUrl.origin);
             }
-            response.set(`Access-Control-Allow-Headers`, `Content-Type`);
         }
+        response.set(`Access-Control-Allow-Headers`, `Content-Type`);
+        response.set(`Access-Control-Allow-Credentials`, 'true');
         next();
     }
 }

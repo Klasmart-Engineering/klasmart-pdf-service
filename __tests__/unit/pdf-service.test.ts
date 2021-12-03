@@ -100,7 +100,7 @@ describe('pdf-service', () => {
 
             fakeEntityManager.findOne.resolves(undefined);
             fakeEntityManager.save.resolvesArg(0);
-            fakeImageConverter.createDocumentFromUrl.resolves({ numPages } as PDFDocumentProxy);
+            fakeImageConverter.createDocumentFromStream.resolves({ numPages } as PDFDocumentProxy);
 
             await pdfService.getPDFPages(testUrl)
                 .should.eventually.equal(numPages);
@@ -111,7 +111,7 @@ describe('pdf-service', () => {
 
             fakeEntityManager.findOne.resolves(undefined);
             fakeEntityManager.save.rejects();
-            fakeImageConverter.createDocumentFromUrl.resolves({ numPages } as PDFDocumentProxy);
+            fakeImageConverter.createDocumentFromStream.resolves({ numPages } as PDFDocumentProxy);
 
             await pdfService.getPDFPages(testUrl)
                 .should.eventually.be.rejectedWith('Error')
@@ -119,10 +119,10 @@ describe('pdf-service', () => {
                 .and.have.property('status', 500);
         });
 
-        it ('should reject with 500 if createDocumentFromUrl rejects', async () => {
+        it ('should reject with 500 if createDocumentFromStream rejects', async () => {
             fakeEntityManager.findOne.resolves(undefined);
             fakeEntityManager.save.resolvesArg(0);
-            fakeImageConverter.createDocumentFromUrl.rejects();
+            fakeImageConverter.createDocumentFromStream.rejects();
 
             await pdfService.getPDFPages(testUrl)
                 .should.eventually.be.rejectedWith('Error')
@@ -130,11 +130,11 @@ describe('pdf-service', () => {
                 .and.have.property('status', 500);
         });
 
-        it ('should reject with status code of propagated error from createDocumentFromUrl try-block when the error is an HttpError', async () => {
+        it ('should reject with status code of propagated error from createDocumentFromStream try-block when the error is an HttpError', async () => {
             fakeEntityManager.findOne.resolves(undefined);
             fakeEntityManager.save.resolvesArg(0);
             const expectedError = createError(401, 'sample-test-error')
-            fakeImageConverter.createDocumentFromUrl.rejects(expectedError);
+            fakeImageConverter.createDocumentFromStream.rejects(expectedError);
 
             await pdfService.getPDFPages(testUrl)
                 .should.eventually.be.rejectedWith(expectedError.message)
@@ -205,7 +205,7 @@ describe('pdf-service', () => {
             const expected = Readable.from(Buffer.from('abc'.repeat(100)));
             const page = 10;
             fakeEntityManager.findOne.resolves({totalPages: 1})
-            fakeImageConverter.createDocumentFromUrl.resolves({} as PDFDocumentProxy);
+            fakeImageConverter.createDocumentFromStream.resolves({} as PDFDocumentProxy);
             fakeImageConverter.generatePageImage.resolves(Readable.from(Buffer.from('')))
             fakeS3Service.readObject.onFirstCall().resolves(undefined);
             fakeS3Service.readObject.onSecondCall().resolves(undefined)
@@ -222,7 +222,7 @@ describe('pdf-service', () => {
             const expected = Readable.from(Buffer.from('abc'.repeat(100)));
             const page = 10;
             fakeEntityManager.findOne.resolves(undefined);
-            fakeImageConverter.createDocumentFromUrl.resolves({} as PDFDocumentProxy);
+            fakeImageConverter.createDocumentFromStream.resolves({} as PDFDocumentProxy);
             fakeImageConverter.generatePageImage.resolves(Readable.from(Buffer.from('')))
             fakeS3Service.readObject.onFirstCall().resolves(undefined);
             fakeS3Service.readObject.onSecondCall().resolves(undefined)
@@ -238,7 +238,7 @@ describe('pdf-service', () => {
             const expected = Readable.from(Buffer.from('abc'.repeat(100)));
             const page = 10;
             fakeEntityManager.findOne.resolves({totalPages: 1})
-            fakeImageConverter.createDocumentFromUrl.resolves({} as PDFDocumentProxy);
+            fakeImageConverter.createDocumentFromStream.resolves({} as PDFDocumentProxy);
             fakeImageConverter.generatePageImage.resolves(Readable.from(Buffer.from('')))
             fakeS3Service.readObject.onFirstCall().resolves(undefined);
             fakeS3Service.readObject.onSecondCall().resolves(undefined)
@@ -268,7 +268,7 @@ describe('pdf-service', () => {
 
             // The PDF has been initialized
             fakeEntityManager.findOne.resolves({totalPages: 12})
-            fakeImageConverter.createDocumentFromUrl.resolves({} as PDFDocumentProxy);
+            fakeImageConverter.createDocumentFromStream.resolves({} as PDFDocumentProxy);
             
             // Force all shortcuts to fail, forcing the service to render the page
             fakeS3Service.readObject.onFirstCall().resolves(undefined);
@@ -307,7 +307,7 @@ describe('pdf-service', () => {
 
             // The PDF has been initialized
             fakeEntityManager.findOne.resolves({totalPages: 12})
-            fakeImageConverter.createDocumentFromUrl.resolves({} as PDFDocumentProxy);
+            fakeImageConverter.createDocumentFromStream.resolves({} as PDFDocumentProxy);
             
             // Force all shortcuts to fail, forcing the service to render the page
             fakeS3Service.readObject.onFirstCall().resolves(undefined);
@@ -379,7 +379,7 @@ describe('pdf-service', () => {
             // Throw an error after page validation to simplify test configuration
             const captureStatus = 502;
             const expectedError = createError(captureStatus);
-            fakeImageConverter.createDocumentFromUrl.rejects(expectedError);
+            fakeImageConverter.createDocumentFromStream.rejects(expectedError);
 
             await rewiredPdfService.__get__('renderSinglePage')('key', new URL('https://pdf-service.com/pdf.pdf'), page)
                 .should.eventually.be.rejected
@@ -396,7 +396,7 @@ describe('pdf-service', () => {
             // Throw an error after page validation to simplify test configuration
             const captureStatus = 502;
             const expectedError = createError(captureStatus);
-            fakeImageConverter.createDocumentFromUrl.rejects(expectedError);
+            fakeImageConverter.createDocumentFromStream.rejects(expectedError);
 
             await rewiredPdfService.__get__('renderSinglePage')('key', new URL('https://pdf-service.com/pdf.pdf'), page)
                 .should.eventually.be.rejected
@@ -410,7 +410,7 @@ describe('pdf-service', () => {
                 totalPages: page + 1
             });
 
-            fakeImageConverter.createDocumentFromUrl.resolves(undefined);
+            fakeImageConverter.createDocumentFromStream.resolves(undefined);
             fakeImageConverter.generatePageImage.resolves(Readable.from(Buffer.from('data')));
 
             rewiredPdfService.__set__('writeStreamToTempFile', sandbox.stub().rejects(new Error('401')));
@@ -430,7 +430,7 @@ describe('pdf-service', () => {
             const statStub = sandbox.stub().rejects(createError(412, 'testing error'));
             sandbox.stub(fs, 'promises').value({ stat: statStub });
 
-            fakeImageConverter.createDocumentFromUrl.resolves(undefined);
+            fakeImageConverter.createDocumentFromStream.resolves(undefined);
             fakeImageConverter.generatePageImage.resolves(Readable.from(Buffer.from('data')));
 
             rewiredPdfService.__set__('writeStreamToTempFile', sandbox.stub().resolves());
@@ -460,7 +460,7 @@ describe('pdf-service', () => {
             fakeS3Service.simpleWriteObject.rejects(createError(411));
 
 
-            fakeImageConverter.createDocumentFromUrl.resolves(undefined);
+            fakeImageConverter.createDocumentFromStream.resolves(undefined);
             fakeImageConverter.generatePageImage.resolves(Readable.from(Buffer.from('data')));
 
             rewiredPdfService.__set__('writeStreamToTempFile', sandbox.stub().resolves());
@@ -490,7 +490,7 @@ describe('pdf-service', () => {
             fakeS3Service.simpleWriteObject.rejects(new Error('non-http error'));
 
 
-            fakeImageConverter.createDocumentFromUrl.resolves(undefined);
+            fakeImageConverter.createDocumentFromStream.resolves(undefined);
             fakeImageConverter.generatePageImage.resolves(Readable.from(Buffer.from('data')));
 
             rewiredPdfService.__set__('writeStreamToTempFile', sandbox.stub().resolves());
@@ -517,7 +517,7 @@ describe('pdf-service', () => {
             fakeFs.createReadStream.onSecondCall().returns(undefined as any);
             fakeS3Service.simpleWriteObject.resolves();
 
-            fakeImageConverter.createDocumentFromUrl.resolves(undefined);
+            fakeImageConverter.createDocumentFromStream.resolves(undefined);
             fakeImageConverter.generatePageImage.resolves(Readable.from(Buffer.from('data')));
 
             rewiredPdfService.__set__('writeStreamToTempFile', sandbox.stub().resolves());

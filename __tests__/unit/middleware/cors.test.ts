@@ -101,5 +101,32 @@ describe('cors-middleware', () => {
                 expect(response.get('Access-Control-Allow-Origin')).to.equal(defaultOrigin);
             });
         })
-    })
+    });
+
+    describe('should always set Access-Control-Allow-Credentials to true', () => {
+        const origins = [
+            defaultOrigin,
+            'http://google.com',
+            'https://live.kidslooop.dev',
+            'https://live.kidsloop.com',
+            'https://api.microsoft.com',
+            'https://h5p.org',
+            ...['api', 'h5p', 'auth', 'live', 'hub', 'app', 'test', 'dev', 'etc', 's3']
+                .map(subdomain => [
+                    `http://${subdomain}.${defaultDomain}`,
+                    `https://${subdomain}.${defaultDomain}` 
+                ])
+                .flatMap(arr=>arr)
+        ];
+
+        origins.forEach(origin => {
+            
+            it(origin, () => {
+                const [request, response ] = configureRequest(origin);
+    
+                corsHandler(request, response, () => {});
+                expect(response.get('Access-Control-Allow-Credentials')).to.equal('true');
+            });
+        });
+    });
 });
