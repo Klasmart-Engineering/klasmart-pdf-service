@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.3.29](https://bitbucket.org/calmisland/kidsloop-pdf-service/compare/v0.3.28...v0.3.29) (2021-12-06)
+
+
+### Bug Fixes
+
+* **KLL-1906:** update styles to fix aspect ratio breaking on some devices ([cd17c08](https://bitbucket.org/calmisland/kidsloop-pdf-service/commit/cd17c0850ea83ca62d20f6f83a8c61a60d047203))
+
 ### [0.3.28](https://bitbucket.org/calmisland/kidsloop-pdf-service/compare/v0.3.27...v0.3.28) (2021-12-03)
 
 
