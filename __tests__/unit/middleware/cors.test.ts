@@ -57,6 +57,29 @@ describe('cors-middleware', () => {
         expect(response.get('Access-Control-Allow-Origin')).to.equal(defaultOrigin);
     });
 
+    describe('should rewrite origin for specific domain/origin combinations', () => {
+        const pairs : [string, string, boolean][] = [ 
+            ['https://cms.alpha.kidsloop.dev', 'kidsloop.dev', true],
+            ['https://cms.alpha.kidsloop.dev', 'alpha.kidsloop.dev', true],
+            ['https://cms.kidsloop.dev', 'alpha.kidsloop.dev', false]
+        ];
+
+        pairs.forEach(([origin, domain, isValid]) => {
+            it(`origin: ${origin}, domain: ${domain} -> ${isValid ? origin : `https://${domain}`}`, () => {
+                withDomain(domain, () => {
+                    const handler = corsMiddleware();
+                    const [request, response ] = configureRequest(origin);
+                    handler(request, response, () => {});
+                    if(isValid) {
+                        expect(response.get('Access-Control-Allow-Origin')).to.equal(origin);
+                    } else {
+                        expect(response.get('Access-Control-Allow-Origin')).not.to.equal(origin);
+                    }
+                })
+            });
+        })
+    })
+
     it('should work across different ports in the same domain', () => {
         withDomain('localhost:23894', () => {
             const origin = 'https://localhost:8080';
