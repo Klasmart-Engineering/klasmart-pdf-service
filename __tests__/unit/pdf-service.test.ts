@@ -16,6 +16,8 @@ import rewire from 'rewire';
 import createError from 'http-errors';
 import asyncTimeout from '../util/async-timeout';
 import { Request } from 'express';
+import { ValidationStatus } from '../../src/interfaces/validation-status';
+import { v4 } from 'uuid';
 
 chai.use(chaiAsPromised);
 chai.should();
@@ -100,7 +102,7 @@ describe('pdf-service', () => {
 
             fakeEntityManager.findOne.resolves(undefined);
             fakeEntityManager.save.resolvesArg(0);
-            fakeImageConverter.createDocumentFromStream.resolves({ numPages } as PDFDocumentProxy);
+            fakeImageConverter.createDocumentFromUrl.resolves({ numPages } as PDFDocumentProxy);
 
             await pdfService.getPDFPages(testUrl)
                 .should.eventually.equal(numPages);
@@ -111,7 +113,7 @@ describe('pdf-service', () => {
 
             fakeEntityManager.findOne.resolves(undefined);
             fakeEntityManager.save.rejects();
-            fakeImageConverter.createDocumentFromStream.resolves({ numPages } as PDFDocumentProxy);
+            fakeImageConverter.createDocumentFromUrl.resolves({ numPages } as PDFDocumentProxy);
 
             await pdfService.getPDFPages(testUrl)
                 .should.eventually.be.rejectedWith('Error')
@@ -119,10 +121,10 @@ describe('pdf-service', () => {
                 .and.have.property('status', 500);
         });
 
-        it ('should reject with 500 if createDocumentFromStream rejects', async () => {
+        it ('should reject with 500 if createDocumentFromUrl rejects', async () => {
             fakeEntityManager.findOne.resolves(undefined);
             fakeEntityManager.save.resolvesArg(0);
-            fakeImageConverter.createDocumentFromStream.rejects();
+            fakeImageConverter.createDocumentFromUrl.rejects();
 
             await pdfService.getPDFPages(testUrl)
                 .should.eventually.be.rejectedWith('Error')
@@ -130,11 +132,11 @@ describe('pdf-service', () => {
                 .and.have.property('status', 500);
         });
 
-        it ('should reject with status code of propagated error from createDocumentFromStream try-block when the error is an HttpError', async () => {
+        it ('should reject with status code of propagated error from createDocumentFromUrl try-block when the error is an HttpError', async () => {
             fakeEntityManager.findOne.resolves(undefined);
             fakeEntityManager.save.resolvesArg(0);
             const expectedError = createError(401, 'sample-test-error')
-            fakeImageConverter.createDocumentFromStream.rejects(expectedError);
+            fakeImageConverter.createDocumentFromUrl.rejects(expectedError);
 
             await pdfService.getPDFPages(testUrl)
                 .should.eventually.be.rejectedWith(expectedError.message)
@@ -205,7 +207,7 @@ describe('pdf-service', () => {
             const expected = Readable.from(Buffer.from('abc'.repeat(100)));
             const page = 10;
             fakeEntityManager.findOne.resolves({totalPages: 1})
-            fakeImageConverter.createDocumentFromStream.resolves({} as PDFDocumentProxy);
+            fakeImageConverter.createDocumentFromUrl.resolves({} as PDFDocumentProxy);
             fakeImageConverter.generatePageImage.resolves(Readable.from(Buffer.from('')))
             fakeS3Service.readObject.onFirstCall().resolves(undefined);
             fakeS3Service.readObject.onSecondCall().resolves(undefined)
@@ -222,7 +224,7 @@ describe('pdf-service', () => {
             const expected = Readable.from(Buffer.from('abc'.repeat(100)));
             const page = 10;
             fakeEntityManager.findOne.resolves(undefined);
-            fakeImageConverter.createDocumentFromStream.resolves({} as PDFDocumentProxy);
+            fakeImageConverter.createDocumentFromUrl.resolves({} as PDFDocumentProxy);
             fakeImageConverter.generatePageImage.resolves(Readable.from(Buffer.from('')))
             fakeS3Service.readObject.onFirstCall().resolves(undefined);
             fakeS3Service.readObject.onSecondCall().resolves(undefined)
@@ -238,7 +240,7 @@ describe('pdf-service', () => {
             const expected = Readable.from(Buffer.from('abc'.repeat(100)));
             const page = 10;
             fakeEntityManager.findOne.resolves({totalPages: 1})
-            fakeImageConverter.createDocumentFromStream.resolves({} as PDFDocumentProxy);
+            fakeImageConverter.createDocumentFromUrl.resolves({} as PDFDocumentProxy);
             fakeImageConverter.generatePageImage.resolves(Readable.from(Buffer.from('')))
             fakeS3Service.readObject.onFirstCall().resolves(undefined);
             fakeS3Service.readObject.onSecondCall().resolves(undefined)
@@ -268,7 +270,7 @@ describe('pdf-service', () => {
 
             // The PDF has been initialized
             fakeEntityManager.findOne.resolves({totalPages: 12})
-            fakeImageConverter.createDocumentFromStream.resolves({} as PDFDocumentProxy);
+            fakeImageConverter.createDocumentFromUrl.resolves({} as PDFDocumentProxy);
             
             // Force all shortcuts to fail, forcing the service to render the page
             fakeS3Service.readObject.onFirstCall().resolves(undefined);
@@ -307,7 +309,7 @@ describe('pdf-service', () => {
 
             // The PDF has been initialized
             fakeEntityManager.findOne.resolves({totalPages: 12})
-            fakeImageConverter.createDocumentFromStream.resolves({} as PDFDocumentProxy);
+            fakeImageConverter.createDocumentFromUrl.resolves({} as PDFDocumentProxy);
             
             // Force all shortcuts to fail, forcing the service to render the page
             fakeS3Service.readObject.onFirstCall().resolves(undefined);
@@ -379,7 +381,7 @@ describe('pdf-service', () => {
             // Throw an error after page validation to simplify test configuration
             const captureStatus = 502;
             const expectedError = createError(captureStatus);
-            fakeImageConverter.createDocumentFromStream.rejects(expectedError);
+            fakeImageConverter.createDocumentFromUrl.rejects(expectedError);
 
             await rewiredPdfService.__get__('renderSinglePage')('key', new URL('https://pdf-service.com/pdf.pdf'), page)
                 .should.eventually.be.rejected
@@ -396,7 +398,7 @@ describe('pdf-service', () => {
             // Throw an error after page validation to simplify test configuration
             const captureStatus = 502;
             const expectedError = createError(captureStatus);
-            fakeImageConverter.createDocumentFromStream.rejects(expectedError);
+            fakeImageConverter.createDocumentFromUrl.rejects(expectedError);
 
             await rewiredPdfService.__get__('renderSinglePage')('key', new URL('https://pdf-service.com/pdf.pdf'), page)
                 .should.eventually.be.rejected
@@ -410,7 +412,7 @@ describe('pdf-service', () => {
                 totalPages: page + 1
             });
 
-            fakeImageConverter.createDocumentFromStream.resolves(undefined);
+            fakeImageConverter.createDocumentFromUrl.resolves(undefined);
             fakeImageConverter.generatePageImage.resolves(Readable.from(Buffer.from('data')));
 
             rewiredPdfService.__set__('writeStreamToTempFile', sandbox.stub().rejects(new Error('401')));
@@ -430,7 +432,7 @@ describe('pdf-service', () => {
             const statStub = sandbox.stub().rejects(createError(412, 'testing error'));
             sandbox.stub(fs, 'promises').value({ stat: statStub });
 
-            fakeImageConverter.createDocumentFromStream.resolves(undefined);
+            fakeImageConverter.createDocumentFromUrl.resolves(undefined);
             fakeImageConverter.generatePageImage.resolves(Readable.from(Buffer.from('data')));
 
             rewiredPdfService.__set__('writeStreamToTempFile', sandbox.stub().resolves());
@@ -460,7 +462,7 @@ describe('pdf-service', () => {
             fakeS3Service.simpleWriteObject.rejects(createError(411));
 
 
-            fakeImageConverter.createDocumentFromStream.resolves(undefined);
+            fakeImageConverter.createDocumentFromUrl.resolves(undefined);
             fakeImageConverter.generatePageImage.resolves(Readable.from(Buffer.from('data')));
 
             rewiredPdfService.__set__('writeStreamToTempFile', sandbox.stub().resolves());
@@ -490,7 +492,7 @@ describe('pdf-service', () => {
             fakeS3Service.simpleWriteObject.rejects(new Error('non-http error'));
 
 
-            fakeImageConverter.createDocumentFromStream.resolves(undefined);
+            fakeImageConverter.createDocumentFromUrl.resolves(undefined);
             fakeImageConverter.generatePageImage.resolves(Readable.from(Buffer.from('data')));
 
             rewiredPdfService.__set__('writeStreamToTempFile', sandbox.stub().resolves());
@@ -517,7 +519,7 @@ describe('pdf-service', () => {
             fakeFs.createReadStream.onSecondCall().returns(undefined as any);
             fakeS3Service.simpleWriteObject.resolves();
 
-            fakeImageConverter.createDocumentFromStream.resolves(undefined);
+            fakeImageConverter.createDocumentFromUrl.resolves(undefined);
             fakeImageConverter.generatePageImage.resolves(Readable.from(Buffer.from('data')));
 
             rewiredPdfService.__set__('writeStreamToTempFile', sandbox.stub().resolves());
@@ -526,6 +528,163 @@ describe('pdf-service', () => {
                 .should.eventually.not.be.undefined;
         });
     
+    });
+
+    describe('validatePostedPDFAsync', () => {
+        let previousCache: NodeCache;
+        let cache: NodeCache;
+        let request: Request;
+        before(() => {
+            previousCache = rewiredPdfService.__get__('validationCache');
+        });
+
+        after(() => {
+            rewiredPdfService.__set__('validationCache', previousCache);
+        });
+
+        beforeEach(() => {
+            cache = new NodeCache({
+                stdTTL: 300,
+                checkperiod: 60 * 30,
+                useClones: false,
+                deleteOnExpire: true
+            });
+            rewiredPdfService.__set__('validationCache', cache);
+
+            // Initialize a request to be used for each test
+            request = Readable.from(Buffer.from('data')) as Request;
+        });
+        
+        it('should add validation failure to cache if createDocumentFromOS rejects', async () => {
+            fakeImageConverter.createDocumentFromOS.rejects();
+            rewiredPdfService.__set__('writeStreamToTempFile', sandbox.stub().resolves());
+
+            await rewiredPdfService.validatePostedPDFAsync(request);
+
+            expect(cache.keys().length).to.equal(1);
+            expect(cache.get(cache.keys()[0])).to.not.be.undefined;
+            const status: ValidationStatus = cache.get(cache.keys()[0]);
+            expect(status.valid).to.be.false;
+        });
+
+        it('should return validation failure if createDocumentFromOS rejects', async () => {
+            fakeImageConverter.createDocumentFromOS.rejects();
+            rewiredPdfService.__set__('writeStreamToTempFile', sandbox.stub().resolves());
+
+            await rewiredPdfService.validatePostedPDFAsync(request).
+                should.eventually.have.property('valid').that.is.false;
+        });
+
+        it('should return indeterminate validation status when createDocumentFromOS resolves normally', async () => {
+            let document = { numPages: 10 } as PDFDocumentProxy;
+            fakeImageConverter.createDocumentFromOS.resolves(document);
+            rewiredPdfService.__set__('writeStreamToTempFile', sandbox.stub().resolves());
+            rewiredPdfService.__set__('cachedValidatePDF', sandbox.stub().resolves());
+
+            await rewiredPdfService.validatePostedPDFAsync(request).
+                should.eventually.have.property('validationComplete').that.is.false;
+        });
+
+        it('should add indeterminate validation status when createDocumentFromOS resolves normally', async () => {
+            let document = { numPages: 10 } as PDFDocumentProxy;
+            fakeImageConverter.createDocumentFromOS.resolves(document);
+            rewiredPdfService.__set__('writeStreamToTempFile', sandbox.stub().resolves());
+            rewiredPdfService.__set__('cachedValidatePDF', sandbox.stub().resolves());
+
+            await rewiredPdfService.validatePostedPDFAsync(request);
+
+            expect(cache.keys().length).to.equal(1);
+            expect(cache.get(cache.keys()[0])).to.not.be.undefined;
+            const status: ValidationStatus = cache.get(cache.keys()[0]);
+            expect(status.validationComplete).to.be.false;
+        });
+
+    });
+
+    describe('cachedValidatePDF', () => {
+        const getPageStub =  sandbox.stub();
+        let cachedValidatePDF: (key: string, fileLocation: string, pages: number) => Promise<void>;
+        let previousCache: NodeCache;
+        let cache: NodeCache;
+        let key: string;
+
+        before(() => {
+            previousCache = rewiredPdfService.__get__('validationCache');
+        });
+
+        after(() => {
+            rewiredPdfService.__set__('validationCache', previousCache);
+        });
+
+        beforeEach(() => {
+            const document = { getPage: getPageStub } as unknown as PDFDocumentProxy;
+            fakeImageConverter.createDocumentFromOS.resolves(document);
+
+            cache = new NodeCache({
+                stdTTL: 300,
+                checkperiod: 60 * 30,
+                useClones: false,
+                deleteOnExpire: true
+            });
+            rewiredPdfService.__set__('validationCache', cache);
+            cachedValidatePDF = rewiredPdfService.__get__('cachedValidatePDF');
+            key = v4();
+            getPageStub.reset();
+
+        });
+
+        
+        it('should update cache when getPage resolves', async () => {
+            let resolvePageTwo;
+            getPageStub.onFirstCall().resolves();
+            getPageStub.onSecondCall().returns(new Promise(resolve => {
+                resolvePageTwo = () => resolve(undefined);
+            }));
+
+            cachedValidatePDF(key, 'test-file', 3);
+            await new Promise(resolve => setTimeout(resolve, 0));
+            expect(cache.get(key)).to.have.property('pagesValidated').that.equals(1);
+            resolvePageTwo();
+        });
+
+        it('should update cache with valid status when getPage resolves on last page', async () => {
+            getPageStub.resolves();
+            await cachedValidatePDF(key, 'test-file', 3);
+            expect(cache.get(key)).to.have.property('valid').that.is.true;
+        });
+
+        it('should update cache with invalid status and return if getPage rejects', async () => {
+            getPageStub.onCall(1).resolves();
+            getPageStub.onCall(2).rejects();
+            await cachedValidatePDF(key, 'test-file', 3);
+
+            expect(cache.get(key)).to.have.property('valid').that.is.false;
+        });
+
+        it('should not update valid until last page is checked', async () => {
+            let resolvePages = [];
+            const pages = 4;
+
+            // Configure getPage for each page to return promises that we can manually resolve
+            for(let i = 0; i < pages; i++) {
+                getPageStub.onCall(i).returns(new Promise(resolve => { resolvePages.push(resolve)}))
+            }
+            cachedValidatePDF(key, 'test-file', pages);
+
+            // Resolve a page, allow event loop progress, then validate cache data
+            for(let i = 0; i < pages - 1; i++) {
+                resolvePages[i]();
+                await new Promise(resolve => setTimeout(resolve, 0));
+                expect(cache.get(key)).to.have.property('valid').that.is.undefined;
+                expect(cache.get(key)).to.have.property('pagesValidated').that.equals(i+1);
+            }
+
+            // Resolve final page, allow event loop to progress, then validate final state
+            resolvePages[3]();
+            await new Promise(resolve => setTimeout(resolve, 0));
+            expect(cache.get(key)).to.have.property('valid').that.is.true;
+            expect(cache.get(key)).to.have.property('pagesValidated').that.equals(4);
+        })
     });
 
     describe('getDirectPageRender', () => {

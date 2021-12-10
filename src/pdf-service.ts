@@ -20,25 +20,32 @@ import { ValidationStatus } from './interfaces/validation-status';
 const log = withLogger('pdf-service');
 
 let pageResolutionCache: NodeCache;
+let validationCache: NodeCache;
+
 const defaultCacheProps = {
     stdTTL: 100,
     checkperiod: 60,
     deleteOnExpire: true
 }
 
-const validationCache = new NodeCache({
+const validationCacheProps = {
     stdTTL: 300,
     checkperiod: 60 * 30,
     useClones: false,
     deleteOnExpire: true
-});
+};
 
 /**
  * Provides configuration for the PDF service
  * @param cache - Provided NodeCache. Will use a default configuration if not provided
  */
-export function initialize(cache: NodeCache = new NodeCache(defaultCacheProps)): void {
-    pageResolutionCache = cache;
+export function initialize(
+    pageResolutionCacheInput: NodeCache = new NodeCache(defaultCacheProps),
+    validationCacheInput: NodeCache = new NodeCache(validationCacheProps)
+): void {
+    pageResolutionCache = pageResolutionCacheInput;
+    validationCache = validationCacheInput;
+    
     if (process.env.CMS_BASE_URL) {
         log.info(`Registering CMS asset location: ${process.env.CMS_BASE_URL}`)
     } else {
@@ -131,7 +138,8 @@ export async function validatePostedPDF(request: Request, registerTempFile: (fil
 export async function validatePostedPDFAsync(request: Request): Promise<ValidationStatus> {
     // Generate Key
     const key = uuidV4();
-    
+    log.debug(`Validating payload using key ${key}`);
+
     // Write PDF to temporary file
     const fileLocation = `./${key}.pdf`;
     await writeStreamToTempFile(fileLocation, request);
@@ -142,6 +150,7 @@ export async function validatePostedPDFAsync(request: Request): Promise<Validati
         document = await imageConverter.createDocumentFromOS(fileLocation);
     } catch (err) {
         // Immediate failure case
+        log.debug(`Immediate validation failure for document with key: ${key}`)
         const failureStatus: ValidationStatus = { key, validationComplete: true, valid: false, totalPages: undefined, pagesValidated: undefined };
         validationCache.set(key, failureStatus);
         return failureStatus;
@@ -155,9 +164,9 @@ export async function validatePostedPDFAsync(request: Request): Promise<Validati
         valid: undefined,
         validationComplete: false
     }
+    log.debug(`Initial document build with ${totalPages} pages created for payload with key: ${key}`)
 
     validationCache.set(key, initialStatus);
-    
 
     // Trigger validation process
     cachedValidatePDF(key, fileLocation, totalPages);
@@ -186,6 +195,7 @@ async function cachedValidatePDF(key: string, fileLocation: string, pages: numbe
             validationStatus.pagesValidated = i;
             validationCache.set(key, validationStatus);
         } catch (err) {
+            log.verbose(`Validation failure for document with key ${key} on page ${i}: ${err.stack}`)
             validationStatus.valid = false;
             validationStatus.validationComplete = true;
             validationCache.set(key, validationStatus);
