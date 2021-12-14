@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.3.30-dev.0](https://bitbucket.org/calmisland/kidsloop-pdf-service/compare/v0.3.29...v0.3.30-dev.0) (2021-12-14)
+
+
+### Features
+
+* **KLL-1935:** integrate intersection api to pug template for view.html ([bd7fe80](https://bitbucket.org/calmisland/kidsloop-pdf-service/commit/bd7fe80634271de69dd6add7923f514f950c5ab8))
+* **KLL-2129:** implementation of async validation check API ([b7a74fa](https://bitbucket.org/calmisland/kidsloop-pdf-service/commit/b7a74fa04ed7c8204e194531c8f5eb2683633707))
+
+
+### Bug Fixes
+
+* **KLL-2128:** reenable validation checks for v2 validation api methods ([ffc4f88](https://bitbucket.org/calmisland/kidsloop-pdf-service/commit/ffc4f88eacf7dd930f13147f3d240f7eec333831))
+
 ### [0.3.29](https://bitbucket.org/calmisland/kidsloop-pdf-service/compare/v0.3.28...v0.3.29) (2021-12-06)
 
 
