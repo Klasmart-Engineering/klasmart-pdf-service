@@ -8,7 +8,6 @@ import * as pdfService from './pdf-service';
 import * as s3Service from './s3-client';
 import { errorHandler } from './util/error-handler';
 import { appRouter } from './routers/app.router';
-import { appRouterV2 } from './routers/app.v2.router';
 import cookieParser from 'cookie-parser';
 import { kidsloopAuthMiddleware } from 'kidsloop-token-validation'
 import { cleanupTempFile } from './middleware/temp-file-cleanup';
@@ -108,7 +107,7 @@ websocketServer.on('connection', async (connection: WebSocket, connectionRequest
 
     const [path, _params] = connectionRequest.url.split('?');
     switch(path) {
-        case '/pdf/v2/validate': return await validatePDF(connection, connectionRequest);
+        case '/pdf/v2/validate': return await validatePDF(connection);
     }
 })
 

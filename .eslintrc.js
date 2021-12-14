@@ -11,5 +11,11 @@ module.exports = {
   env: {
     "browser": false,
     "node": true
+  },
+  rules: {
+    "@typescript-eslint/no-unused-vars": ["warn", { 
+      "argsIgnorePattern": "^_",
+      "varsIgnorePattern": "^_"
+    }]
   }
 };

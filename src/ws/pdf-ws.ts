@@ -1,6 +1,5 @@
 import fs from 'fs';
 import { v4 as uuidV4 } from 'uuid';
-import { IncomingMessage } from 'http';
 import WebSocket from 'ws';
 import * as pdfService from '../pdf-service';
 import { withLogger } from 'kidsloop-nodejs-logger';
@@ -20,7 +19,7 @@ async function configure() {
 
 export type PDFValidationUpdateCallback = (data: ValidationStatus) => void;
 
-export async function validatePDF(connection: WebSocket, connectionRequest: IncomingMessage): Promise<void> {
+export async function validatePDF(connection: WebSocket): Promise<void> {
     // Expecting binary data from client
     connection.binaryType = 'arraybuffer';
     const key = uuidV4();
@@ -30,7 +29,7 @@ export async function validatePDF(connection: WebSocket, connectionRequest: Inco
         connection.on('message', async (arrayBuffer: ArrayBuffer) => {
             stream.on('error', reject);
             const bufferedData = Buffer.from(arrayBuffer);
-            log.info(`Receiving data with length ${bufferedData.byteLength}`);
+            log.verbose(`Receiving ws data with length ${bufferedData.byteLength}`);
             const inputStream = new PassThrough();
             inputStream.on('end', resolve);
             inputStream.end(bufferedData);
@@ -43,7 +42,7 @@ export async function validatePDF(connection: WebSocket, connectionRequest: Inco
     await pdfService.validatePDFWithStatusCallback(key, fileLocation, validationUpdateCallback);
 
     connection.close();
-    log.debug(`Removing terporary file at ${fileLocation}`);
+    log.verbose(`Removing temporary file at ${fileLocation}`);
     try {
         fs.rmSync(fileLocation);
     } catch (err) {
