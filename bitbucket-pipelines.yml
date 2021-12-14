@@ -113,11 +113,11 @@ pipelines:
         name: "Build & Push Docker image"
         image: python:3.9-alpine
         script:
+          - export SEMVAR=$(cat semvar.txt)
           - |
             if [[ "$SEMVAR" == *"dev"* ]]; then
               pip3 install -U awscli
               export REPO=$DOCKER_REPO_URL/kidsloop-pdf-service
-              export SEMVAR=$(cat semvar.txt)
               aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin $DOCKER_REPO_URL
               docker build -f Dockerfile -t pdf-service --target build .
               docker tag pdf-service:latest $REPO:$SEMVAR
