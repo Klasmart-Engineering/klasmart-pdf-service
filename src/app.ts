@@ -18,7 +18,9 @@ import YAML from 'yamljs';
 import { version } from '../package.json';
 import { correlationMiddleware, withLogger } from 'kidsloop-nodejs-logger';
 import { corsMiddleware } from './middleware/cors-middleware';
-
+import WebSocket from 'ws';
+import { validatePDF } from './ws/pdf-ws';
+import { IncomingMessage } from 'http';
 
 const log = withLogger('app');
 
@@ -27,6 +29,9 @@ log.info(`Running pdf-service v${version} on Node ${process.version}`)
 
 const app = express();
 app.disable('x-powered-by');
+
+const websocketServer = new WebSocket.Server({ noServer: true });
+
 
 const port = process.env.PORT || 32891;
 
@@ -60,7 +65,10 @@ app.use(express.json());
 log.info(`Registering static file access to '/static'`);
 app.use(express.static(__dirname + '/static'));
 
-app.use(`${routePrefix}/v2`, appRouterV2);
+if (process.env.NODE_ENV?.toUpperCase().startsWith('DEV')) {
+    log.warn(`Registering development only static file access to /dev-static`);
+    app.use(express.static(__dirname + '/dev-static'));
+}
 
 log.info(`Registering appRouter with prefix: ${routePrefix}`)
 app.use(routePrefix, appRouter);
@@ -84,6 +92,25 @@ app.use(cleanupTempFile());
 const server = app.listen(port, () => {
     log.info(`Application listening with prefix ${routePrefix} on port ${port}`);
 });
+
+server.on('upgrade', (request, socket, head) => {
+    log.silly(`Upgrading websocket connection`)
+    websocketServer.handleUpgrade(request, socket, head, (websocket) => {
+        websocketServer.emit('connection', websocket, request);
+    });
+});
+
+websocketServer.on('connection', async (connection: WebSocket, connectionRequest: IncomingMessage) => {
+    if (!connectionRequest?.url) {
+        log.debug(`No url found on upgraded connection`);
+        return;
+    }
+
+    const [path, _params] = connectionRequest.url.split('?');
+    switch(path) {
+        case '/pdf/v2/validate': return await validatePDF(connection, connectionRequest);
+    }
+})
 
 server.on('connection', (conn) => {
     conn.setKeepAlive(true);

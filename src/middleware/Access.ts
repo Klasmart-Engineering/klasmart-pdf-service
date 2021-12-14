@@ -50,7 +50,7 @@ export function Authorized(...types: AuthType[]) {
         const errorCode = response.locals.authType === AuthType.Anonymous 
             ? 401
             : 403;
-
+        log.silly(`Passing authorization status error with code ${errorCode} to error handler`);
         next(createError(errorCode));        
     }
 }

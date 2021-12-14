@@ -33,6 +33,7 @@ appRouterV2.get(`/validate/:key`,
             log.debug(`Request to check validation status of document with key: ${key}`)
             const result = await pdfService.getAsyncValidationStatus(key);
             if (!result) {
+                log.silly(`No validation data for document with key: ${key}`);
                 response.sendStatus(404);
                 return;
             }

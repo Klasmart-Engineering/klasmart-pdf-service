@@ -16,6 +16,7 @@ import { Request } from 'express';
 import { DocumentInitParameters } from 'pdfjs-dist/types/src/display/api';
 import { PDFDocumentProxy, } from 'pdfjs-dist/types/src/display/api';
 import { ValidationStatus } from './interfaces/validation-status';
+import { PDFValidationUpdateCallback } from './ws/pdf-ws';
 
 const log = withLogger('pdf-service');
 
@@ -133,6 +134,57 @@ export async function validatePostedPDF(request: Request, registerTempFile: (fil
 
     // Return values
     return { ...valid, hash: hashString, length };
+}
+
+export async function validatePDFWithStatusCallback(key: string, fileLocation: string, updateCallback: PDFValidationUpdateCallback): Promise<void> {
+    const documentReloadFrequency = 20;
+
+    let document: PDFDocumentProxy;
+    try {
+        document = await imageConverter.createDocumentFromOS(fileLocation);
+    } catch (err) {
+        // Immediate failure case, document is corrupt or not a PDF document 
+        updateCallback({
+            key,
+            pagesValidated: 0,
+            totalPages: undefined,
+            valid: false,
+            validationComplete: true
+        });
+        return;
+    }
+    
+    
+    const pages = document.numPages;
+    const validationStatus: ValidationStatus = {
+        key,
+        pagesValidated: 0,
+        totalPages: pages,
+        valid: undefined,
+        validationComplete: false
+    };
+    log.verbose(`Beginning validation check of ${pages} pages for PDF with key ${key}`)
+
+    for(let i = 1; i <= pages; i++) {
+        log.silly(`Validating page ${i} for pdf with key: ${key}`)
+        if (i % documentReloadFrequency === 0) document = await imageConverter.createDocumentFromOS(fileLocation);
+        try {
+            await document.getPage(i);
+            validationStatus.pagesValidated = i;
+            updateCallback(validationStatus);
+        } catch (err) {
+            log.verbose(`Validation failure for document with key ${key} on page ${i}: ${err.stack}`)
+            validationStatus.valid = false;
+            validationStatus.validationComplete = true;
+            updateCallback(validationStatus);
+            deleteTemporaryValidationPDF(key, fileLocation);
+            return;
+        }
+    }
+    validationStatus.valid = true;
+    validationStatus.validationComplete = true;
+    validationCache.set(key, validationStatus);
+    updateCallback(validationStatus);
 }
 
 export async function validatePostedPDFAsync(request: Request): Promise<ValidationStatus> {
