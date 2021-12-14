@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.3.30-dev.1](https://bitbucket.org/calmisland/kidsloop-pdf-service/compare/v0.3.30-dev.0...v0.3.30-dev.1) (2021-12-14)
+
+
+### Bug Fixes
+
+* minor script reordering to bitbucket dev pipeline docker build step ([a30b9b7](https://bitbucket.org/calmisland/kidsloop-pdf-service/commit/a30b9b7d790b7c6da517e12b48f902a1eb167c80))
+
 ### [0.3.30-dev.0](https://bitbucket.org/calmisland/kidsloop-pdf-service/compare/v0.3.29...v0.3.30-dev.0) (2021-12-14)
 
 
