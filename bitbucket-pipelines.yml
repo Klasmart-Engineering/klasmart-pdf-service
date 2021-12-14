@@ -95,6 +95,39 @@ pipelines:
         services:
           - docker
         size: 2x
+    dev:
+    - step: 
+        name: 'Fetch NPM dependencies'
+        image: node:14.16
+        script:
+          - npm ci --only=production
+          - npm audit fix --production
+          - export SEMVAR=$(git tag -l --contains HEAD)
+          - echo $SEMVAR > semvar.txt
+        caches:
+          - nodemodules
+        artifacts:
+          - node_modules/**
+          - semvar.txt
+    - step:
+        name: "Build & Push Docker image"
+        image: python:3.9-alpine
+        script:
+          - |
+            if [[ "$SEMVAR" == *"dev"* ]]; then
+              pip3 install -U awscli
+              export REPO=$DOCKER_REPO_URL/kidsloop-pdf-service
+              export SEMVAR=$(cat semvar.txt)
+              aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin $DOCKER_REPO_URL
+              docker build -f Dockerfile -t pdf-service --target build .
+              docker tag pdf-service:latest $REPO:$SEMVAR
+              docker push $REPO:$SEMVAR 
+            fi
+        services:
+          - docker
+        caches:
+          - docker
+        size: 2x
 
 definitions:
   caches:

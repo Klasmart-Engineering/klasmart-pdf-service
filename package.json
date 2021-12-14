@@ -6,6 +6,7 @@
   "main": "app.ts",
   "scripts": {
     "release": "standard-version",
+    "prerelease": "standard-version -- --prerelease dev",
     "start": "ts-node ./src/app.ts",
     "start:local": "node --max_old_space_size=8192 -r ts-node/register -r dotenv/config ./src/app.ts",
     "start:dist": "node -r dotenv/config ./dist/app.js",
