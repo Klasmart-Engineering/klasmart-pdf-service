@@ -11,21 +11,41 @@ import { kidsloopAuthMiddleware } from 'kidsloop-token-validation';
 import cookieParser from 'cookie-parser';
 import * as jwt from 'jsonwebtoken';
 
-
-
 describe('app.router', () => {
-    const sandbox = sinon.createSandbox();
-    const serviceStub = sandbox.stub(pdfService);
+    let sandbox;
+    let serviceStub;
+    let app;
+    let oldCmsEndpoint;
+    before(() => {
+        sandbox = sinon.createSandbox();
+        serviceStub = sandbox.stub(pdfService);
+        app = express();
+    
+        app.use(cookieParser());
+        app.use(kidsloopAuthMiddleware());
+        app.use(express.json());
+        app.use(express.static(__dirname + '/static'));
+        app.use('/pdf', appRouter);
+        app.use(errorHandler);
+    });
+    
+    beforeEach(() => {
+        oldCmsEndpoint = process.env.CMS_BASE_URL;
+        process.env.CMS_BASE_URL = 'https://test-cms-endpoint.com';
+    });
 
-    const app = express();
+    afterEach(() => {
+        if (oldCmsEndpoint) process.env.CMS_BASE_URL = oldCmsEndpoint;
+        else delete process.env.CMS_BASE_URL;
+        sandbox.reset();
+    });
 
-    app.use(cookieParser());
-    app.use(kidsloopAuthMiddleware());
-    app.use(express.json());
-    app.use(express.static(__dirname + '/static'));
-    app.use('/pdf', appRouter);
-    app.use(errorHandler);
-
+    after(() => {
+        sandbox.restore();
+        sinon.restore();
+        sandbox.reset();
+        sinon.reset();
+    });
 
     const pdfData = `%PDF-1.0
     1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj 2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj 3 0 obj<</Type/Page/MediaBox[0 0 3 3]>>endobj
@@ -64,26 +84,13 @@ describe('app.router', () => {
         expiredJwt: `access=${expiringJwt}`
     };
     
-    let oldCmsEndpoint = process.env.CMS_BASE_URL;
-    beforeEach(() => {
-        process.env.CMS_BASE_URL = 'https://test-cms-endpoint.com';
-    });
-    
-    afterEach(() => {
-        if (oldCmsEndpoint) process.env.CMS_BASE_URL = oldCmsEndpoint;
-        else delete process.env.CMS_BASE_URL;
-        sandbox.reset();
-    });
 
-    after(() => {
-        sandbox.restore();
-        sinon.restore();
-        sandbox.reset();
-        sinon.reset();
-    })
 
     describe('POST /:prefix/validate', () => {
-        serviceStub.validatePostedPDF.resolves({ valid: true });
+        beforeEach(() => {
+            serviceStub.validatePostedPDF.resolves({ valid: true });
+        });
+
         it('should return a 401 when an access token is not included', async () => {
             await request(app)
                 .post('/pdf/validate')
@@ -242,8 +249,10 @@ describe('app.router', () => {
         });
 
         describe('Should respond with 400 if page is a non-positive integer value', () => {
-            serviceStub.getPDFPage.resolves(Readable.from(Buffer.from('img data')));
-
+            beforeEach(() => {
+                serviceStub.getPDFPage.resolves(Readable.from(Buffer.from('img data')));
+            });
+            
             const nums = [0, -1, -22, -0]
             nums.forEach(n => {
                 it(''+n, async () => {

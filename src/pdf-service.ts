@@ -29,12 +29,6 @@ const defaultCacheProps = {
     deleteOnExpire: true
 }
 
-const validationCacheProps = {
-    stdTTL: 300,
-    checkperiod: 60 * 30,
-    useClones: false,
-    deleteOnExpire: true
-};
 
 /**
  * Provides configuration for the PDF service
@@ -42,20 +36,14 @@ const validationCacheProps = {
  */
 export function initialize(
     pageResolutionCacheInput: NodeCache = new NodeCache(defaultCacheProps),
-    validationCacheInput: NodeCache = new NodeCache(validationCacheProps)
 ): void {
     pageResolutionCache = pageResolutionCacheInput;
-    validationCache = validationCacheInput;
     
     if (process.env.CMS_BASE_URL) {
         log.info(`Registering CMS asset location: ${process.env.CMS_BASE_URL}`)
     } else {
         log.warn(`CMS_BASE_URL not configured! PDF resource locations may be unreachable!`);
     }
-
-    validationCache.on('expire', (key) => {
-        log.debug(`Validation status result with key ${key} has expired`);
-    })
 }
 
 export async function getAsyncValidationStatus(key: string): Promise<ValidationStatus | undefined> {
@@ -143,6 +131,7 @@ export async function validatePDFWithStatusCallback(key: string, fileLocation: s
     try {
         document = await imageConverter.createDocumentFromOS(fileLocation);
     } catch (err) {
+        log.verbose(`PDF Document metadata read failure thrown by pdf.js: ${err.message}`)
         // Immediate failure case, document is corrupt or not a PDF document 
         updateCallback({
             key,
@@ -183,7 +172,7 @@ export async function validatePDFWithStatusCallback(key: string, fileLocation: s
     }
     validationStatus.valid = true;
     validationStatus.validationComplete = true;
-    validationCache.set(key, validationStatus);
+    log.verbose(`PDF with key: ${key} determined valid.`);
     updateCallback(validationStatus);
 }
 

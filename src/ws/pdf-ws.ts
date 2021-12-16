@@ -19,24 +19,36 @@ async function configure() {
 
 export type PDFValidationUpdateCallback = (data: ValidationStatus) => void;
 
+/**
+ * Web socket interfacing method for PDF validation
+ * This function will read arraybuffer data sent from the client via the
+ * web socket connection into a temporary file. It will create a callback for
+ * reporting validation status via the websocket and then delegate validation
+ * to the service-level validation function. The connection is closed when the
+ * servie level function completes.
+ * @param connection - Websocket connection
+ */
 export async function validatePDF(connection: WebSocket): Promise<void> {
     // Expecting binary data from client
     connection.binaryType = 'arraybuffer';
     const key = uuidV4();
     const fileLocation = `${TEMPORARY_FILE_LOCATION}/${key}.pdf`;
     const stream = fs.createWriteStream(fileLocation);
-    await new Promise((resolve, reject) => {
-        connection.on('message', async (arrayBuffer: ArrayBuffer) => {
-            stream.on('error', reject);
-            const bufferedData = Buffer.from(arrayBuffer);
-            log.verbose(`Receiving ws data with length ${bufferedData.byteLength}`);
-            const inputStream = new PassThrough();
-            inputStream.on('end', resolve);
-            inputStream.end(bufferedData);
-            inputStream.pipe(stream);
+    try {
+        await new Promise((resolve, reject) => {
+            connection.on('message', async (arrayBuffer: ArrayBuffer) => {
+                stream.on('error', reject);
+                const bufferedData = Buffer.from(arrayBuffer);
+                log.verbose(`Receiving ws data with length ${bufferedData.byteLength}`);
+                const inputStream = new PassThrough();
+                inputStream.on('end', resolve);
+                inputStream.end(bufferedData);
+                inputStream.pipe(stream);
+            });
         });
-    });
-
+    } catch (err) {
+        console.log(err);
+    }
     const validationUpdateCallback: PDFValidationUpdateCallback = (data: ValidationStatus) => connection.send(JSON.stringify(data));
 
     await pdfService.validatePDFWithStatusCallback(key, fileLocation, validationUpdateCallback);

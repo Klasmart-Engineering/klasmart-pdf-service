@@ -4,24 +4,29 @@ import { errorHandler } from '../../src/util/error-handler';
 import sinon from 'sinon';
 import createError from 'http-errors';
 
-const app = express();
-const sandbox = sinon.createSandbox();
-const stub = sandbox.stub();
-
-// Create a stub that can be controlled to throw a variety of errors to be
-// picked up by the errorHandler
-app.use(async (request, response, next: NextFunction) => {
-    try {
-        await stub();
-        response.sendStatus(200);
-    } catch (err) {
-        next(err);
-    }
-});
-
-app.use(errorHandler);
-
 describe('error-handler', () => {
+    let sandbox: sinon.SinonSandbox;
+    let app: express.Express;
+    let stub;
+
+    before(() => {
+        app = express();
+        sandbox = sinon.createSandbox();
+        stub = sandbox.stub();
+        
+        // Create a stub that can be controlled to throw a variety of errors to be
+        // picked up by the errorHandler
+        app.use(async (request, response, next: NextFunction) => {
+            try {
+                await stub();
+                response.sendStatus(200);
+            } catch (err) {
+                next(err);
+            }
+        });
+        
+        app.use(errorHandler);
+    })
 
     afterEach(() => {
         sandbox.restore();
