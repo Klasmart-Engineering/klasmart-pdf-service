@@ -45,9 +45,14 @@ pdfService.initialize();
 app.get(`/.well-known/express/server-health`, (_, response: Response) => {
     response.sendStatus(200).end();
 });
+app.use(correlationMiddleware());
+
+app.use((request, _response, next) => {
+    log.verbose(`Receiving ${request.method} request for ${request.path}.`);
+    next();
+})
 
 app.use(cookieParser());
-app.use(correlationMiddleware());
 app.use(kidsloopAuthMiddleware({
     logger: withLogger('kidsloopAuthMiddleware')
 }));

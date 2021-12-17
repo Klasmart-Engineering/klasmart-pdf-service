@@ -75,6 +75,7 @@ appRouter.get(`/:pdfName/prerender`, Authorized(AuthType.Any),
 appRouter.get(`/:pdfName/validate`, async (request: Request, response: Response, next: NextFunction) => {
     const { pdfName } = request.params;
     try {
+        log.verbose(`Received request to validate PDF ${pdfName}`);
         const start = new Date().valueOf();
         const validationStatus = await pdfService.validateCMSPDF(pdfName);
         const diff = new Date().valueOf() - start.valueOf();
@@ -86,7 +87,7 @@ appRouter.get(`/:pdfName/validate`, async (request: Request, response: Response,
 
 appRouter.get(`/:pdfName/page/:page`, async (request: Request, response: Response, next: NextFunction) => {
     const { pdfName, page } = request.params;
-    log.debug(`Request for page ${page}`)
+    log.verbose(`Request for page ${page}`)
     // ? Note: +num is being used rather than parseInt due to parseInt interpreting 0 lead ints as binary
     // ? while +num will drop the 0, a more inuitive behavior to service consumers
 
@@ -128,7 +129,7 @@ appRouter.get(`/:pdfName/render-page/:page`, async (request: Request, response: 
     }
 
     const { pdfName, page } = request.params;
-    log.debug(`Request for page ${page}`)
+    log.debug(`Request for direct render of page ${page}`)
     // ? Note: +num is being used rather than parseInt due to parseInt interpreting 0 lead ints as binary
     // ? while +num will drop the 0, a more inuitive behavior to service consumers
 

@@ -29,7 +29,6 @@ const defaultCacheProps = {
     deleteOnExpire: true
 }
 
-
 /**
  * Provides configuration for the PDF service
  * @param cache - Provided NodeCache. Will use a default configuration if not provided
@@ -108,6 +107,7 @@ export async function validatePostedPDF(request: Request, registerTempFile: (fil
             .on('end', () => {
                 hash.end();
                 const digest = hash.read();
+                log.verbose(`Hash calculation for document ${tempFileName} complete: ${digest}`)
                 resolve(digest);
             })
             .on('error', (err) => {
@@ -326,25 +326,25 @@ export async function getPDFPage(pdfName: string, page: number, pdfURL: URL): Pr
         // 404/403 errors are expected here, so don't rethrow these
         if (!(err instanceof HttpError)) {
             // We can probably continue here, this error may indicate a problem but won't prevent us from trying other things
-            log.warn(`Unexpected error in initial S3 request: ${err.message}`);
+            log.warn(`Unexpected error in initial S3 request while checking existence for page ${page} of PDF ${pdfName} located at ${pdfURL}: ${err.message}`);
         } else if (![403, 404].includes(err.status)) {
-            log.silly(`Page render not found on S3.`);
+            log.debug(`Page render for page ${page} of ${pdfName} not found on S3.`);
             throw err;
         } else {
-            log.warn(`Unexpected HTTP error in initial S3 request: ${err.message}`);
+            log.warn(`Unexpected HTTP error in initial S3 request for page ${page} of ${pdfName}: ${err.message}`);
         }
     }
 
     if (pageStream) return pageStream;
     
     if (pageResolutionCache.has(pageKey)) {
-        log.debug('Page key found in cache, awaiting resolution if not already resolved');
+        log.debug(`Page key for page ${page} of ${pdfName} found in cache, awaiting resolution if not already resolved`);
         await pageResolutionCache.get(pageKey);
-        log.debug('Resolved, page is prerendered');
+        log.debug(`Resolved, page ${page} of ${pdfName} is prerendered`);
         const stream = await s3Service.readObject(pageKey);
         if (stream) return stream;
     } else {
-        log.silly(`Page key not found in cache.`);
+        log.debug(`Page key for page ${page} of ${pdfName} not found in cache.`);
     }
 
     let stream;
@@ -356,7 +356,7 @@ export async function getPDFPage(pdfName: string, page: number, pdfURL: URL): Pr
             log.debug(`Removing temporary file: ${tempFilename}`);
             fs.promises.rm(tempFilename)
                 .catch(err => {
-                    log.error(`Error removing temporary file. Caused by: ${err.stack}`);
+                    log.error(`Error removing temporary file: ${tempFilename} for page ${page} of ${pdfName}. Caused by: ${err.stack}`);
                 })
         });
     } catch (err) {
@@ -384,7 +384,7 @@ async function renderSinglePage(pageKey: string, pdfURL: URL, page: number): Pro
         if (!pdfMetadata) throw createError(400, `PDF metadata not found. PDF must be processed using '.../pages?...' before pages can be loaded.`);
         
         if (pdfMetadata.totalPages < page) {
-            throw createError(404, `Document does not contain page: ${page}`)
+            throw createError(404, `Document ${pdfURL} does not contain page: ${page}`)
         }
         
         const document = await imageConverter.createDocumentFromUrl(pdfURL.toString());
@@ -401,7 +401,7 @@ async function renderSinglePage(pageKey: string, pdfURL: URL, page: number): Pro
             stat = await fs.promises.stat(filename);
             log.debug(`Filesize for ${pageKey}: ${stat.size}`);
         } catch (err) {
-            log.error(`Error writing image to temporary file: ${err.message}`);
+            log.error(`Error writing image page ${page} of PDF located at ${pdfURL} to temporary file: ${err.message}`);
             throw createError(500, err.message);
         }
 
@@ -418,7 +418,7 @@ async function renderSinglePage(pageKey: string, pdfURL: URL, page: number): Pro
             // ! file. While it would be better to persist the image, failing to do so will not
             // ! prevent us from succcessfully serving the image to the user.
             if (err instanceof HttpError) throw err;
-            log.error(`Error writing file to S3.`);
+            log.error(`Error writing PDF from ${pdfURL} file to S3 with key: ${pageKey}.`);
             log.error(JSON.stringify(err));
         }
         return filename;
@@ -433,9 +433,9 @@ async function writeStreamToTempFile (filename: string, stream: JPEGStream): Pro
         const fileStream = fs.createWriteStream(filename);
         stream
             .on('end', async () => {
-                log.debug(`stream end`);
+                log.debug(`Completed write to temporary file for file: ${filename}`);
                 const contentLength = fileStream.bytesWritten;
-                log.silly(`contentLength: ${contentLength}`)
+                log.debug(`contentLength of file ${filename}: ${contentLength}`)
                 resolve(contentLength);
             })
             .on('error', (err) => {
@@ -448,7 +448,7 @@ async function writeStreamToTempFile (filename: string, stream: JPEGStream): Pro
                 reject(err);
             });
 
-        log.debug('Piping file');
+        log.debug(`Piping data to temporary file ${filename}`);
     });
 }
 
@@ -461,14 +461,14 @@ async function initializeMetadata(pdfURL: URL) {
     try {
         const document = await imageConverter.createDocumentFromUrl(pdfURL.toString());
         const pages = document.numPages;
-        log.debug(`${pages} detected.`)
+        log.debug(`${pages} detected for PDF at ${pdfURL}.`)
         const pdfMetadata = new PDFMetadata(pdfURL.toString().toLowerCase(), pages, 0);
-        log.debug(`Storing metadata`)
+        log.debug(`Storing metadata for PDF at ${pdfURL}`)
         await getManager().save(PDFMetadata, pdfMetadata);
-        log.debug(`PDF metadata initialization complete`);
+        log.debug(`PDF metadata initialization complete for PDF at ${pdfURL}`);
         return { pdfMetadata, document };
     } catch (err) {
-        log.error(`Error initializing page metadata: ${err.message}`, err);
+        log.error(`Error initializing page metadata for PDF at ${pdfURL}: ${err.message}`, err);
         if (err instanceof HttpError) throw err;
         throw createHttpError(500, err);
     }

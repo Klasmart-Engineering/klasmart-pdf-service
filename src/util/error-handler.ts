@@ -21,6 +21,7 @@ export const errorHandler = (error: | HttpError | (Error & {status?: number}), r
     // In the case of an HttpError, map directly to an HTTP response
     if (error instanceof HttpError) {
         log.silly(error.stack);
+        log.verbose(`Sending error response ${error.statusCode} following error: ${error.message}`);
         response.status(error.statusCode ?? error.status).send(error.message);
         next();
         return;
@@ -29,6 +30,7 @@ export const errorHandler = (error: | HttpError | (Error & {status?: number}), r
     // In the Error message has a numeric status field, send that as the http response
     if (error.status && typeof error.status === 'number') {
         log.silly(error.stack);
+        log.verbose(`Mapped generic response to HTTP failure with code ${error.status}: ${error.message}`);
         response.status(error.status).send(error.message);
         next();
         return;

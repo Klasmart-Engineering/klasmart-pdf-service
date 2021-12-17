@@ -136,7 +136,7 @@ export const validatePDFTextContent = async (config: DocumentInitParameters): Pr
 }
 
 export const generatePageImage = async (document: PDFDocumentProxy, pageNumber: number): Promise<JPEGStream> => {
-    log.debug(`creating page: ${pageNumber}/${document.numPages}`)
+    log.verbose(`creating page: ${pageNumber}/${document.numPages}`)
     let pageProxy;
     try {
         pageProxy = await document.getPage(pageNumber);
@@ -159,7 +159,7 @@ export const generatePageImage = async (document: PDFDocumentProxy, pageNumber: 
     await renderTask.promise
     
     // Convert the canvas to an image buffer.
-    log.debug('creating jpeg output stream');
+    log.verbose('creating jpeg output stream');
     const imageOutputStream = nodeCanvas.canvas?.createJPEGStream({
         quality: parseFloat(process.env.JPEG_QUALITY as string) || DEFAULT_JPEG_IMAGE_QUALITY,
     });
