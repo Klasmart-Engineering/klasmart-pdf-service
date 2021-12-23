@@ -17,11 +17,12 @@ import { DocumentInitParameters } from 'pdfjs-dist/types/src/display/api';
 import { PDFDocumentProxy, } from 'pdfjs-dist/types/src/display/api';
 import { ValidationStatus } from './interfaces/validation-status';
 import { PDFValidationUpdateCallback } from './ws/pdf-ws';
+import { getAdaptedOutline } from './pdf/pdf-outline-builder';
+import { mapModelToDTO, PDFMetadataDTO } from './dto/PDFMetadataDTO';
 
 const log = withLogger('pdf-service');
 
 let pageResolutionCache: NodeCache;
-let validationCache: NodeCache;
 
 const defaultCacheProps = {
     stdTTL: 100,
@@ -45,11 +46,7 @@ export function initialize(
     }
 }
 
-export async function getAsyncValidationStatus(key: string): Promise<ValidationStatus | undefined> {
-    return validationCache.get(key);
-}
-
-export async function validateCMSPDF(pathPrefix: string, pdfName: string) : Promise<ValidationResult> {
+export async function validateCMSPDF(pathPrefix: string,pdfName: string) : Promise<ValidationResult> {
     const config: DocumentInitParameters = {
         url: createCMSURL(pdfName, pathPrefix)
     };
@@ -197,82 +194,6 @@ async function validatePDFWithStatusCallback(key: string, loadDocument: () => Pr
     updateCallback({ ...validationStatus });
 }
 
-
-export async function validatePostedPDFAsync(request: Request): Promise<ValidationStatus> {
-    // Generate Key
-    const key = uuidV4();
-    log.debug(`Validating payload using key ${key}`);
-
-    // Write PDF to temporary file
-    const fileLocation = `./${key}.pdf`;
-    await writeStreamToTempFile(fileLocation, request);
-    
-    // Get initial metadata
-    let document: PDFDocumentProxy;
-    try {   
-        document = await imageConverter.createDocumentFromOS(fileLocation);
-    } catch (err) {
-        // Immediate failure case
-        log.debug(`Immediate validation failure for document with key: ${key}`)
-        const failureStatus: ValidationStatus = { key, validationComplete: true, valid: false, totalPages: undefined, pagesValidated: undefined };
-        validationCache.set(key, failureStatus);
-        return failureStatus;
-    }
-
-    const totalPages = document.numPages;
-    const initialStatus: ValidationStatus = {
-        key,
-        pagesValidated: 0,
-        totalPages,
-        valid: undefined,
-        validationComplete: false
-    }
-    log.debug(`Initial document build with ${totalPages} pages created for payload with key: ${key}`)
-
-    validationCache.set(key, initialStatus);
-
-    // Trigger validation process
-    cachedValidatePDF(key, fileLocation, totalPages);
-
-    // Write response to client
-    return initialStatus;
-}
-
-async function cachedValidatePDF(key: string, fileLocation: string, pages: number) {
-    const documentReloadFrequency = 20;
-    let document: PDFDocumentProxy = await imageConverter.createDocumentFromOS(fileLocation);
-    const validationStatus: ValidationStatus = {
-        key,
-        pagesValidated: 0,
-        totalPages: pages,
-        valid: undefined,
-        validationComplete: false
-    };
-    log.verbose(`Beginning validation check of ${pages} pages for PDF with key ${key}`)
-
-    for(let i = 1; i <= pages; i++) {
-        log.silly(`Validating page ${i} for pdf with key: ${key}`)
-        if (i % documentReloadFrequency === 0) document = await imageConverter.createDocumentFromOS(fileLocation);
-        try {
-            await document.getPage(i);
-            validationStatus.pagesValidated = i;
-            validationCache.set(key, validationStatus);
-        } catch (err) {
-            log.verbose(`Validation failure for document with key ${key} on page ${i}: ${err.stack}`)
-            validationStatus.valid = false;
-            validationStatus.validationComplete = true;
-            validationCache.set(key, validationStatus);
-            deleteTemporaryValidationPDF(key, fileLocation);
-            return;
-        }
-    }
-    validationStatus.valid = true;
-    validationStatus.validationComplete = true;
-    validationCache.set(key, validationStatus);
-    deleteTemporaryValidationPDF(key, fileLocation);
-
-}
-
 export async function deleteTemporaryValidationPDF(key: string, fileLocation: string): Promise<undefined> {
     log.silly(`Validation check for PDF with key ${key} completed, deleting local file: ${fileLocation}.`)
     try {
@@ -304,6 +225,30 @@ export async function getPDFPages(pathPrefix: string, pdfName: string):Promise<n
     const { pdfMetadata } = await initializeMetadata(pdfURL);
 
     return pdfMetadata.totalPages;
+}
+
+/**
+ * Function for retrieving document metadata
+ * @param pdfName 
+ * @returns 
+ */
+export async function getPDFMetadata(path: string, pdfName: string): Promise<PDFMetadataDTO> {
+    try {
+        const em = getManager();
+        let rawMetadata = await em.findOne(PDFMetadata, pdfName);
+
+        // If metadata has not been generated yet, generate it
+        if (!rawMetadata) {
+            const url = createCMSURL(pdfName, path);
+            ({ pdfMetadata: rawMetadata } = await initializeMetadata(url));
+        }
+
+        // Map the internal data representation to the desired client facing format
+        return mapModelToDTO(rawMetadata);
+    } catch (err) {
+        log.error(`Error retrieving document metadata: ${err.stack}`)
+        throw err;
+    }
 }
 
 /**
@@ -488,8 +433,11 @@ async function initializeMetadata(pdfURL: URL) {
     try {
         const document = await imageConverter.createDocumentFromUrl(pdfURL.toString());
         const pages = document.numPages;
+        const outline = await getAdaptedOutline(document);
+        const pageIndexes = await document.getPageLabels() || undefined;
+        const url = pdfURL.toString().toLowerCase();
         log.debug(`${pages} detected for PDF at ${pdfURL}.`)
-        const pdfMetadata = new PDFMetadata(pdfURL.toString().toLowerCase(), pages, 0);
+        const pdfMetadata = new PDFMetadata(url, pages, 0, outline, pageIndexes);
         log.debug(`Storing metadata for PDF at ${pdfURL}`)
         await getManager().save(PDFMetadata, pdfMetadata);
         log.debug(`PDF metadata initialization complete for PDF at ${pdfURL}`);

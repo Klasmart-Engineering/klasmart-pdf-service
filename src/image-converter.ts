@@ -159,7 +159,7 @@ export const generatePageImage = async (document: PDFDocumentProxy, pageNumber: 
     await renderTask.promise
     
     // Convert the canvas to an image buffer.
-    log.verbose('creating jpeg output stream');
+    log.verbose(`creating jpeg output stream for page: ${pageNumber}/${document.numPages}`);
     const imageOutputStream = nodeCanvas.canvas?.createJPEGStream({
         quality: parseFloat(process.env.JPEG_QUALITY as string) || DEFAULT_JPEG_IMAGE_QUALITY,
     });
