@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.3.30-dev.3](https://bitbucket.org/calmisland/kidsloop-pdf-service/compare/v0.3.30-dev.2...v0.3.30-dev.3) (2021-12-23)
+
+
+### Bug Fixes
+
+* fixed issue that allowed pdf documents with invalid page content to pass validation on ws:/pdf/v2/validate endpoint ([3c052f1](https://bitbucket.org/calmisland/kidsloop-pdf-service/commit/3c052f15e28eabf03fe5ac738e4281b2c690b3a2))
+
 ### [0.3.30-dev.2](https://bitbucket.org/calmisland/kidsloop-pdf-service/compare/v0.3.30-dev.1...v0.3.30-dev.2) (2021-12-16)
 
 ### [0.3.30-dev.1](https://bitbucket.org/calmisland/kidsloop-pdf-service/compare/v0.3.30-dev.0...v0.3.30-dev.1) (2021-12-14)
