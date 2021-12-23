@@ -11,12 +11,12 @@ export const appRouter = Router();
 const log = withLogger('app.router');
 
 appRouter.post(`/validate`, 
-    Authorized(AuthType.Authenticated), 
+    // Authorized(AuthType.Authenticated), 
     AllowedContentTypes('application/pdf'),
     async (request: Request, response: Response, next: NextFunction) => {
         try {
             const registerTempFile = (filename: string) => response.locals.tempFiles = filename;
-            log.debug(`Request to validate posted file of length ${request.headers['content-length']} from user: ${response.locals.token.id} (${response.locals.token.email})`)
+            log.debug(`Request to validate posted file of length ${request.headers['content-length']} from user: ${response.locals.token?.id} (${response.locals.token?.email})`)
             const valid = await pdfService.validatePostedPDF(request, registerTempFile);
             log.info(`Validation result: ${JSON.stringify(valid)}`)
             response.json(valid);

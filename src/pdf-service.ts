@@ -158,7 +158,7 @@ export async function validatePDFWithStatusCallback(key: string, fileLocation: s
         log.silly(`Validating page ${i} for pdf with key: ${key}`)
         if (i % documentReloadFrequency === 0) document = await imageConverter.createDocumentFromOS(fileLocation);
         try {
-            await document.getPage(i);
+            await imageConverter.generatePageImage(document, i);
             validationStatus.pagesValidated = i;
             updateCallback(validationStatus);
         } catch (err) {
