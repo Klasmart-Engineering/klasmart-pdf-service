@@ -6,6 +6,7 @@ import pug from 'pug';
 import { withLogger } from 'kidsloop-nodejs-logger';
 import { Authorized, AuthType } from '../middleware/Access';
 import { AllowedContentTypes } from '../middleware/ContentTypeFilter';
+import Axios from 'axios';
 
 export const appRouter = Router();
 const log = withLogger('app.router');
@@ -69,6 +70,22 @@ appRouter.get(`/:pdfName/prerender`, Authorized(AuthType.Any),
     pdfService.prerenderDocument('assets', pdfName, accepted, reject);
 });
 
+appRouter.get(`/:pdfName/metadata`, Authorized(AuthType.Any),
+    async (request: Request, response: Response, next: NextFunction) => {
+        
+        const { pdfName } = request.params;
+        log.verbose(`Received request for metadata of pdf: ${pdfName}`);
+
+        try {
+            const metadata = await pdfService.getPDFMetadata(pdfName);
+            response.send(metadata);
+        } catch (err) {
+            next(err);
+            return;
+        }
+        next();
+});
+
 appRouter.get(`/:pdfName/validate`, async (request: Request, response: Response, next: NextFunction) => {
     const { pdfName } = request.params;
     try {
@@ -122,6 +139,17 @@ appRouter.get(`/:pdfName/render-page/:page`, async (request: Request, response: 
     if (process.env.NODE_ENV !== 'development') {
         response.sendStatus(404);
     }
+
+    //! TEMP
+    let x;
+    try {
+        x = await Axios.get('http://localhost:8888');
+        console.log(x)
+    } catch (err) {
+        console.log(x);
+        console.log(err);
+    }    
+    //! END-TEMP
 
     const { pdfName, page } = request.params;
     log.debug(`Request for direct render of page ${page}`)
