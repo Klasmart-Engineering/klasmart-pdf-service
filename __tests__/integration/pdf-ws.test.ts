@@ -76,6 +76,7 @@ describe('pdf-ws', () => {
         });
 
         it('should send validation status updates in sequential page order', (done) => {
+            
             const routeEndpoint = `ws://localhost:8888/pdf/v2/validate`;
             const socket = new WebSocket(routeEndpoint);
             socket.on('connect_error', (err) => {
@@ -104,7 +105,7 @@ describe('pdf-ws', () => {
                     }
                 }
             });
-        });
+        }).timeout(75_000);
 
         it('should terminate with an update with validationComplete value of true', (done) => {
             const routeEndpoint = `ws://localhost:8888/pdf/v2/validate`;

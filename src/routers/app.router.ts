@@ -11,7 +11,7 @@ export const appRouter = Router();
 const log = withLogger('app.router');
 
 appRouter.post(`/validate`, 
-    // Authorized(AuthType.Authenticated), 
+    Authorized(AuthType.Authenticated), 
     AllowedContentTypes('application/pdf'),
     async (request: Request, response: Response, next: NextFunction) => {
         try {
