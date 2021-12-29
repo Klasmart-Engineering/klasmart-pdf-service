@@ -1,10 +1,12 @@
 import WebSocket from 'ws';
-import { validatePDF } from './pdf-ws';
+import { validatePDF, validatePDFByContentId } from './pdf-ws';
 import { IncomingMessage } from 'http';
 import { withLogger } from 'kidsloop-nodejs-logger';
 import { Server } from 'http';
 
 const log = withLogger('initialize-ws');
+
+const validateByContentIdRegex = new RegExp(/^\/pdf\/v2\/(?:([^/]+?))\/validate\/?$/i);
 
 export function hookWebsocketHandler(server: Server): void {
     log.info('Registering websocket handlers on server');
@@ -28,6 +30,13 @@ export function hookWebsocketHandler(server: Server): void {
         switch(path) {
             case '/pdf/v2/validate': return await validatePDF(connection);
         }
+
+        if (validateByContentIdRegex.test(path)) {
+            const contentId = path.split('/')[3];
+            validatePDFByContentId(connection, contentId);
+            return;
+        }
+        
     });
     log.info('Websocket server created');
 }

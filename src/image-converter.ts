@@ -26,19 +26,19 @@ export interface ValidationResult {
   length?: number;
 }
 
-export const createDocumentFromUrl = async (pdfUrl: string): Promise<PDFDocumentProxy> => {
-  log.debug('creating document from URL');
+export const createDocumentFromUrl = async (pdfUrl: string, stopAtErrors = false): Promise<PDFDocumentProxy> => {
   try {
     // ? Note: await here allows for exceptions thrown by the promise to be caught in the catch block
-    return await pdf.getDocument({
+    log.verbose(`Creating PDF Document Proxy from URL: ${pdfUrl}`);
+    
+    const config = {
       url: pdfUrl,
+      stopAtErrors,
       cMapUrl: CMAP_URL,
       cMapPacked: CMAP_PACKED,
       standardFontDataUrl: STANDARD_FONT_DATA_URL,
-      httpHeaders: {
-        "x-correlation-id": withCorrelation()
-      }
-    }).promise;
+    };
+    return await pdf.getDocument(config).promise;
   } catch (err) {
     log.error(`Error creating PDF document proxy: ${err.message}`);
     log.error(err.stack);
@@ -50,7 +50,7 @@ export const createDocumentFromUrl = async (pdfUrl: string): Promise<PDFDocument
   }
 }
 
-export async function createDocumentFromOS(path: string): Promise<PDFDocumentProxy> {
+export async function createDocumentFromOS(path: string, stopAtErrors = false): Promise<PDFDocumentProxy> {
   log.debug('Creating document from read stream');
   const buffer = await fs.promises.readFile(path);
   try {
@@ -59,7 +59,7 @@ export async function createDocumentFromOS(path: string): Promise<PDFDocumentPro
       cMapUrl: CMAP_URL,
       cMapPacked: CMAP_PACKED,
       standardFontDataUrl: STANDARD_FONT_DATA_URL,
-      stopAtErrors: true
+      stopAtErrors
     }).promise;
   } catch (err) {
     const message = err instanceof Error ? err.stack : err;
@@ -90,6 +90,7 @@ export const validatePDFTextContent = async (config: DocumentInitParameters): Pr
     ...config
   };
   try {
+      console.log(documentOptions);
       document =  await pdf.getDocument(documentOptions).promise;
     } catch (err) {
       log.error(`Error creating PDF document proxy: ${err.message}`);

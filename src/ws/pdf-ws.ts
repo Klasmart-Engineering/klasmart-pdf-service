@@ -51,7 +51,7 @@ export async function validatePDF(connection: WebSocket): Promise<void> {
     }
     const validationUpdateCallback: PDFValidationUpdateCallback = (data: ValidationStatus) => connection.send(JSON.stringify(data));
 
-    await pdfService.validatePDFWithStatusCallback(key, fileLocation, validationUpdateCallback);
+    await pdfService.validatePostedPDFWithStatusCallback(key, fileLocation, validationUpdateCallback);
 
     connection.close();
     log.verbose(`Removing temporary file at ${fileLocation}`);
@@ -60,6 +60,13 @@ export async function validatePDF(connection: WebSocket): Promise<void> {
     } catch (err) {
         log.error(`Error removing temporary file with key ${key}: ${err.stack}`);
     }
+}
+
+export async function validatePDFByContentId(connection: WebSocket, contentId: string): Promise<void> {
+    const validationUpdateCallback: PDFValidationUpdateCallback = (data: ValidationStatus) => connection.send(JSON.stringify(data));
+
+    await pdfService.validatePDFWithStatusCallbackByContentId(contentId, validationUpdateCallback);
+    connection.close();
 }
 
 (async () => await configure())();

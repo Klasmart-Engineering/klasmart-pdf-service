@@ -51,7 +51,7 @@ export async function getAsyncValidationStatus(key: string): Promise<ValidationS
 
 export async function validateCMSPDF(pdfName: string) : Promise<ValidationResult> {
     const config: DocumentInitParameters = {
-        url: `${process.env.CMS_BASE_URL}/assets/${pdfName}`
+        url: createCMSURL(pdfName)
     };
     return imageConverter.validatePDFTextContent(config);
 }
@@ -124,12 +124,23 @@ export async function validatePostedPDF(request: Request, registerTempFile: (fil
     return { ...valid, hash: hashString, length };
 }
 
-export async function validatePDFWithStatusCallback(key: string, fileLocation: string, updateCallback: PDFValidationUpdateCallback): Promise<void> {
+export async function validatePDFWithStatusCallbackByContentId(contentId: string, updateCallback: PDFValidationUpdateCallback): Promise<void> {
+    const loadDocument = async () => imageConverter.createDocumentFromUrl(createCMSURL(contentId), true);
+    await validatePDFWithStatusCallback(contentId, loadDocument, updateCallback);
+}
+
+export async function validatePostedPDFWithStatusCallback(key: string, fileLocation: string, updateCallback: PDFValidationUpdateCallback): Promise<void> {
+    const loadDocument = async () => imageConverter.createDocumentFromOS(fileLocation, true);
+    await validatePDFWithStatusCallback(key, loadDocument, updateCallback);
+}
+
+
+async function validatePDFWithStatusCallback(key: string, loadDocument: () => Promise<PDFDocumentProxy>, updateCallback: PDFValidationUpdateCallback) {
     const documentReloadFrequency = 20;
 
     let document: PDFDocumentProxy;
     try {
-        document = await imageConverter.createDocumentFromOS(fileLocation);
+        document = await loadDocument();
     } catch (err) {
         log.verbose(`PDF Document metadata read failure thrown by pdf.js: ${err.message}`)
         // Immediate failure case, document is corrupt or not a PDF document 
@@ -156,7 +167,7 @@ export async function validatePDFWithStatusCallback(key: string, fileLocation: s
 
     for(let i = 1; i <= pages; i++) {
         log.silly(`Validating page ${i} for pdf with key: ${key}`)
-        if (i % documentReloadFrequency === 0) document = await imageConverter.createDocumentFromOS(fileLocation);
+        if (i % documentReloadFrequency === 0) document = await loadDocument();
         try {
             await imageConverter.generatePageImage(document, i);
             validationStatus.pagesValidated = i;
@@ -166,7 +177,6 @@ export async function validatePDFWithStatusCallback(key: string, fileLocation: s
             validationStatus.valid = false;
             validationStatus.validationComplete = true;
             updateCallback(validationStatus);
-            deleteTemporaryValidationPDF(key, fileLocation);
             return;
         }
     }
@@ -175,6 +185,7 @@ export async function validatePDFWithStatusCallback(key: string, fileLocation: s
     log.verbose(`PDF with key: ${key} determined valid.`);
     updateCallback(validationStatus);
 }
+
 
 export async function validatePostedPDFAsync(request: Request): Promise<ValidationStatus> {
     // Generate Key
@@ -479,4 +490,8 @@ export const mapPageKey = (pdfURL: URL, pdfName: string, page: number): string =
     hash.update(Buffer.from(pdfURL.toString().toUpperCase()));
     const digest = hash.digest().toString('hex');
     return `${pdfName.toLowerCase()}-${digest}/${page}.jpeg`;
+}
+
+export function createCMSURL(contentId: string): string {
+    return `${process.env.CMS_BASE_URL}/assets/${contentId}`;
 }
