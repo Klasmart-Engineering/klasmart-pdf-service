@@ -215,7 +215,7 @@ describe('pdf-service', () => {
             cache.set(pdfService.mapPageKey(testUrl, testPdfName, 10), Promise.resolve());
 
             await pdfService.getPDFPage(testPdfName, page, testUrl)
-                .should.eventually.be.rejectedWith(`Document does not contain page: ${page}`)
+                .should.eventually.be.rejectedWith(`does not contain page: ${page}`)
                 .and.be.an.instanceOf(Error)
                 .and.have.property('status', 404);
         });
@@ -248,7 +248,7 @@ describe('pdf-service', () => {
             cache.set(pdfService.mapPageKey(testUrl, testPdfName, 10), Promise.resolve());
 
             await pdfService.getPDFPage(testPdfName, page, testUrl)
-                .should.eventually.be.rejectedWith(`Document does not contain page: ${page}`)
+                .should.eventually.be.rejectedWith(`does not contain page: ${page}`)
                 .and.be.an.instanceOf(Error)
                 .and.have.property('status', 404);
         });
