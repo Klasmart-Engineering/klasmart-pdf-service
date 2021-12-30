@@ -134,7 +134,17 @@ export async function validatePostedPDFWithStatusCallback(key: string, fileLocat
     await validatePDFWithStatusCallback(key, loadDocument, updateCallback);
 }
 
-
+/**
+ * Validates a PDF Documents structure by rendering each page. Function
+ * communicates validation status by calling a provided callback function
+ * with an instance of ValidationStatus as an argument.
+ * Loads, reloads document data using a provided loadDocument function.
+ * 
+ * @param key - Identifying key for the document, may be a canonical name or generated ID
+ * @param loadDocument - Callback function that resolves to a PDFDocumentProxy
+ * @param updateCallback - Callback function which is called when ValidationStatus is updated
+ * @returns 
+ */
 async function validatePDFWithStatusCallback(key: string, loadDocument: () => Promise<PDFDocumentProxy>, updateCallback: PDFValidationUpdateCallback) {
     const documentReloadFrequency = 20;
 
@@ -154,7 +164,6 @@ async function validatePDFWithStatusCallback(key: string, loadDocument: () => Pr
         return;
     }
     
-    
     const pages = document.numPages;
     const validationStatus: ValidationStatus = {
         key,
@@ -171,19 +180,19 @@ async function validatePDFWithStatusCallback(key: string, loadDocument: () => Pr
         try {
             await imageConverter.generatePageImage(document, i);
             validationStatus.pagesValidated = i;
-            updateCallback(validationStatus);
+            updateCallback({ ...validationStatus });
         } catch (err) {
             log.verbose(`Validation failure for document with key ${key} on page ${i}: ${err.stack}`)
             validationStatus.valid = false;
             validationStatus.validationComplete = true;
-            updateCallback(validationStatus);
+            updateCallback({ ...validationStatus });
             return;
         }
     }
     validationStatus.valid = true;
     validationStatus.validationComplete = true;
     log.verbose(`PDF with key: ${key} determined valid.`);
-    updateCallback(validationStatus);
+    updateCallback({ ...validationStatus });
 }
 
 

@@ -899,5 +899,58 @@ describe('pdf-service', () => {
 
             await result.should.eventually.be.rejectedWith(expectedError);
         });
+    });
+
+    describe('validatePDFWithStatusCallback', async () => {
+        const validatePDFWithStatusCallback = rewiredPdfService.__get__('validatePDFWithStatusCallback');
+        it('should call callback with failure if loadDocument throws', async () => {
+            const loadDocument = () => Promise.reject({});
+            const callback = sinon.stub<[ValidationStatus]>();
+            await validatePDFWithStatusCallback('key', loadDocument, callback);
+            expect(callback.getCalls()[0].firstArg).not.to.be.undefined;
+            expect(callback.getCalls()[0].firstArg.valid).to.be.false;
+        });
+
+        it('should call callback with pass if all calls to generatePageImage resolve', async () => {
+            const loadDocument = () => Promise.resolve({ numPages: 5 });
+            const callback = sinon.stub<[ValidationStatus]>();
+            fakeImageConverter.generatePageImage.resolves();
+            await validatePDFWithStatusCallback('key', loadDocument, callback);
+            expect(callback.lastCall?.firstArg?.valid).to.be.true;
+        });
+
+        it('should call callback n+1 times for a document of n pages when all pages resolve', async () => {
+            const numPages = 5;
+            const loadDocument = () => Promise.resolve({ numPages });
+            const callback = sinon.stub<[ValidationStatus]>();
+            fakeImageConverter.generatePageImage.resolves();
+            await validatePDFWithStatusCallback('key', loadDocument, callback);
+            expect(callback.getCalls().length).to.equal(numPages + 1);
+        });
+
+        it('should call callback with failure when generatePageImage rejects', async () => {
+            const loadDocument = () => Promise.resolve({ numPages: 5 });
+            const callback = sinon.stub<[ValidationStatus]>();
+            fakeImageConverter.generatePageImage.resolves();
+            fakeImageConverter.generatePageImage.onThirdCall().rejects({});
+            await validatePDFWithStatusCallback('key', loadDocument, callback);
+            expect(callback.lastCall?.firstArg?.valid).to.be.false;
+        });
+
+        it('should call callback with pages in sequential order', async () => {
+            const numPages = 5;
+            let expectedPage = 0;
+            const loadDocument = () => Promise.resolve({ numPages });
+            const callback = sinon.stub<[ValidationStatus]>();
+            fakeImageConverter.generatePageImage.resolves();
+            await validatePDFWithStatusCallback('key', loadDocument, callback);
+            const calls = callback.getCalls();
+            for(let i = 0; i < calls.length; i++) {
+                const arg: ValidationStatus = calls[i].firstArg;
+                if (!arg.validationComplete) {
+                    expect(arg.pagesValidated).to.equal(++expectedPage);
+                }
+            }
+        });
     })
 });
