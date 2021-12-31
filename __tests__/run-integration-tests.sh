@@ -6,8 +6,13 @@ S3_NINJA_HASH=$(docker run -d -p 9872:9000 scireum/s3-ninja:7.1.1)
 echo "Waiting for S3-Ninja startup"
 sleep 10
 
-# Configure ENV variables for S3 Ninja usage
+# Move PDFs used for integration tests to assets folder
+cp ./__tests__/integration/resources/invalid.pdf ./src/testing-pdfs/assets/integration-invalid.pdf
+cp ./__tests__/integration/resources/long.pdf ./src/testing-pdfs/assets/integration-long.pdf
+cp ./__tests__/integration/resources/valid.pdf ./src/testing-pdfs/assets/integration-valid.pdf
 
+
+# Configure ENV variables for S3 Ninja usage
 export AWS_SECRET_KEY=$(docker exec $S3_NINJA_HASH cat /home/sirius/app/application.conf | grep "awsSecretKey" | grep -o '".*"' | sed 's/"//g')
 export AWS_SECRET_KEY_NAME=$(docker exec $S3_NINJA_HASH cat /home/sirius/app/application.conf | grep "awsAccessKey" | grep -o '".*"' | sed 's/"//g')
 export AWS_REGION=ap-northeast-2
@@ -19,3 +24,8 @@ npm run test:integration
 
 # Clean up
 docker stop $S3_NINJA_HASH
+
+# CLean up PDF documents
+rm ./src/testing-pdfs/assets/integration-invalid.pdf
+rm ./src/testing-pdfs/assets/integration-long.pdf
+rm ./src/testing-pdfs/assets/integration-valid.pdf

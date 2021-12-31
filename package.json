@@ -12,7 +12,7 @@
     "start:dist": "node -r dotenv/config ./dist/app.js",
     "test": "npm run test:unit",
     "test:unit": "LOG_LEVEL=silly LOG_STYLE=SILENT AWS_BUCKET=sample-bucket AWS_REGION=ap-northeast-2 NODE_ENV=test NEW_RELIC_ENABLED=false nyc ts-mocha \"__tests__/unit/**/*.test.ts\"",
-    "test:integration": "LOG_LEVEL=silly LOG_STYLE=SILENT NEW_RELIC_ENABLED=false DEV_JWT_SECRET=pdf-integration-test-secret nyc ts-mocha \"__tests__/integration/*.test.ts\"",
+    "test:integration": "LOG_LEVEL=silly LOG_STYLE=STRING_COLOR NEW_RELIC_ENABLED=false DEV_JWT_SECRET=pdf-integration-test-secret nyc ts-mocha \"__tests__/integration/*.test.ts\"",
     "cover": "npm run cover:unit && npm run cover:integration && npm run cover:report",
     "cover:unit": "nyc --silent npm run test:unit",
     "cover:integration": "nyc --silent --no-clean npm run test:integration",

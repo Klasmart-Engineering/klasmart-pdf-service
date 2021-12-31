@@ -27,17 +27,27 @@ startxref
 
 
 describe('pdf-ws', () => {
-
     let wsServerAddress: string;
     let server: Server;
-
+    const port = process.env.PORT || 8888;
+    let cmsBaseUrl = `http://localhost:${port}`;
+    
+    let oldCmsBaseUrl: string;
+    let oldExposeTestingPDFs: string;
+    
     before(() => {
-        const port = 8888;
+        oldCmsBaseUrl = process.env.CMS_BASE_URL;
+        oldExposeTestingPDFs = process.env.EXPOSE_TESTING_PDFS;
+        process.env.CMS_BASE_URL = cmsBaseUrl;
+        process.env.EXPOSE_TESTING_PDFS = 'EXPOSE';
+        
         const app = express();
         app.use((req, _res, next) => {
             console.log(`request received for path: ${req.path}`);
             next();
         })
+        console.log(__dirname)
+        app.use(express.static(__dirname + '/resources'));
         server = app.listen(port, () => {
             log.debug('Test server for ws integration tests listening on port 8888');
         });
@@ -51,11 +61,9 @@ describe('pdf-ws', () => {
         });
     });
 
-    describe('validatePDF', () => {
-
-        
+    describe('/pdf/v2/validate', () => {
         it('should send validation status updates', (done) => {
-            const routeEndpoint = `ws://localhost:8888/pdf/v2/validate`;
+            const routeEndpoint = `ws://localhost:${port}/pdf/v2/validate`;
             const socket = new WebSocket(routeEndpoint);
 
             socket.on('connect_error', (err) => {
@@ -77,7 +85,7 @@ describe('pdf-ws', () => {
 
         it('should send validation status updates in sequential page order', (done) => {
             
-            const routeEndpoint = `ws://localhost:8888/pdf/v2/validate`;
+            const routeEndpoint = `ws://localhost:${port}/pdf/v2/validate`;
             const socket = new WebSocket(routeEndpoint);
             socket.on('connect_error', (err) => {
                 log.error(err.stack);
@@ -85,7 +93,7 @@ describe('pdf-ws', () => {
             })
             let previousPage: number;
             socket.on('open', () => {
-                const data = fs.readFileSync('./__tests__/integration/resources/long.pdf');
+                const data = fs.readFileSync('./__tests__/integration/resources/assets/long.pdf');
                 const buff = Buffer.from(data);
                 socket.send(buff);
             })
@@ -108,7 +116,7 @@ describe('pdf-ws', () => {
         }).timeout(75_000);
 
         it('should terminate with an update with validationComplete value of true', (done) => {
-            const routeEndpoint = `ws://localhost:8888/pdf/v2/validate`;
+            const routeEndpoint = `ws://localhost:${port}/pdf/v2/validate`;
             const socket = new WebSocket(routeEndpoint);
             let lastPayload;
             socket.on('connect_error', (err) => {
@@ -116,7 +124,7 @@ describe('pdf-ws', () => {
                 assert.fail(`Error opening connection: ${err.stack}`);
             });
             socket.on('open', () => {
-                const data = fs.readFileSync('./__tests__/integration/resources/valid.pdf');
+                const data = fs.readFileSync('./__tests__/integration/resources/assets/valid.pdf');
                 const buff = Buffer.from(data);
                 socket.send(buff);
             });
@@ -135,14 +143,14 @@ describe('pdf-ws', () => {
         });
 
         it('should validate a valid PDF document as valid', (done) => {
-            const routeEndpoint = `ws://localhost:8888/pdf/v2/validate`;
+            const routeEndpoint = `ws://localhost:${port}/pdf/v2/validate`;
             const socket = new WebSocket(routeEndpoint);
             socket.on('connect_error', (err) => {
                 log.error(err.stack);
                 assert.fail(`Error opening connection: ${err.stack}`);
             });
             socket.on('open', () => {
-                const data = fs.readFileSync('./__tests__/integration/resources/valid.pdf');
+                const data = fs.readFileSync('./__tests__/integration/resources/assets/valid.pdf');
                 const buff = Buffer.from(data);
                 socket.send(buff);
             });
@@ -159,14 +167,14 @@ describe('pdf-ws', () => {
         });
 
         it('should validate a non-PDF document as invalid', (done) => {
-            const routeEndpoint = `ws://localhost:8888/pdf/v2/validate`;
+            const routeEndpoint = `ws://localhost:${port}/pdf/v2/validate`;
             const socket = new WebSocket(routeEndpoint);
             socket.on('connect_error', (err) => {
                 log.error(err.stack);
                 assert.fail(`Error opening connection: ${err.stack}`);
             });
             socket.on('open', () => {
-                const data = fs.readFileSync('./__tests__/integration/resources/invalid.pdf');
+                const data = fs.readFileSync('./__tests__/integration/resources/assets/invalid.pdf');
                 const buff = Buffer.from(data);
                 socket.send(buff);
             });
@@ -183,7 +191,116 @@ describe('pdf-ws', () => {
         });
     });
 
+    describe('/pdf/v2/:contentID/validate', () => {
+        it('should send validation status updates', (done) => {
+            const routeEndpoint = `ws://localhost:${port}/pdf/v2/valid.pdf/validate`;
+            const socket = new WebSocket(routeEndpoint);
+
+            socket.on('connect_error', (err) => {
+                log.error(err.stack);
+                throw err;
+            })
+            
+            socket.on('message', (buffer) => {
+                const payload = JSON.parse(buffer.toString());
+                if (payload.validationComplete) {
+                    done();
+                }
+            });
+        });
+
+        it('should send validation status updates in sequential page order', (done) => {
+            
+            const routeEndpoint = `ws://localhost:${port}/pdf/v2/long.pdf/validate`;
+            const socket = new WebSocket(routeEndpoint);
+            socket.on('connect_error', (err) => {
+                log.error(err.stack);
+                throw err;
+            })
+            let previousPage: number;
+            socket.on('message', (buffer) => {
+                const payload: ValidationStatus = JSON.parse(buffer.toString());
+                
+                if (payload.validationComplete) {
+                    done();
+                    return;
+                }
+
+                if (!previousPage) {
+                    previousPage = payload.pagesValidated;
+                } else {
+                    if (++previousPage !== payload.pagesValidated) {
+                        assert.fail(`Status for page ${payload.pagesValidated} should follow ${payload.pagesValidated - 1}, but followed ${previousPage - 1}`);
+                    }
+                }
+            });
+        }).timeout(75_000);
+
+        it('should terminate with an update with validationComplete value of true', (done) => {
+            const routeEndpoint = `ws://localhost:${port}/pdf/v2/valid.pdf/validate`;
+            const socket = new WebSocket(routeEndpoint);
+            let lastPayload;
+            socket.on('connect_error', (err) => {
+                log.error(err.stack);
+                assert.fail(`Error opening connection: ${err.stack}`);
+            });
+
+            socket.on('message', (buffer) => {
+                const payload: ValidationStatus = JSON.parse(buffer.toString());
+                lastPayload = payload;
+            });
+
+            socket.on('close', () => {
+                if (lastPayload?.validationComplete) {
+                    done();
+                } else {
+                    assert.fail();
+                }
+            })
+        });
+
+        it('should validate a valid PDF document as valid', (done) => {
+            const routeEndpoint = `ws://localhost:${port}/pdf/v2/valid.pdf/validate`;
+            const socket = new WebSocket(routeEndpoint);
+            socket.on('connect_error', (err) => {
+                log.error(err.stack);
+                assert.fail(`Error opening connection: ${err.stack}`);
+            });
+            socket.on('message', (buffer) => {
+                const payload: ValidationStatus = JSON.parse(buffer.toString());
+                if (payload.validationComplete) {
+                    if (payload.valid) {
+                        done();
+                    } else {
+                        assert.fail(`Valid PDF should be evaluated as valid`);
+                    }
+                }
+            });
+        });
+
+        it('should validate a non-PDF document as invalid', (done) => {
+            const routeEndpoint = `ws://localhost:${port}/pdf/v2/invalid.pdf/validate`;
+            const socket = new WebSocket(routeEndpoint);
+            socket.on('connect_error', (err) => {
+                log.error(err.stack);
+                assert.fail(`Error opening connection: ${err.stack}`);
+            });
+            socket.on('message', (buffer) => {
+                const payload: ValidationStatus = JSON.parse(buffer.toString());
+                if (payload.validationComplete) {
+                    if (payload.valid === false) {
+                        done();
+                    } else {
+                        assert.fail(`Valid PDF should be evaluated as valid`);
+                    }
+                }
+            });
+        });
+    });
+
     after(() => {
+        process.env.CMS_BASE_URL = oldCmsBaseUrl;
+        process.env.EXPOSE_TESTING_PDFS = oldExposeTestingPDFs;
         log.info('Closing test server');
         server.close();
     })
