@@ -43,6 +43,17 @@ describe('pdf-service', () => {
 
     let cache: NodeCache;
 
+    let previousCMSBaseURL: string;
+
+    before(() => {
+        previousCMSBaseURL = process.env.CMS_BASE_URL;
+        process.env.CMS_BASE_URL = 'http://localhost:32891';
+    })
+
+    after(() => {
+        process.env.CMS_BASE_URL = previousCMSBaseURL;
+    })
+
     beforeEach(() => {
         rewiredPdfService = rewire<typeof pdfService>('../../src/pdf-service');
         fakeEntityManager = sandbox.createStubInstance(typeorm.EntityManager);
@@ -82,7 +93,7 @@ describe('pdf-service', () => {
         it('should reject with 500 if findOne rejects', async () => {
             fakeEntityManager.findOne.rejects();
 
-            await pdfService.getPDFPages(testUrl)
+            await pdfService.getPDFPages('assets', 'pdf-name.pdf')
                 .should.eventually.be.rejectedWith('Error')
                 .and.be.an.instanceOf(Error)
                 .and.have.property('status', 500);
@@ -93,7 +104,7 @@ describe('pdf-service', () => {
             
             fakeEntityManager.findOne.resolves({ totalPages });
 
-            await pdfService.getPDFPages(testUrl)
+            await pdfService.getPDFPages('assets', 'pdf-name.pdf')
                 .should.eventually.equal(totalPages);
         });
 
@@ -104,7 +115,7 @@ describe('pdf-service', () => {
             fakeEntityManager.save.resolvesArg(0);
             fakeImageConverter.createDocumentFromUrl.resolves({ numPages } as PDFDocumentProxy);
 
-            await pdfService.getPDFPages(testUrl)
+            await pdfService.getPDFPages('assets', 'pdf-name.pdf')
                 .should.eventually.equal(numPages);
         });
 
@@ -115,7 +126,7 @@ describe('pdf-service', () => {
             fakeEntityManager.save.rejects();
             fakeImageConverter.createDocumentFromUrl.resolves({ numPages } as PDFDocumentProxy);
 
-            await pdfService.getPDFPages(testUrl)
+            await pdfService.getPDFPages('assets', 'pdf-name.pdf')
                 .should.eventually.be.rejectedWith('Error')
                 .and.be.an.instanceOf(Error)
                 .and.have.property('status', 500);
@@ -126,7 +137,7 @@ describe('pdf-service', () => {
             fakeEntityManager.save.resolvesArg(0);
             fakeImageConverter.createDocumentFromUrl.rejects();
 
-            await pdfService.getPDFPages(testUrl)
+            await pdfService.getPDFPages('assets', 'pdf-name.pdf')
                 .should.eventually.be.rejectedWith('Error')
                 .and.be.an.instanceOf(Error)
                 .and.have.property('status', 500);
@@ -138,7 +149,7 @@ describe('pdf-service', () => {
             const expectedError = createError(401, 'sample-test-error')
             fakeImageConverter.createDocumentFromUrl.rejects(expectedError);
 
-            await pdfService.getPDFPages(testUrl)
+            await pdfService.getPDFPages('assets', 'pdf-name.pdf')
                 .should.eventually.be.rejectedWith(expectedError.message)
                 .and.be.an.instanceOf(Error)
                 .and.have.property('status', expectedError.status);
@@ -692,6 +703,7 @@ describe('pdf-service', () => {
     });
 
     describe('prerenderDocument', () => {
+        const pdfName = 'test-file.pdf';
         it('should attempt to generate a page from 1 to return value of getPDFPages inclusively', async () => {
             let count = 0;
             
@@ -701,7 +713,7 @@ describe('pdf-service', () => {
                 return Promise.resolve(Readable.from(Buffer.from('')));
             });
 
-            await rewiredPdfService.prerenderDocument('somepdf', new URL('http://someurl.com'), () => {}, rejectStub);
+            await rewiredPdfService.prerenderDocument('somepdf', pdfName, () => {}, rejectStub);
             await asyncTimeout(300);
             expect(count).to.equal(5);
         });
@@ -715,7 +727,7 @@ describe('pdf-service', () => {
                 return Promise.resolve(Readable.from(Buffer.from('')));
             });
 
-            await rewiredPdfService.prerenderDocument('somepdf', new URL('http://someurl.com'), () => {}, rejectStub)
+            await rewiredPdfService.prerenderDocument('somepdf', pdfName, () => {}, rejectStub)
             expect(rejectStub.calledOnce).be.true;
             expect(rejectStub.firstCall.firstArg).to.equal(expected);
         });
@@ -729,7 +741,7 @@ describe('pdf-service', () => {
                 return Promise.resolve(Readable.from(Buffer.from('')));
             });
 
-            await rewiredPdfService.prerenderDocument('somepdf', new URL('http://someurl.com'), () => {}, rejectStub);
+            await rewiredPdfService.prerenderDocument('somepdf', pdfName, () => {}, rejectStub);
             await asyncTimeout(300);
             expect(count).to.equal(3);
         });
@@ -742,7 +754,7 @@ describe('pdf-service', () => {
                 return Promise.resolve(Readable.from(Buffer.from('')));
             });
 
-            rewiredPdfService.prerenderDocument('somepdf', new URL('http://someurl.com'), acceptedStub, rejectStub);
+            rewiredPdfService.prerenderDocument('somepdf', pdfName, acceptedStub, rejectStub);
             // Although prerenderDocument has resolved, getPDFPage should not have resolved yet
             expect(acceptedStub.calledOnce).to.equal(false);
             
