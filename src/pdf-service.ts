@@ -49,9 +49,9 @@ export async function getAsyncValidationStatus(key: string): Promise<ValidationS
     return validationCache.get(key);
 }
 
-export async function validateCMSPDF(pdfName: string) : Promise<ValidationResult> {
+export async function validateCMSPDF(pathPrefix: string, pdfName: string) : Promise<ValidationResult> {
     const config: DocumentInitParameters = {
-        url: createCMSURL(pdfName)
+        url: createCMSURL(pdfName, pathPrefix)
     };
     return imageConverter.validatePDFTextContent(config);
 }
@@ -283,7 +283,9 @@ export async function deleteTemporaryValidationPDF(key: string, fileLocation: st
     return;
 }
 
-export async function getPDFPages(pdfURL: URL):Promise<number> {
+export async function getPDFPages(pathPrefix: string, pdfName: string):Promise<number> {
+    const pdfURL = new URL(createCMSURL(pdfName, pathPrefix));
+    log.debug(`Request for PDF pages for PDF located at ${pdfURL.toString()}.`)
     let existingMetadata;
     try {
         const em = getManager();
@@ -309,10 +311,11 @@ export async function getPDFPages(pdfURL: URL):Promise<number> {
  * @param pdfURL
  * @param accepted - Function, call when the response is ready to be accepted 
  */
-export async function prerenderDocument(pdfName: string, pdfURL: URL, accepted: () => void, reject: (err: Error) => void): Promise<void> {
+export async function prerenderDocument(pathPrefix: string, pdfName: string, accepted: () => void, reject: (err: Error) => void): Promise<void> {
+    const pdfURL = new URL(createCMSURL(pdfName, pathPrefix));
     let pages: number;
     try {
-        pages = await getPDFPages(pdfURL);
+        pages = await getPDFPages(pdfName, pathPrefix);
         accepted();
     } catch(err) {
         // PDF document is invalid or missing, fail fast and alert user
@@ -336,7 +339,7 @@ export async function prerenderDocument(pdfName: string, pdfURL: URL, accepted: 
     If the pageKey is not in the cache it will add it to the cache and then load the PDF, generate an image for the page and save it to S3,
         then return a stream for this image
 */
-export async function getPDFPage(pdfName: string, page: number, pdfURL: URL): Promise<Readable> {
+export async function getPDFPage(pdfName: string, page: number, pdfURL: URL, pathPrefix = 'assets'): Promise<Readable> {
     const pageKey = mapPageKey(pdfURL, pdfName, page);
     let pageStream: Readable | undefined;
     
@@ -391,7 +394,8 @@ export async function getPDFPage(pdfName: string, page: number, pdfURL: URL): Pr
     return stream;
 }
 
-export async function getDirectPageRender(page: number, pdfURL: URL): Promise<JPEGStream> {
+export async function getDirectPageRender(page: number, pathPrefix: string, pdfName: string): Promise<JPEGStream> {
+    const pdfURL = new URL(createCMSURL(pdfName, pathPrefix));
     const document = await imageConverter.createDocumentFromUrl(pdfURL.toString());
     return imageConverter.generatePageImage(document, page);
 }
@@ -501,6 +505,6 @@ export const mapPageKey = (pdfURL: URL, pdfName: string, page: number): string =
     return `${pdfName.toLowerCase()}-${digest}/${page}.jpeg`;
 }
 
-export function createCMSURL(contentId: string): string {
-    return `${process.env.CMS_BASE_URL}/assets/${contentId}`;
+export function createCMSURL(contentId: string, pathPrefix = 'assets'): string {
+    return `${process.env.CMS_BASE_URL}/${pathPrefix}/${contentId}`;
 }
