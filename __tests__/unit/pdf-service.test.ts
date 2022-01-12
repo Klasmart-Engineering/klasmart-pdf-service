@@ -204,10 +204,12 @@ describe('pdf-service', () => {
             const expected = Readable.from(Buffer.from('abc'.repeat(100)));
             const unexpected = Readable.from(Buffer.from('nono'.repeat(100)));
             fakeS3Service.readObject.onFirstCall().resolves(undefined);
-            fakeS3Service.readObject.onSecondCall().resolves(expected)
+            fakeS3Service.readObject.onSecondCall().resolves(expected);
             fakeS3Service.readObject.onThirdCall().resolves(unexpected);
 
-            cache.set(pdfService.mapPageKey(testUrl, testPdfName, 1), Promise.resolve());
+
+            fakeEntityManager.findOne.resolves({totalPages: 5});
+            cache.set(pdfService.mapPageKey(new URL('http://localhost:32891/assets/some-pdf.pdf'), testPdfName, 1), Promise.resolve());
 
             await pdfService.getPDFPage(testPdfName, 1, 'assets')
                 .should.eventually.equal(expected);

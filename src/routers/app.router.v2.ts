@@ -8,7 +8,7 @@ import { Authorized, AuthType } from '../middleware/Access';
 import { AllowedContentTypes } from '../middleware/ContentTypeFilter';
 
 export const appRouter = Router();
-const log = withLogger('app.router');
+const log = withLogger('app.router.v2');
 
 appRouter.post(`/validate`, 
     Authorized(AuthType.Authenticated), 
@@ -130,21 +130,23 @@ appRouter.get(`/:pathPrefix/:pdfName/render-page/:page`, async (request: Request
     // ? while +num will drop the 0, a more inuitive behavior to service consumers
 
     if (isNaN(+page)) {
+        log.debug(`Invalid page request: ${page} must be numeric`);
         next(createError(400, 'Page must be numeric'));
         return;
     }
 
     // Validate page is a natural number
     if (page.split('.').length > 1) {
+        log.debug(`Invalid page request: ${page} may not contain a decimal portion`);
         next(createError(400, 'Page may not contain a decimal portion'));
         return;
     }
 
     if (+page < 1) {
+        log.debug(`Invalid page request: ${page} must be a positive value`);
         next(createError(400, 'Page must be a positive value'));
         return;
     }
-
     
     response.contentType('image/jpeg')
     try {
