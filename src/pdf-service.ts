@@ -324,7 +324,7 @@ export async function prerenderDocument(pathPrefix: string, pdfName: string, acc
     }
     for(let i = 1; i <= pages; i++) {
         try {
-            const stream = await getPDFPage(pdfName, i, pdfURL);
+            const stream = await getPDFPage(pdfName, i, pathPrefix);
             // Destroy stream so that .close listeners fire
             stream.destroy();
         } catch (err) {
@@ -339,7 +339,8 @@ export async function prerenderDocument(pathPrefix: string, pdfName: string, acc
     If the pageKey is not in the cache it will add it to the cache and then load the PDF, generate an image for the page and save it to S3,
         then return a stream for this image
 */
-export async function getPDFPage(pdfName: string, page: number, pdfURL: URL, pathPrefix = 'assets'): Promise<Readable> {
+export async function getPDFPage(pdfName: string, page: number, pathPrefix = 'assets'): Promise<Readable> {
+    const pdfURL = new URL(createCMSURL(pdfName, pathPrefix));
     const pageKey = mapPageKey(pdfURL, pdfName, page);
     let pageStream: Readable | undefined;
     

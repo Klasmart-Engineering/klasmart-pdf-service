@@ -104,11 +104,9 @@ appRouter.get(`/:pdfName/page/:page`, async (request: Request, response: Respons
         return;
     }
     
-    const pdfURL = new URL(`/assets/${pdfName}`, process.env.CMS_BASE_URL);
-    
     response.contentType('image/jpeg')
     try {
-        const stream: Readable = await pdfService.getPDFPage(pdfName, +page, pdfURL)
+        const stream: Readable = await pdfService.getPDFPage(pdfName, +page, 'assets');
         stream.pipe(response)
     } catch (err) {
         next(err);

@@ -163,7 +163,7 @@ describe('pdf-service', () => {
             fakeS3Service.readObject.onFirstCall().rejects(new Error('Non HTTP error'));
             rewiredPdfService.__set__('renderSinglePage', () => Promise.reject(createError(411)));
 
-            await rewiredPdfService.getPDFPage(testPdfName, 1, testUrl)
+            await rewiredPdfService.getPDFPage(testPdfName, 1, 'assets')
                 .should.eventually.be.rejected
                 .and.have.property('status', 411);
 
@@ -176,7 +176,7 @@ describe('pdf-service', () => {
                     const expected = createError(code);
                     fakeS3Service.readObject.rejects(expected);
                     
-                    await pdfService.getPDFPage(testPdfName, 1, testUrl)
+                    await pdfService.getPDFPage(testPdfName, 1, 'assets')
                         .should.eventually.be.rejected
                         .and.be.an.instanceOf(Error)
                         .and.have.property('status', code);
@@ -194,7 +194,7 @@ describe('pdf-service', () => {
                     fakeS3Service.readObject.onSecondCall().resolves(expected)
                     cache.set(pdfService.mapPageKey(testUrl, testPdfName, 1), Promise.resolve());
         
-                    await pdfService.getPDFPage(testPdfName, 1, testUrl)
+                    await pdfService.getPDFPage(testPdfName, 1, 'assets')
                         .should.eventually.equal(expected);
                 });
             });
@@ -206,9 +206,10 @@ describe('pdf-service', () => {
             fakeS3Service.readObject.onFirstCall().resolves(undefined);
             fakeS3Service.readObject.onSecondCall().resolves(expected)
             fakeS3Service.readObject.onThirdCall().resolves(unexpected);
+
             cache.set(pdfService.mapPageKey(testUrl, testPdfName, 1), Promise.resolve());
 
-            await pdfService.getPDFPage(testPdfName, 1, testUrl)
+            await pdfService.getPDFPage(testPdfName, 1, 'assets')
                 .should.eventually.equal(expected);
 
             expect(fakeS3Service.readObject.getCalls().length).to.equal(2);
@@ -225,7 +226,7 @@ describe('pdf-service', () => {
             fakeS3Service.readObject.onThirdCall().resolves(expected);
             cache.set(pdfService.mapPageKey(testUrl, testPdfName, 10), Promise.resolve());
 
-            await pdfService.getPDFPage(testPdfName, page, testUrl)
+            await pdfService.getPDFPage(testPdfName, page, 'assets')
                 .should.eventually.be.rejectedWith(`does not contain page: ${page}`)
                 .and.be.an.instanceOf(Error)
                 .and.have.property('status', 404);
@@ -242,7 +243,7 @@ describe('pdf-service', () => {
             fakeS3Service.readObject.onThirdCall().resolves(expected);
             cache.set(pdfService.mapPageKey(testUrl, testPdfName, 10), Promise.resolve());
 
-            await pdfService.getPDFPage(testPdfName, page, testUrl)
+            await pdfService.getPDFPage(testPdfName, page, 'assets')
                 .should.eventually.be.rejected
                 .and.have.property('status', 400);
         });
@@ -258,7 +259,7 @@ describe('pdf-service', () => {
             fakeS3Service.readObject.onThirdCall().resolves(expected);
             cache.set(pdfService.mapPageKey(testUrl, testPdfName, 10), Promise.resolve());
 
-            await pdfService.getPDFPage(testPdfName, page, testUrl)
+            await pdfService.getPDFPage(testPdfName, page, 'assets')
                 .should.eventually.be.rejectedWith(`does not contain page: ${page}`)
                 .and.be.an.instanceOf(Error)
                 .and.have.property('status', 404);
@@ -296,7 +297,7 @@ describe('pdf-service', () => {
             // Fake the FS write stream
             fakeFs.createWriteStream.returns(mockWritable as unknown as WriteStream);
             
-            const resultPromise = pdfService.getPDFPage(testPdfName, page, testUrl);
+            const resultPromise = pdfService.getPDFPage(testPdfName, page, 'assets');
             await new Promise<void>((resolve, _) => resolve());
             
             setTimeout(() => {
@@ -334,7 +335,7 @@ describe('pdf-service', () => {
             // Fake the FS write stream
             fakeFs.createWriteStream.returns(mockWritable as unknown as WriteStream);
             
-            const resultPromise = pdfService.getPDFPage(testPdfName, page, testUrl);
+            const resultPromise = pdfService.getPDFPage(testPdfName, page, 'assets');
             await new Promise<void>((resolve, _) => resolve());
             
             try {
