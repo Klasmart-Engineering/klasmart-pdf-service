@@ -124,8 +124,11 @@ export async function validatePostedPDF(request: Request, registerTempFile: (fil
     return { ...valid, hash: hashString, length };
 }
 
-export async function validatePDFWithStatusCallbackByContentId(contentId: string, updateCallback: PDFValidationUpdateCallback): Promise<void> {
-    const loadDocument = async () => imageConverter.createDocumentFromUrl(createCMSURL(contentId), true);
+export async function validatePDFWithStatusCallbackByContentId(contentId: string, updateCallback: PDFValidationUpdateCallback, cmsPath = "assets"): Promise<void> {
+    console.log(contentId, cmsPath)
+    const url = createCMSURL(contentId, cmsPath);
+    log.debug(`Creating document load function for document at ${url.toString()}`)
+    const loadDocument = async () => imageConverter.createDocumentFromUrl(url, true);
     await validatePDFWithStatusCallback(contentId, loadDocument, updateCallback);
 }
 

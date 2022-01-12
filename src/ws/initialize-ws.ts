@@ -6,7 +6,7 @@ import { Server } from 'http';
 
 const log = withLogger('initialize-ws');
 
-const validateByContentIdRegex = new RegExp(/^\/pdf\/v2\/(?:([^/]+?))\/validate\/?$/i);
+const validateByContentIdRegex = new RegExp(/^\/pdf\/v2\/(?:([^/]+?))\/(?:([^/]+?))\/validate\/?$/i);
 
 export function hookWebsocketHandler(server: Server): void {
     log.info('Registering websocket handlers on server');
@@ -32,8 +32,9 @@ export function hookWebsocketHandler(server: Server): void {
         }
 
         if (validateByContentIdRegex.test(path)) {
-            const contentId = path.split('/')[3];
-            validatePDFByContentId(connection, contentId);
+            const [_host, _pdf, _v2, cmsPath, contentId] = path.split('/');
+            // const contentId = path.split('/')[3];
+            validatePDFByContentId(connection, cmsPath, contentId);
             return;
         }
         
