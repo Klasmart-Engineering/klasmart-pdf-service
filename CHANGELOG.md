@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.3.31-dev.1](https://bitbucket.org/calmisland/kidsloop-pdf-service/compare/v0.3.31-dev.0...v0.3.31-dev.1) (2022-01-12)
+
+
+### Features
+
+* **KLL-2498:** add v2 api for ws validation apis ([a111a78](https://bitbucket.org/calmisland/kidsloop-pdf-service/commit/a111a78e13b60be50a33c9a2d747b0e230399d12))
+
 ### [0.3.31-dev.0](https://bitbucket.org/calmisland/kidsloop-pdf-service/compare/v0.3.30...v0.3.31-dev.0) (2022-01-12)
 
 
