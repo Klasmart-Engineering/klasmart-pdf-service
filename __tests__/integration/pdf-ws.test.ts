@@ -43,7 +43,7 @@ describe('pdf-ws', () => {
         
         const app = express();
         app.use((req, _res, next) => {
-            console.log(`request received for path: ${req.path}`);
+            log.debug(`request received for path: ${req.path}`);
             next();
         })
         console.log(__dirname)

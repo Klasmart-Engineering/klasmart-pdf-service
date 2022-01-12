@@ -312,10 +312,9 @@ export async function getPDFPages(pathPrefix: string, pdfName: string):Promise<n
  * @param accepted - Function, call when the response is ready to be accepted 
  */
 export async function prerenderDocument(pathPrefix: string, pdfName: string, accepted: () => void, reject: (err: Error) => void): Promise<void> {
-    const pdfURL = new URL(createCMSURL(pdfName, pathPrefix));
     let pages: number;
     try {
-        pages = await getPDFPages(pdfName, pathPrefix);
+        pages = await getPDFPages(pathPrefix, pdfName);
         accepted();
     } catch(err) {
         // PDF document is invalid or missing, fail fast and alert user
@@ -397,6 +396,7 @@ export async function getPDFPage(pdfName: string, page: number, pathPrefix = 'as
 
 export async function getDirectPageRender(page: number, pathPrefix: string, pdfName: string): Promise<JPEGStream> {
     const pdfURL = new URL(createCMSURL(pdfName, pathPrefix));
+    log.debug(`Rendering page ${page} from document located at ${pdfURL.toString()}`)
     const document = await imageConverter.createDocumentFromUrl(pdfURL.toString());
     return imageConverter.generatePageImage(document, page);
 }
@@ -500,6 +500,7 @@ async function initializeMetadata(pdfURL: URL) {
 }
 
 export const mapPageKey = (pdfURL: URL, pdfName: string, page: number): string => {
+    log.silly(`Creating page key for pdf with URL: ${pdfURL}, name: ${pdfName}, and page: ${page}`)
     const hash = crypto.createHash('sha512');
     hash.update(Buffer.from(pdfURL.toString().toUpperCase()));
     const digest = hash.digest().toString('hex');
