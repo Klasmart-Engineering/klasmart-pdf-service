@@ -62,10 +62,10 @@ export async function validatePDF(connection: WebSocket): Promise<void> {
     }
 }
 
-export async function validatePDFByContentId(connection: WebSocket, contentId: string): Promise<void> {
+export async function validatePDFByContentId(connection: WebSocket, cmsPath: string, contentId: string): Promise<void> {
     const validationUpdateCallback: PDFValidationUpdateCallback = (data: ValidationStatus) => connection.send(JSON.stringify(data));
 
-    await pdfService.validatePDFWithStatusCallbackByContentId(contentId, validationUpdateCallback);
+    await pdfService.validatePDFWithStatusCallbackByContentId(contentId, validationUpdateCallback, cmsPath);
     connection.close();
 }
 
