@@ -47,7 +47,7 @@ export async function validatePDF(connection: WebSocket): Promise<void> {
             });
         });
     } catch (err) {
-        console.log(err);
+        log.error(err.stack);
     }
     const validationUpdateCallback: PDFValidationUpdateCallback = (data: ValidationStatus) => connection.send(JSON.stringify(data));
 

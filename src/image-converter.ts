@@ -90,7 +90,6 @@ export const validatePDFTextContent = async (config: DocumentInitParameters): Pr
     ...config
   };
   try {
-      console.log(documentOptions);
       document =  await pdf.getDocument(documentOptions).promise;
     } catch (err) {
       log.error(`Error creating PDF document proxy: ${err.message}`);
