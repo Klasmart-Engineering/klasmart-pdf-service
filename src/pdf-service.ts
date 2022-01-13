@@ -125,7 +125,6 @@ export async function validatePostedPDF(request: Request, registerTempFile: (fil
 }
 
 export async function validatePDFWithStatusCallbackByContentId(contentId: string, updateCallback: PDFValidationUpdateCallback, cmsPath = "assets"): Promise<void> {
-    console.log(contentId, cmsPath)
     const url = createCMSURL(contentId, cmsPath);
     log.debug(`Creating document load function for document at ${url.toString()}`)
     const loadDocument = async () => imageConverter.createDocumentFromUrl(url, true);

@@ -46,8 +46,8 @@ describe('pdf-ws', () => {
             log.debug(`request received for path: ${req.path}`);
             next();
         })
-        console.log(__dirname)
-        app.use(express.static(__dirname + '/resources'));
+        const staticFileLocation = process.env.EXECUTION_PWD + '/__tests__/integration/resources'
+        app.use(express.static(staticFileLocation));
         server = app.listen(port, () => {
             log.debug('Test server for ws integration tests listening on port 8888');
         });
@@ -191,9 +191,9 @@ describe('pdf-ws', () => {
         });
     });
 
-    describe('/pdf/v2/:contentID/validate', () => {
+    describe('/pdf/v2/:path/:contentID/validate', () => {
         it('should send validation status updates', (done) => {
-            const routeEndpoint = `ws://localhost:${port}/pdf/v2/valid.pdf/validate`;
+            const routeEndpoint = `ws://localhost:${port}/pdf/v2/assets/valid.pdf/validate`;
             const socket = new WebSocket(routeEndpoint);
 
             socket.on('connect_error', (err) => {
@@ -211,7 +211,7 @@ describe('pdf-ws', () => {
 
         it('should send validation status updates in sequential page order', (done) => {
             
-            const routeEndpoint = `ws://localhost:${port}/pdf/v2/long.pdf/validate`;
+            const routeEndpoint = `ws://localhost:${port}/pdf/v2/assets/long.pdf/validate`;
             const socket = new WebSocket(routeEndpoint);
             socket.on('connect_error', (err) => {
                 log.error(err.stack);
@@ -237,7 +237,7 @@ describe('pdf-ws', () => {
         }).timeout(75_000);
 
         it('should terminate with an update with validationComplete value of true', (done) => {
-            const routeEndpoint = `ws://localhost:${port}/pdf/v2/valid.pdf/validate`;
+            const routeEndpoint = `ws://localhost:${port}/pdf/v2/assets/valid.pdf/validate`;
             const socket = new WebSocket(routeEndpoint);
             let lastPayload;
             socket.on('connect_error', (err) => {
@@ -260,7 +260,7 @@ describe('pdf-ws', () => {
         });
 
         it('should validate a valid PDF document as valid', (done) => {
-            const routeEndpoint = `ws://localhost:${port}/pdf/v2/valid.pdf/validate`;
+            const routeEndpoint = `ws://localhost:${port}/pdf/v2/assets/valid.pdf/validate`;
             const socket = new WebSocket(routeEndpoint);
             socket.on('connect_error', (err) => {
                 log.error(err.stack);
@@ -279,7 +279,7 @@ describe('pdf-ws', () => {
         });
 
         it('should validate a non-PDF document as invalid', (done) => {
-            const routeEndpoint = `ws://localhost:${port}/pdf/v2/invalid.pdf/validate`;
+            const routeEndpoint = `ws://localhost:${port}/pdf/v2/assets/invalid.pdf/validate`;
             const socket = new WebSocket(routeEndpoint);
             socket.on('connect_error', (err) => {
                 log.error(err.stack);
@@ -295,6 +295,49 @@ describe('pdf-ws', () => {
                     }
                 }
             });
+        });
+
+        describe('should validate pdfs on multiple CMS paths', () => {
+            const testPaths: [string, boolean][] = [
+                ['/assets/valid.pdf', true],
+                ['/test/a.pdf', true],
+                ['/schedule_attachment/valid.pdf', true],
+                ['/teacher_manual/valid.pdf', true],
+                ['/thumbnail/valid.pdf', true],
+                ['/empty/valid.pdf', false]
+            ];
+
+            testPaths.forEach(([path, expectation]) => {
+                it(`${path} -> ${expectation ? 'Okay' : 'Not Found'}`, (done) => {
+                    const routeEndpoint = `ws://localhost:${port}/pdf/v2${path}/validate`;
+                    const socket = new WebSocket(routeEndpoint);
+                    socket.on('connect_error', (err) => {
+                        log.error(err.stack);
+                        if (!expectation) {
+                            done();
+                        } else {
+                            assert.fail(`PDF ${path} expected to validate correctly but failed.`);
+                        }
+                    });
+                    socket.on('message', (buffer) => {
+                        const payload: ValidationStatus = JSON.parse(buffer.toString());
+                        if (payload.validationComplete) {
+                            if (payload.valid) {
+                                if (!expectation) {
+                                    assert.fail(`PDF ${path} expected to fail, but passed`);
+                                }
+                                done();
+                            } else {
+                                if (expectation) {
+                                    assert.fail(`Valid PDF should be evaluated as valid`);
+                                } else {
+                                    done();
+                                }
+                            }
+                        }
+                    });
+                })
+            })
         });
     });
 

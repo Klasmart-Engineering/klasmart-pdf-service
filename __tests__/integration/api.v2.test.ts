@@ -11,14 +11,11 @@ import { kidsloopAuthMiddleware } from 'kidsloop-token-validation';
 import cookieParser from 'cookie-parser';
 import * as jwt from 'jsonwebtoken';
 import * as initTypeorm from '../../src/init-typeorm';
-import { AppConfig } from 'aws-sdk';
-import { Server } from 'typeorm';
 
 describe('app.router.v2', () => {
     let sandbox;
     let serviceStub;
     let app;
-    let oldCmsEndpoint;
     let server;
 
     before(async () => {

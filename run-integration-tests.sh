@@ -1,11 +1,15 @@
+# Removing Docker containers if they already exist
+docker stop pdf-int-s3 || true && docker rm pdf-int-s3 || true
+docker stop pdf-int-pg || true && docker rm pdf-int-pg || true
+
 # Startup S3 ninja
 echo "Starting s3-ninja Container"
 docker pull scireum/s3-ninja:7.0
-S3_NINJA_HASH=$(docker run -d -p 9872:9000 scireum/s3-ninja:7.1.1) 
+S3_NINJA_HASH=$(docker run --name pdf-int-s3 -d -p 9872:9000 scireum/s3-ninja:7.1.1) 
 
 echo "Starting PostgreSQL Instance"
 docker pull postgres
-PG_HASH=$(docker run -e POSTGRES_PASSWORD=abcdefg -d -p 9999:5432 postgres) 
+PG_HASH=$(docker run --name pdf-int-pg -e POSTGRES_PASSWORD=abcdefg -d -p 9999:5432 postgres) 
 
 echo "Waiting for S3-Ninja startup"
 sleep 10
