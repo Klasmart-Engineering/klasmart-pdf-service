@@ -9,7 +9,7 @@ pipelines:
           script:
             - pipe: atlassian/git-secrets-scan:0.5.1
       - step:
-          image: 'node:14.16'
+          image: 'node:16.6'
           name: 'Linter'
           script: 
             - npm config set dev true 
@@ -18,20 +18,19 @@ pipelines:
             - npx eslint . --ext .js,.jsx,.ts,.tsx
       - step:
           name: 'Test'
-          image: 'node:14.16'
+          image: 'node:16.6'
           script:
             - npm i --no-progress
-            - npm i -g gulp
-            - sh ./post-install.sh
             - npm run test:unit
   branches:
     alpha:
     - step: 
         name: 'Fetch NPM dependencies'
-        image: node:14.16
+        image: node:16.6
         script:
           - npm ci --only=production
           - npm audit fix --production
+          - npm run build
           - export SEMVAR=$(git tag -l --contains HEAD)
           - echo $SEMVAR > semvar.txt
         caches:
@@ -39,6 +38,7 @@ pipelines:
         artifacts:
           - node_modules/**
           - semvar.txt
+          - dist/**
     - step:
         name: "Build & Push Docker image"
         image: python:3.9-alpine
@@ -63,10 +63,11 @@ pipelines:
     production:
     - step: 
         name: 'Fetch NPM dependencies'
-        image: node:14.16
+        image: node:16.6
         script:
           - npm ci --only=production
           - npm audit fix
+          - npm run build
           - export SEMVAR=$(git tag -l --contains HEAD)
           - echo $SEMVAR > semvar.txt
         caches:
@@ -74,6 +75,7 @@ pipelines:
         artifacts:
           - node_modules/**
           - semvar.txt
+          - dist/**
     - step:
         name: "Build & Push Docker image"
         image: python:3.9-alpine
@@ -98,10 +100,11 @@ pipelines:
     dev:
     - step: 
         name: 'Fetch NPM dependencies'
-        image: node:14.16
+        image: node:16.6
         script:
           - npm ci --only=production
           - npm audit fix --production
+          - npm run build
           - export SEMVAR=$(git tag -l --contains HEAD)
           - echo $SEMVAR > semvar.txt
         caches:
@@ -109,6 +112,7 @@ pipelines:
         artifacts:
           - node_modules/**
           - semvar.txt
+          - dist/**
     - step:
         name: "Build & Push Docker image"
         image: python:3.9-alpine

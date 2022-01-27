@@ -1,2 +1,2 @@
 npm version
-npx ts-node ./src/app.ts
+npm run start:dist
