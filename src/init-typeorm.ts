@@ -25,6 +25,10 @@ export const initialize = async (): Promise<Connection> => {
       });
       await connection.synchronize();
       log.info(`TypeORM synchronized and ready`);
+      if (!connection.hasMetadata(PDFMetadata)) {
+        log.error('FATAL: TypeORM Metadata failed to load correctly. Check Babel, TypeORM configuration!');
+        throw new Error('Failed to load TypeORM PDFMetadata entity metadata.');
+      }
       return connection;
     } catch (error) {
       log.error(`Error setting up database connection: ${error.message}`);
