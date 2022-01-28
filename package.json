@@ -19,8 +19,7 @@
     "cover:integration": "nyc --silent --no-clean npm run test:integration",
     "cover:report": "nyc report --reporter=lcov --reporter=text",
     "build": "babel src --out-dir dist --extensions \".ts\" --source-maps inline",
-    "lint": "eslint",
-    "postinstall": "sh ./post-install.sh"
+    "lint": "eslint"
   },
   "author": {
     "name": "Mitch Goshorn",
