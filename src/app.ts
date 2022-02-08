@@ -10,7 +10,7 @@ import { errorHandler } from './util/error-handler';
 import { appRouter } from './routers/app.router';
 import { appRouter as appV2Router } from './routers/app.router.v2';
 import cookieParser from 'cookie-parser';
-import { kidsloopAuthMiddleware } from 'kidsloop-token-validation'
+import { kidsloopAuthMiddleware } from '@kidsloop-global/kidsloop-token-validation';
 import { cleanupTempFile } from './middleware/temp-file-cleanup';
 import { contentLengthFilter } from './middleware/content-length-filter';
 import swaggerUi from 'swagger-ui-express';

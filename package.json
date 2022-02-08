@@ -38,7 +38,7 @@
     "express": "^4.17.1",
     "http-errors": "^1.8.0",
     "@kidsloop-global/kidsloop-nodejs-logger": "0.2.16",
-    "kidsloop-token-validation": "bitbucket:calmisland/kidsloop-token-validation#v1.2.2",
+    "@kidsloop-global/kidsloop-token-validation": "1.5.1",
     "newrelic": "^8.5.0",
     "node-cache": "^5.1.2",
     "pdfjs-dist": "^2.12.313",
