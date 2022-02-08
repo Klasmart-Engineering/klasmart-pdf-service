@@ -2,7 +2,7 @@ import fs from 'fs';
 import { v4 as uuidV4 } from 'uuid';
 import WebSocket from 'ws';
 import * as pdfService from '../pdf-service';
-import { withLogger } from 'kidsloop-nodejs-logger';
+import { withLogger } from '@kidsloop-global/kidsloop-nodejs-logger';
 import { ValidationStatus } from '../interfaces/validation-status';
 import { PassThrough } from 'stream';
 

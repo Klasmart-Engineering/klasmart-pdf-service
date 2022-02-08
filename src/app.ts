@@ -16,7 +16,7 @@ import { contentLengthFilter } from './middleware/content-length-filter';
 import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
 import { version } from '../package.json';
-import { correlationMiddleware, withLogger } from 'kidsloop-nodejs-logger';
+import { correlationMiddleware, withLogger } from '@kidsloop-global/kidsloop-nodejs-logger';
 import { corsMiddleware } from './middleware/cors-middleware';
 import { Server } from 'http';
 import { hookWebsocketHandler } from './ws/initialize-ws';

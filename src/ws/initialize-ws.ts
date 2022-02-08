@@ -1,7 +1,7 @@
 import WebSocket from 'ws';
 import { validatePDF, validatePDFByContentId } from './pdf-ws';
 import { IncomingMessage } from 'http';
-import { withLogger } from 'kidsloop-nodejs-logger';
+import { withLogger } from '@kidsloop-global/kidsloop-nodejs-logger';
 import { Server } from 'http';
 
 const log = withLogger('initialize-ws');

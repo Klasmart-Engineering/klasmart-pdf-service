@@ -6,7 +6,7 @@ import * as s3Service from './s3-client';
 import NodeCache from 'node-cache';
 import createError, { HttpError } from 'http-errors';
 import { Readable } from 'stream';
-import { withLogger } from 'kidsloop-nodejs-logger';
+import { withLogger } from '@kidsloop-global/kidsloop-nodejs-logger';
 import fs from 'fs';
 import { JPEGStream } from 'canvas';
 import crypto from 'crypto';

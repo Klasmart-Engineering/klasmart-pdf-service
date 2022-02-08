@@ -2,7 +2,7 @@ import { GetObjectCommand, GetObjectRequest, PutObjectCommand, S3Client } from '
 
 import { Readable } from 'stream';
 import { JPEGStream } from 'canvas';
-import { withLogger } from 'kidsloop-nodejs-logger';
+import { withLogger } from '@kidsloop-global/kidsloop-nodejs-logger';
 import createError from 'http-errors';
 
 // ? Note: This environment configuration should only be necessary for testing. For deployed applications, permissions should be automatically configured through the task role.
