@@ -16,12 +16,12 @@ jobs:
     - uses: actions/checkout@v2
       name: Configure NodeJS
     - uses: actions/setup-node@v2
+      env:
+        NODE_AUTH_TOKEN: ${{secrets.KL_PACKAGES_PAT}}
       with:
         node-version: '16.6'
 
     - name: Install Dependencies
-      env:
-        NODE_AUTH_TOKEN: ${{secrets.KL_PACKAGES_PAT}}
       run: npm ci
 
     - name: Run Unit Tests
