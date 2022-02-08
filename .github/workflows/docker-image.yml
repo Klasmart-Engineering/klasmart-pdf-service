@@ -53,4 +53,6 @@ jobs:
         npm ci --production=only
 
     - name: Create Image
-      run: docker build . --file Dockerfile --tag ${{github.repository.name}}:$(head -c 8 <<< ${{github.sha}})
+      env:
+        GITHUB_REPOSITORY: ${{env.GITHUB_REPOSITORY}}
+      run: docker build . --file Dockerfile --tag ${GITHUB_REPOSITORY#*/}:$(head -c 8 <<< ${{github.sha}})
