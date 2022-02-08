@@ -21,7 +21,7 @@ jobs:
 
     - name: Install Dependencies
       env:
-        NODE_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
+        NODE_AUTH_TOKEN: ${{secrets.KL_PACKAGES_PAT}}
       run: npm ci
 
     - name: Run Unit Tests
