@@ -3,6 +3,7 @@ name: Docker Image CI
 on:
   push:
     branches: [ master, actions, "audit-fixes" ]
+    tags: [ master, alpha, production, "audit-fixes" ]
   pull_request:
     branches: [ master, actions, "audit-fixes" ]
 
