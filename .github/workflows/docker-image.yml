@@ -20,6 +20,8 @@ jobs:
         node-version: '16.6'
 
     - name: Install Dependencies
+      env:
+        NODE_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
       run: npm ci
 
     - name: Run Unit Tests
