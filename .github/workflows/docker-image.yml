@@ -20,7 +20,8 @@ jobs:
         NODE_AUTH_TOKEN: ${{secrets.KL_PACKAGES_PAT}}
       with:
         node-version: '16.6'
-
+        registry-url: 'https://npm.pkg.github.com'
+        scope: '@kidsloop-global'
     - name: Install Dependencies
       run: npm ci
 
