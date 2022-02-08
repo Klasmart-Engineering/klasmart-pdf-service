@@ -17,7 +17,7 @@ jobs:
       name: Configure NodeJS
     - uses: actions/setup-node@v2
       env:
-        NODE_AUTH_TOKEN: ${{secrets.KL_PACKAGES_PAT}}
+        NODE_AUTH_TOKEN: ${{ secrets.KL_PACKAGES_PAT }}
       with:
         node-version: '16.6'
         registry-url: 'https://npm.pkg.github.com'
@@ -36,7 +36,7 @@ jobs:
       name: Configure NodeJS
     - uses: actions/setup-node@v2
       env:
-        NODE_AUTH_TOKEN: ${{secrets.KL_PACKAGES_PAT}}
+        NODE_AUTH_TOKEN: ${{ secrets.KL_PACKAGES_PAT }}
       with:
         node-version: '16.6'
         registry-url: 'https://npm.pkg.github.com'
@@ -54,5 +54,10 @@ jobs:
 
     - name: Create Image
       env:
-        GITHUB_REPOSITORY: ${{env.GITHUB_REPOSITORY}}
+        GITHUB_REPOSITORY: ${{ env.GITHUB_REPOSITORY }}
       run: docker build . --file Dockerfile --tag ${GITHUB_REPOSITORY#*/}:$(head -c 8 <<< ${{github.sha}})
+
+    - name: Push Image
+      with:
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+      run: docker push ghcr.io/${{ env.GITHUB_REPOSITORY }}:$(head -c 8 <<< ${{github.sha}})
