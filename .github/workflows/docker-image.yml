@@ -2,13 +2,13 @@ name: Docker Image CI
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master, actions ]
   pull_request:
-    branches: [ master ]
+    branches: [ master, actions ]
 
 jobs:
 
-  build:
+  test:
 
     runs-on: ubuntu-latest
 
@@ -25,11 +25,11 @@ jobs:
     - name: Run Unit Tests
       run: npm run test:unit
       
-    - name: Prepare For Packaging
-      run: |
-        rm -rf ./node_modules
-        npm ci --production=only      
+#     - name: Prepare For Packaging
+#       run: |
+#         rm -rf ./node_modules
+#         npm ci --production=only      
       
-    - uses: actions/checkout@v2
-    - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag ${{github.repository.name}}:$(head -c 8 <<< ${{github.sha}})
+#     - uses: actions/checkout@v2
+#     - name: Build the Docker image
+#       run: docker build . --file Dockerfile --tag ${{github.repository.name}}:$(head -c 8 <<< ${{github.sha}})
