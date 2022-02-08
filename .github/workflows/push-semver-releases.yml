@@ -44,9 +44,7 @@ jobs:
     - name: Build
       run: npm run build
     - name: Remove dependencies and reinstall only production dependencies
-      run: |
-        rm -rf node_modules
-        npm ci --production=only
+      run: npm prune --production
     - name: Extract Docker metadata
       id: meta
       uses: docker/metadata-action@v3
