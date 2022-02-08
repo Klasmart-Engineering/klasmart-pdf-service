@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.4.1](https://bitbucket.org/calmisland/kidsloop-pdf-service/compare/v0.3.30...v0.4.1) (2022-02-08)
+
+
+### Features
+
+* **KLL-2497:** create v2 router to allow for CMS path resolution, updated pdf-service, pdf-v2-router configuration ([efd9c83](https://bitbucket.org/calmisland/kidsloop-pdf-service/commit/efd9c83ce0b2708a9856578fcf9844359a3aacc3))
+* **KLL-2498:** add v2 api for ws validation apis ([469f0b6](https://bitbucket.org/calmisland/kidsloop-pdf-service/commit/469f0b6d5f10cee7db24a5bea009cb0b5155f8e6))
+
 ## [0.4.0](https://bitbucket.org/calmisland/kidsloop-pdf-service/compare/v0.3.31-dev.1...v0.4.0) (2022-01-21)
 
 ### [0.3.31-dev.1](https://bitbucket.org/calmisland/kidsloop-pdf-service/compare/v0.3.31-dev.0...v0.3.31-dev.1) (2022-01-12)
