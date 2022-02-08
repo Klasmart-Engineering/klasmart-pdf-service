@@ -42,10 +42,15 @@ jobs:
         registry-url: 'https://npm.pkg.github.com'
         scope: '@kidsloop-global'
     - name: Install Dependencies
-      run: npm ci --production=only
+      run: npm ci 
 
     - name: Build
       run: npm run build
+
+    - name: Remove dependencies and reinstall only production dependencies
+      run: |
+        rm -rf node_modules
+        npm ci --production=only
 
     - name: Create Image
       run: docker build . --file Dockerfile --tag ${{github.repository.name}}:$(head -c 8 <<< ${{github.sha}})
