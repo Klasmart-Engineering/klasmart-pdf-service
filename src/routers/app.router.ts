@@ -70,21 +70,7 @@ appRouter.get(`/:pdfName/prerender`, Authorized(AuthType.Any),
     pdfService.prerenderDocument('assets', pdfName, accepted, reject);
 });
 
-appRouter.get(`/:pdfName/metadata`, Authorized(AuthType.Any),
-    async (request: Request, response: Response, next: NextFunction) => {
-        
-        const { pdfName } = request.params;
-        log.verbose(`Received request for metadata of pdf: ${pdfName}`);
 
-        try {
-            const metadata = await pdfService.getPDFMetadata(pdfName);
-            response.send(metadata);
-        } catch (err) {
-            next(err);
-            return;
-        }
-        next();
-});
 
 appRouter.get(`/:pdfName/validate`, async (request: Request, response: Response, next: NextFunction) => {
     const { pdfName } = request.params;

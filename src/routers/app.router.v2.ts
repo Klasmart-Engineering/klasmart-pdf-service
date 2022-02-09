@@ -49,6 +49,21 @@ appRouter.get(`/:pathPrefix/:pdfName/view.html`, Authorized(AuthType.Any),
     next();
 });
 
+appRouter.get(`/:pathPrefix/:pdfName/metadata`, Authorized(AuthType.Any),
+    async (request: Request, response: Response, next: NextFunction) => {
+        
+        const { pathPrefix, pdfName } = request.params;
+        log.verbose(`Received request for metadata of pdf: ${pdfName}`);
+
+        try {
+            const metadata = await pdfService.getPDFMetadata(pathPrefix, pdfName);
+            response.send(metadata);
+        } catch (err) {
+            next(err);
+            return;
+        }
+        next();
+});
 
 /**
  * This endpoint is intended to allow automation hooks to
