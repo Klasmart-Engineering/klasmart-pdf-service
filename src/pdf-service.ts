@@ -240,7 +240,7 @@ export async function getPDFMetadata(path: string, pdfName: string): Promise<PDF
         // If metadata has not been generated yet, generate it
         if (!rawMetadata) {
             const url = createCMSURL(pdfName, path);
-            ({ pdfMetadata: rawMetadata } = await initializeMetadata(url));
+            ({ pdfMetadata: rawMetadata } = await initializeMetadata(new URL(url)));
         }
 
         // Map the internal data representation to the desired client facing format
