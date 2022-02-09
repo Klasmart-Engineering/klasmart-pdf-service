@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.5.0](https://bitbucket.org/calmisland/kidsloop-pdf-service/compare/v0.4.0...v0.5.0) (2022-02-09)
+
+
+### Features
+
+* **metadata:** add additional pdf processing steps to store pdf outline, page index metadata, add /metadata pdf endpoint to retrieve data ([5353233](https://bitbucket.org/calmisland/kidsloop-pdf-service/commit/53532337ad79e887ec3d47a90161384072476cc1))
+
+### [0.4.1](https://bitbucket.org/calmisland/kidsloop-pdf-service/compare/v0.4.0...v0.4.1) (2022-02-09)
+
+
+### Features
+
+* **metadata:** add additional pdf processing steps to store pdf outline, page index metadata, add /metadata pdf endpoint to retrieve data ([5353233](https://bitbucket.org/calmisland/kidsloop-pdf-service/commit/53532337ad79e887ec3d47a90161384072476cc1))
+
 ## [0.4.0](https://bitbucket.org/calmisland/kidsloop-pdf-service/compare/v0.3.31-dev.1...v0.4.0) (2022-01-21)
 
 ### [0.3.31-dev.1](https://bitbucket.org/calmisland/kidsloop-pdf-service/compare/v0.3.31-dev.0...v0.3.31-dev.1) (2022-01-12)
