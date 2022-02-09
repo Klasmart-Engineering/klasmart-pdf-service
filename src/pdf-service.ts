@@ -194,18 +194,6 @@ async function validatePDFWithStatusCallback(key: string, loadDocument: () => Pr
     updateCallback({ ...validationStatus });
 }
 
-export async function deleteTemporaryValidationPDF(key: string, fileLocation: string): Promise<undefined> {
-    log.silly(`Validation check for PDF with key ${key} completed, deleting local file: ${fileLocation}.`)
-    try {
-        await fs.promises.rm(fileLocation);
-        log.verbose(`Deleted temporary file with key: ${key}`);
-    } catch (err) {
-        const message = err instanceof Error ? err.stack : err;
-        log.error(`Error deleting temporary file with key ${key} at ${fileLocation} following validationCache expired: ${message}`);
-    }
-    return;
-}
-
 export async function getPDFPages(pathPrefix: string, pdfName: string):Promise<number> {
     const pdfURL = new URL(createCMSURL(pdfName, pathPrefix));
     log.debug(`Request for PDF pages for PDF located at ${pdfURL.toString()}.`)

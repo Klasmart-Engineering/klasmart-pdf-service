@@ -18,6 +18,7 @@ import asyncTimeout from '../util/async-timeout';
 import { Request } from 'express';
 import { ValidationStatus } from '../../src/interfaces/validation-status';
 import { v4 } from 'uuid';
+import * as pdfOutlineBuilder from '../../src/pdf/pdf-outline-builder';
 
 chai.use(chaiAsPromised);
 chai.should();
@@ -37,6 +38,7 @@ describe('pdf-service', () => {
     let fakeImageConverter: sinon.SinonStubbedInstance<typeof imageConverter>;
     let fakeS3Service: sinon.SinonStubbedInstance<typeof s3Service>;
     let fakeFs: sinon.SinonStubbedInstance<typeof fs>;
+    let fakePdfOutlineBuilder: sinon.SinonStubbedInstance<typeof pdfOutlineBuilder>;
 
     const transactionMockImpl = async (fn: (args: any[]) => Promise<any>) => await fn(fakeEntityManager as any);
     const rejectStub = sandbox.stub();
@@ -60,6 +62,7 @@ describe('pdf-service', () => {
         fakeEntityManager.transaction.callsFake(transactionMockImpl as any);
         fakeImageConverter = sandbox.stub(imageConverter);
         fakeS3Service = sandbox.stub(s3Service);
+        fakePdfOutlineBuilder = sandbox.stub(pdfOutlineBuilder);
         mockManager = new MockManager('getManager', fakeEntityManager);        
         cache = new NodeCache({stdTTL: 10000, checkperiod: 10000});
         pdfService.initialize(cache);
@@ -90,6 +93,10 @@ describe('pdf-service', () => {
     });
 
     describe('getPDFPages', () => {
+        const getPageLabels: () => Promise<string[] | null> = () => Promise.resolve([]);
+        beforeEach(() => {
+            fakePdfOutlineBuilder.getAdaptedOutline.resolves([]);
+        });
         it('should reject with 500 if findOne rejects', async () => {
             fakeEntityManager.findOne.rejects();
 
@@ -113,7 +120,7 @@ describe('pdf-service', () => {
 
             fakeEntityManager.findOne.resolves(undefined);
             fakeEntityManager.save.resolvesArg(0);
-            fakeImageConverter.createDocumentFromUrl.resolves({ numPages } as PDFDocumentProxy);
+            fakeImageConverter.createDocumentFromUrl.resolves({ numPages, getPageLabels } as PDFDocumentProxy);
 
             await pdfService.getPDFPages('assets', 'pdf-name.pdf')
                 .should.eventually.equal(numPages);
@@ -124,7 +131,7 @@ describe('pdf-service', () => {
 
             fakeEntityManager.findOne.resolves(undefined);
             fakeEntityManager.save.rejects();
-            fakeImageConverter.createDocumentFromUrl.resolves({ numPages } as PDFDocumentProxy);
+            fakeImageConverter.createDocumentFromUrl.resolves({ numPages, getPageLabels } as PDFDocumentProxy);
 
             await pdfService.getPDFPages('assets', 'pdf-name.pdf')
                 .should.eventually.be.rejectedWith('Error')
@@ -542,92 +549,6 @@ describe('pdf-service', () => {
                 .should.eventually.not.be.undefined;
         });
     
-    });
-
-    describe('cachedValidatePDF', () => {
-        const getPageStub =  sandbox.stub();
-        let cachedValidatePDF: (key: string, fileLocation: string, pages: number) => Promise<void>;
-        let previousCache: NodeCache;
-        let cache: NodeCache;
-        let key: string;
-
-        before(() => {
-            previousCache = rewiredPdfService.__get__('validationCache');
-        });
-
-        after(() => {
-            rewiredPdfService.__set__('validationCache', previousCache);
-        });
-
-        beforeEach(() => {
-            const document = { getPage: getPageStub } as unknown as PDFDocumentProxy;
-            fakeImageConverter.createDocumentFromOS.resolves(document);
-
-            cache = new NodeCache({
-                stdTTL: 300,
-                checkperiod: 60 * 30,
-                useClones: false,
-                deleteOnExpire: true
-            });
-            rewiredPdfService.__set__('validationCache', cache);
-            cachedValidatePDF = rewiredPdfService.__get__('cachedValidatePDF');
-            key = v4();
-            getPageStub.reset();
-
-        });
-
-        
-        it('should update cache when getPage resolves', async () => {
-            let resolvePageTwo;
-            getPageStub.onFirstCall().resolves();
-            getPageStub.onSecondCall().returns(new Promise(resolve => {
-                resolvePageTwo = () => resolve(undefined);
-            }));
-
-            cachedValidatePDF(key, 'test-file', 3);
-            await new Promise(resolve => setTimeout(resolve, 0));
-            expect(cache.get(key)).to.have.property('pagesValidated').that.equals(1);
-            resolvePageTwo();
-        });
-
-        it('should update cache with valid status when getPage resolves on last page', async () => {
-            getPageStub.resolves();
-            await cachedValidatePDF(key, 'test-file', 3);
-            expect(cache.get(key)).to.have.property('valid').that.is.true;
-        });
-
-        it('should update cache with invalid status and return if getPage rejects', async () => {
-            getPageStub.onCall(1).resolves();
-            getPageStub.onCall(2).rejects();
-            await cachedValidatePDF(key, 'test-file', 3);
-
-            expect(cache.get(key)).to.have.property('valid').that.is.false;
-        });
-
-        it('should not update valid until last page is checked', async () => {
-            let resolvePages = [];
-            const pages = 4;
-
-            // Configure getPage for each page to return promises that we can manually resolve
-            for(let i = 0; i < pages; i++) {
-                getPageStub.onCall(i).returns(new Promise(resolve => { resolvePages.push(resolve)}))
-            }
-            cachedValidatePDF(key, 'test-file', pages);
-
-            // Resolve a page, allow event loop progress, then validate cache data
-            for(let i = 0; i < pages - 1; i++) {
-                resolvePages[i]();
-                await new Promise(resolve => setTimeout(resolve, 0));
-                expect(cache.get(key)).to.have.property('valid').that.is.undefined;
-                expect(cache.get(key)).to.have.property('pagesValidated').that.equals(i+1);
-            }
-
-            // Resolve final page, allow event loop to progress, then validate final state
-            resolvePages[3]();
-            await new Promise(resolve => setTimeout(resolve, 0));
-            expect(cache.get(key)).to.have.property('valid').that.is.true;
-            expect(cache.get(key)).to.have.property('pagesValidated').that.equals(4);
-        })
     });
 
     describe('getDirectPageRender', () => {
