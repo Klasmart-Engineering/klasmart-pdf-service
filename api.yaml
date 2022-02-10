@@ -1,7 +1,7 @@
 openapi: 3.0.0
 info:
   title: Kidsloop PDF Service API Docs
-  version: "0.3.2"
+  version: "0.5.1"
 
 components:
   securitySchemes:
@@ -9,9 +9,51 @@ components:
       type: apiKey
       in: cookie
       name: access
+  schemas:
+    internalOutlineRecord:
+      type: object
+      required:
+        - title
+        - bold
+        - italic
+        - page
+      properties:
+        title:
+          type: string
+        bold:
+          type: boolean
+        italic:
+          type: boolean
+        color:
+          type: array
+          items:
+            type: integer
+          minItems: 3
+          maxItems: 3
+          example: [ 255, 255, 255 ]
+        page:
+          type: integer
+        dest:
+          oneOf:
+            - type: string
+            - type: array
+        url:
+          type: string
+        unsafeUrl:
+          type: string
+        newWindow:
+          type: boolean
+        count:
+          type: number
+        items:
+          type: array
+          items:
+            $ref: "#components/schemas/internalOutlineRecord"
 tags:
+- name: "PDFv2"
+  description: "Primary service routes"
 - name: "pdf"
-  description: "Primary service route"
+  description: "Legacy v1 service route"
 - name: "Health Check"
   description: "Endpoint(s) provided for automated health checks"
 paths:
@@ -194,6 +236,311 @@ paths:
       tags:
       - "pdf"
       parameters:
+        - in: path
+          name: pdfName
+          schema:
+            type: string
+          required: true
+          description: Keyname used to identify PDF in storage.
+          example: 60b97f038c3d41f51ca07ea0.pdf
+        - in: path
+          name: page
+          schema:
+            type: number
+          required: true
+          description: Page number of PDF to be served
+          example: 1
+      description: "This is a utility function that bypasses all storage mechanisms and directly renders a fresh image from a PDF document and serves it.  Note: This endpoint is only available when the service is launched with a NODE_ENV value of development." 
+      responses:
+        "200":
+          description: OK
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+        "400":
+          description: Request Error - See response for error details
+          content:
+            text:
+              schema:
+                type: string
+        "404":
+          description: Not Found - The pdf defined in {pdfName} does not exist.
+        "500":
+          description: Internal Server Error
+  /pdf/v2/validate:
+    post:
+      tags:
+      - "PDFv2"
+      description: "Validates a posted PDF document and returns a validation status. Note: Although the cookie is documented here, Swagger UI does not support embedding a cookie in the 'Try It Out' feature. At the time of this being documented attempts from the UI will always be Unauthorized!" 
+      security:
+        - cookieAuth: []
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  description: The PDF Document
+                  type: string
+                  format: binary
+              required:
+                - file
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - authcookie
+                properties:
+                  valid:
+                    type: boolean
+                    description: Validation result of the document.
+                  pages:
+                    type: number
+                    description: Number of pages in PDF. Not included when PDF is invalid
+                  length:
+                    type: number
+                    description: Byte length of file
+                  hash:
+                    type: string
+                    description: MD5 hash of file
+        "401":
+          description: Unauthorized - Your credentials are undefined, invalid, or expired.
+            Get new authentication credentials and try again
+        "403":
+          description: Forbidden - Your credentials do not authorize you to view this
+            resource.
+        "413":
+          description: Payload Too Large - Post body exceeds maximum file size of 500mb
+        "415":
+          description: "Unsupported Media Type - This route only accepts requests that report their content-type as 'application/pdf'.  Requests with any other mime type will be rejected."
+        "500":
+          description: Internal Server Error
+  /pdf/v2/{pathPrefix}/{pdfName}/metadata:
+    get:
+      tags:
+      - "PDFv2"
+      parameters:
+        - in: path
+          name: pathPrefix
+          schema:
+            type: string
+          required: true
+          description: "Path part of CMS content ID."
+          example: "assets"
+        - in: path
+          name: pdfName
+          schema:
+            type: string
+          required: true
+          description: Keyname used to identify PDF in storage.
+          example: 60b97f038c3d41f51ca07ea0.pdf
+      description: "JSON payload describing PDF document metadata" 
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalPages: 
+                    type: integer
+                    minimum: 1
+                    description: total number of pages in documents
+                  outline:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        title:
+                          type: string
+                        bold:
+                          type: boolean
+                        italic:
+                          type: boolean
+                        color:
+                          type: array
+                          items:
+                            type: integer
+                        page:
+                          type: integer
+                        dest:
+                          oneOf:
+                            - type: string
+                            - type: array
+                              items:
+                                $ref: "#/components/schemas/internalOutlineRecord"
+                  pageLabels: 
+                    type: array
+                    items:
+                      type: string
+                required:
+                  - totalPages 
+        "404":
+          description: Not Found - The pdf {pathPrefix}/{pdfName} does not exist.
+        "500":
+          description: Internal Server Error
+  /pdf/v2/{pathPrefix}/{pdfName}/view.html:
+    get:
+      tags:
+      - "PDFv2"
+      parameters:
+        - in: path
+          name: pathPrefix
+          schema:
+            type: string
+          required: true
+          description: "Path part of CMS content ID."
+          example: "assets"
+        - in: path
+          name: pdfName
+          schema:
+            type: string
+          required: true
+          description: Keyname used to identify PDF in storage.
+          example: 60b97f038c3d41f51ca07ea0.pdf
+      description: "Serves an HTML document that contains links to rendered images of pages within the PDF document" 
+      responses:
+        "200":
+          description: OK
+          content:
+            text/html:
+              schema:
+                type: string
+                format: text/html
+        "404":
+          description: Not Found - The pdf defined in {pdfName} does not exist.
+        "500":
+          description: Internal Server Error
+  /pdf/v2/{pathPrefix}/{pdfName}/prerender:
+    get:
+      tags:
+      - "PDFv2"
+      parameters:
+        - in: path
+          name: pdfName
+          schema:
+            type: string
+          required: true
+          description: Keyname used to identify PDF in storage.
+          example: 60b97f038c3d41f51ca07ea0.pdf
+      description: "Attempts to prerender a PDFs pages and store them prior to attempts to view them. This method is intended to be consumed by webhooks that can alert the service when new PDF content has been added." 
+      responses:
+        "202":
+          description: No Content - Server has accepted the request and will begin prerendering pages.
+        "404":
+          description: Not Found - The pdf defined in {pdfName} does not exist.
+        "500":
+          description: Internal Server Error
+  /pdf/v2/{pathPrefix}/{pdfName}/validate:
+    get:
+      tags:
+      - "PDFv2"
+      parameters:
+        - in: path
+          name: pathPrefix
+          schema:
+            type: string
+          required: true
+          description: "Path part of CMS content ID."
+          example: "assets"
+        - in: path
+          name: pdfName
+          schema:
+            type: string
+          required: true
+          description: Keyname used to identify PDF in storage.
+          example: 60b97f038c3d41f51ca07ea0.pdf
+      description: "Attempts to validate a stored PDF document. Consumers should prefer the POST method for client-facing operation. This function is defined to provide a convenient interface to batch validate and report performance metadata" 
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - authcookie
+                properties:
+                  valid:
+                    type: boolean
+                    description: Validation result of the document.
+                  pages:
+                    type: number
+                    description: Number of pages in PDF. Not included when PDF is invalid
+                  processingTime:
+                    type: number
+                    description: Time in milliseconds required to process the validation
+        "404":
+          description: Not Found - The pdf defined in {pdfName} does not exist.
+        "500":
+          description: Internal Server Error
+
+  /pdf/v2/{pathPrefix}/{pdfName}/page/{page}:
+    get:
+      tags:
+      - "PDFv2"
+      parameters:
+        - in: path
+          name: pathPrefix
+          schema:
+            type: string
+          required: true
+          description: "Path part of CMS content ID."
+          example: "assets"
+        - in: path
+          name: pdfName
+          schema:
+            type: string
+          required: true
+          description: Keyname used to identify PDF in storage.
+          example: 60b97f038c3d41f51ca07ea0.pdf
+        - in: path
+          name: page
+          schema:
+            type: number
+          required: true
+          description: Page number of PDF to be served
+          example: 1
+      description: "Serves an image render of a single page of a PDF document identified by the {pdfName} and {page} path parameters." 
+      responses:
+        "200":
+          description: OK
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+        "400":
+          description: Request Error - See response for error details
+          content:
+            text:
+              schema:
+                type: string
+        "404":
+          description: Not Found - The pdf defined in {pdfName} does not exist.
+        "500":
+          description: Internal Server Error
+  
+  /pdf/v2/{pathPrefix}/{pdfName}/render-page/{page}:
+    get:
+      tags:
+      - "PDFv2"
+      parameters:
+        - in: path
+          name: pathPrefix
+          schema:
+            type: string
+          required: true
+          description: "Path part of CMS content ID."
+          example: "assets"
         - in: path
           name: pdfName
           schema:
