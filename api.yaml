@@ -584,4 +584,4 @@ paths:
           description: OK
 servers:
   - url: http://localhost:32891
-  - url: http://api.alpha.kidsloop.net
+  - url: https://api.alpha.kidsloop.net
