@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from 'express';
-import { withLogger } from '@kidsloop-global/kidsloop-nodejs-logger';
+import { withLogger } from '@kl-engineering/kidsloop-nodejs-logger';
 
 const log = withLogger('ContentTypeFilter');
 

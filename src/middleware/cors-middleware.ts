@@ -1,4 +1,4 @@
-import { withLogger } from '@kidsloop-global/kidsloop-nodejs-logger';
+import { withLogger } from '@kl-engineering/kidsloop-nodejs-logger';
 import { Request, Response, NextFunction } from 'express';
 
 const log = withLogger('cors-middleware');

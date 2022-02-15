@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { HttpError } from 'http-errors';
-import { withLogger } from '@kidsloop-global/kidsloop-nodejs-logger';
+import { withLogger } from '@kl-engineering/kidsloop-nodejs-logger';
 
 const log = withLogger('error-handler');
 

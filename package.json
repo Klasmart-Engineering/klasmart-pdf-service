@@ -1,5 +1,5 @@
 {
-  "name": "kidsloop-pdf-service",
+  "name": "@kl-engineering/kidsloop-pdf-service",
   "version": "0.4.4",
   "description": "Service which stores and provides access to PDF content by converting pages into images and serving those images.",
   "repository": "https://bitbucket.org/calmisland/kidsloop-pdf-service",
@@ -37,8 +37,8 @@
     "core-js": "^3.14.0",
     "express": "^4.17.1",
     "http-errors": "^1.8.0",
-    "@kidsloop-global/kidsloop-nodejs-logger": "0.2.16",
-    "@kidsloop-global/kidsloop-token-validation": "1.5.1",
+    "@kl-engineering/kidsloop-nodejs-logger": "0.3.2",
+    "@kl-engineering/kidsloop-token-validation": "1.5.1",
     "newrelic": "^8.5.0",
     "node-cache": "^5.1.2",
     "pdfjs-dist": "^2.12.313",

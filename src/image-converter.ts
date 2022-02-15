@@ -3,7 +3,7 @@ import createHttpError from 'http-errors';
 import * as pdf from 'pdfjs-dist/legacy/build/pdf.js';
 import { PDFDocumentProxy, } from 'pdfjs-dist/types/src/display/api';
 import { DocumentInitParameters } from 'pdfjs-dist/types/src/display/api';
-import { withCorrelation, withLogger } from '@kidsloop-global/kidsloop-nodejs-logger';
+import { withCorrelation, withLogger } from '@kl-engineering/kidsloop-nodejs-logger';
 import fs from 'fs';
 
 const DEFAULT_SCALE = 3;

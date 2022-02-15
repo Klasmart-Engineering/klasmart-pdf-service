@@ -1,5 +1,5 @@
 import express from 'express';
-import { withLogger } from '@kidsloop-global/kidsloop-nodejs-logger';
+import { withLogger } from '@kl-engineering/kidsloop-nodejs-logger';
 import { hookWebsocketHandler } from '../../src/ws/initialize-ws';
 import { Server } from 'http';
 import { WebSocket } from 'ws';
