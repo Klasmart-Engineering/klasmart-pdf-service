@@ -19,7 +19,8 @@
     "cover:report": "nyc report --reporter=lcov --reporter=text",
     "build": "babel src --out-dir dist --extensions \".ts\" --source-maps inline",
     "lint": "eslint",
-    "postinstall": "sh ./post-install.sh"
+    "postinstall": "sh ./post-install.sh",
+    "typeorm": "ts-node node_modules/typeorm/cli.js"
   },
   "author": {
     "name": "Mitch Goshorn",
@@ -37,7 +38,7 @@
     "core-js": "^3.14.0",
     "express": "^4.17.1",
     "http-errors": "^1.8.0",
-    "kidsloop-nodejs-logger": "bitbucket:calmisland/kidsloop-nodejs-logger#v0.2.16",
+    "kidsloop-nodejs-logger": "bitbucket:calmisland/kidsloop-nodejs-logger#v0.3.2",
     "kidsloop-token-validation": "bitbucket:calmisland/kidsloop-token-validation#v1.2.2",
     "newrelic": "^8.5.0",
     "node-cache": "^5.1.2",
@@ -50,6 +51,7 @@
     "typeorm": "^0.2.34",
     "typescript": "^4.4.0",
     "uuid": "^8.3.2",
+    "web-streams-polyfill": "^3.2.0",
     "winston": "^3.3.3",
     "ws": "^8.3.0",
     "yamljs": "^0.3.0"
