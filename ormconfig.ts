@@ -1,3 +1,4 @@
+import { ConnectionOptions } from 'typeorm';
 import { PDFMetadata } from './src/models/PDFMetadata';
 
 export default {
@@ -19,4 +20,4 @@ export default {
     extra: {
       connectionLimit: 5
     }
-}
+} as ConnectionOptions;

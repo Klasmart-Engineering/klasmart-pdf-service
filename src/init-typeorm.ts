@@ -1,6 +1,6 @@
 import { Connection, createConnection } from 'typeorm';
 import { withLogger } from 'kidsloop-nodejs-logger';
-import { PDFMetadata } from './models/PDFMetadata';
+import ormConfig from '../ormconfig';
 
 const log = withLogger('init-typeorm');
 
@@ -8,23 +8,17 @@ let connection: Connection | undefined;
 
 export const initialize = async (): Promise<Connection> => {
     try {
-      connection = await createConnection({
-        name: 'default',
-        type: 'postgres',
-        host: process.env.DB_HOST,
-        username: process.env.DB_USER,
-        port: +(process.env.DB_PORT || 5432),
-        database: process.env.DB_DATABASE || 'postgres',
-        password: process.env.DB_PASSWORD,
-        entities: [PDFMetadata],
-
-        logging: 'all',
-        extra: {
-          connectionLimit: 5
+      connection = await createConnection(ormConfig);
+      if (await connection.showMigrations()) {
+        log.info(`Unapplied migrations found.  Applying migrations.`);
+        try {
+          await connection.runMigrations();
+        } catch (err) {
+          log.error(`Unable to apply migrations. Caused by: ${err.stack}`);
+          throw new Error(`Unable to apply TypeScript migrations.`);
         }
-      });
-      await connection.synchronize();
-      log.info(`TypeORM synchronized and ready`);
+      }
+      log.info(`TypeORM ready`);
       return connection;
     } catch (error) {
       log.error(`Error setting up database connection: ${error.message}`);
