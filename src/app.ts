@@ -21,6 +21,9 @@ import { corsMiddleware } from './middleware/cors-middleware';
 import { Server } from 'http';
 import { hookWebsocketHandler } from './ws/initialize-ws';
 
+// IIFE
+(async () => {
+
 const log = withLogger('app');
 
 log.info(`Starting in node environment: ${process.env.NODE_ENV}`)
@@ -35,8 +38,10 @@ const routePrefix = process.env.ROUTE_PREFIX || '/pdf';
 
 
 /* #region Initialization */
-typeormConfig.initialize();
-s3Service.initialize();
+await Promise.all([
+    typeormConfig.initialize(),
+    s3Service.initialize()
+]);
 pdfService.initialize();
 /* #endregion Initialization */
 
@@ -103,3 +108,5 @@ server.on('connection', (conn) => {
     conn.setKeepAlive(true);
     conn.setTimeout(1000 * 60 * 10);
 });
+
+})();
