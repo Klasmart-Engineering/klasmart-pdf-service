@@ -1,4 +1,4 @@
-## [0.5.6](https://bitbucket.org/calmisland/kidsloop-pdf-service/compare/v0.4.4...v0.5.6) (2022-03-02)
+## [0.5.7](https://bitbucket.org/calmisland/kidsloop-pdf-service/compare/v0.4.4...v0.5.7) (2022-03-02)
 
 
 ### Features
