@@ -12,4 +12,5 @@ COPY ./api.yaml ./api.yaml
 COPY ./dist ./dist
 COPY docker-startup.sh ./
 COPY ./ormconfig.ts ./
+COPY ./migration ./
 ENTRYPOINT ["sh", "./docker-startup.sh"]
