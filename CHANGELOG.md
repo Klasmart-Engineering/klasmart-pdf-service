@@ -1,7 +1,20 @@
 # [](https://github.com/KL-Engineering/kidsloop-pdf-service/compare/v0.4.4...v) (2022-03-02)
 
 
+<<<<<<< HEAD
 ### Features
+=======
+### [0.5.5](https://bitbucket.org/calmisland/kidsloop-pdf-service/compare/v0.3.30...v0.5.5) (2022-02-17)
+
+
+### Features
+
+* **KLL-2497:** create v2 router to allow for CMS path resolution, updated pdf-service, pdf-v2-router configuration ([b178154](https://bitbucket.org/calmisland/kidsloop-pdf-service/commit/b1781546dec56eab9f6051b7094fd7f60fd2128a))
+* **KLL-2498:** add v2 api for ws validation apis ([2282306](https://bitbucket.org/calmisland/kidsloop-pdf-service/commit/2282306ff785fad427cf4e585d0621a74b48bbbc))
+* **metadata:** add additional pdf processing steps to store pdf outline, page index metadata, add /metadata pdf endpoint to retrieve data ([5f5488d](https://bitbucket.org/calmisland/kidsloop-pdf-service/commit/5f5488d387ab101d6066f0a541f3c083e288d9dc))
+
+### [0.5.4](https://bitbucket.org/calmisland/kidsloop-pdf-service/compare/v0.5.3...v0.5.4) (2022-02-17)
+>>>>>>> chore(release): 0.5.5
 
 * **metadata:** add additional pdf processing steps to store pdf outline, page index metadata, add /metadata pdf endpoint to retrieve data ([fc35ee8](https://github.com/KL-Engineering/kidsloop-pdf-service/commit/fc35ee879414fc457ef2633a8cc0590be80f5cf1))
 
