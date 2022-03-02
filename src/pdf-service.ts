@@ -418,6 +418,7 @@ async function writeStreamToTempFile (filename: string, stream: JPEGStream): Pro
 **/
 async function initializeMetadata(pdfURL: URL) {
     log.debug(`Creating document for pdf located at ${pdfURL.toString()}`); 
+    let pdfMetadata: PDFMetadata | undefined;
     try {
         const document = await imageConverter.createDocumentFromUrl(pdfURL.toString());
         const pages = document.numPages;
@@ -425,13 +426,21 @@ async function initializeMetadata(pdfURL: URL) {
         const pageIndexes = await document.getPageLabels() || undefined;
         const url = pdfURL.toString().toLowerCase();
         log.debug(`${pages} detected for PDF at ${pdfURL}.`)
-        const pdfMetadata = new PDFMetadata(url, pages, 0, outline, pageIndexes);
+        pdfMetadata = new PDFMetadata(url, pages, 0, outline, pageIndexes);
+        
+        // Replace unicode null - see KLL-3119 for details
+        const json = JSON.stringify(pdfMetadata).replace(/\\u0000/g, '');
+        pdfMetadata = JSON.parse(json) as PDFMetadata;
+
         log.debug(`Storing metadata for PDF at ${pdfURL}`)
+
+
         await getManager().save(PDFMetadata, pdfMetadata);
         log.debug(`PDF metadata initialization complete for PDF at ${pdfURL}`);
         return { pdfMetadata, document };
     } catch (err) {
         log.error(`Error initializing page metadata for PDF at ${pdfURL}: ${err.message}`, err);
+        log.debug(`Erroring payload: ${JSON.stringify(pdfMetadata)}`)
         if (err instanceof HttpError) throw err;
         throw createHttpError(500, err);
     }

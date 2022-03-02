@@ -1,4 +1,5 @@
 import { PDFDocumentProxy, RefProxy } from 'pdfjs-dist/types/src/display/api';
+import { withLogger } from '@kl-engineering/kidsloop-nodejs-logger';
 
 export type PDFOutlineTree = PDFOutlineItem[];
 export type PDFInternalOutlineTree = PDFInternalOutlineRecord[];
@@ -25,7 +26,7 @@ export interface PDFInternalOutlineRecord {
     bold: boolean;
     italic: boolean;
     color: Uint8ClampedArray;
-    page: number;
+    page: number | undefined;
     dest: string | any[] | undefined;
     url: string | undefined;
     unsafeUrl: string | undefined;
@@ -34,12 +35,20 @@ export interface PDFInternalOutlineRecord {
     items: PDFInternalOutlineRecord[];
 }
 
+const logger = withLogger('pdf-outline-builder');
+
 export async function retrieveDocumentOutline(document: PDFDocumentProxy): Promise<PDFOutlineTree> {
     return document.getOutline();
 }
 
-export async function mapDestinationToPage(document: PDFDocumentProxy, ref: RefProxy): Promise<number> {
-    return document.getPageIndex(ref);
+export async function mapDestinationToPage(document: PDFDocumentProxy, ref: RefProxy): Promise<number | undefined> {
+    try {
+        return await document.getPageIndex(ref); 
+    } catch (err) {
+        logger.debug(`Error encountered while attempting to map PDF outline item destination to page. Caused by ${err.stack}`);
+        logger.debug(`Dumping ref data: ${ref instanceof Object ? JSON.stringify(ref) : ref}`);
+        return undefined;
+    }
 }
 
 export async function getAdaptedOutline(document: PDFDocumentProxy): Promise<PDFInternalOutlineTree | undefined> {
@@ -49,6 +58,7 @@ export async function getAdaptedOutline(document: PDFDocumentProxy): Promise<PDF
     if (!outline) {
         return undefined;
     }
+    console.log(outline);
     
     // This process will recurse through tree and convert the shape of the object to match PDFInternalOutlineTree
     outline.forEach(tree => 
