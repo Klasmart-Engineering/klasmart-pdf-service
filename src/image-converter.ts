@@ -44,7 +44,7 @@ export const createDocumentFromUrl = async (pdfUrl: string, stopAtErrors = false
     log.error(err.stack);
 
     if (err.name === `InvalidPDFException`) createHttpError(500, 'Document is not a valid PDF');
-    if (err.name === `MissingPDFException`) throw createHttpError(404, 'PDF with provided key not found');
+    if (err.name === `MissingPDFException`) throw createHttpError(404, `Unable to retrieve PDF document from CMS URL: ${pdfUrl}`);
      
     throw createHttpError(500, 'Error encountered creating PDF document');
   }
@@ -119,7 +119,7 @@ export const validatePDFTextContent = async (config: DocumentInitParameters): Pr
           const nodeCanvas = new NodeCanvas(viewport.width, viewport.height);
       
           const renderContext = {
-              canvasContext: nodeCanvas.context as Canvas.NodeCanvasRenderingContext2D,
+              canvasContext: nodeCanvas.context as Canvas.CanvasRenderingContext2D,
               viewport,
               nodeCanvas,
           };

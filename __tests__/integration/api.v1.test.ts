@@ -7,7 +7,7 @@ import * as pdfService from '../../src/pdf-service';
 import createError from 'http-errors';
 import { assert } from 'chai';
 import { Readable } from 'stream';
-import { kidsloopAuthMiddleware } from 'kidsloop-token-validation';
+import { kidsloopAuthMiddleware } from '@kl-engineering/kidsloop-token-validation';
 import cookieParser from 'cookie-parser';
 import * as jwt from 'jsonwebtoken';
 

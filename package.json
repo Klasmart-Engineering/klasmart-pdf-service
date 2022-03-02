@@ -42,7 +42,7 @@
     "@kl-engineering/kidsloop-token-validation": "1.5.1",
     "newrelic": "^8.5.0",
     "node-cache": "^5.1.2",
-    "pdfjs-dist": "^2.12.313",
+    "pdfjs-dist": "^2.12",
     "pg": "^8.6.0",
     "pug": "^3.0.2",
     "reflect-metadata": "^0.1.13",
