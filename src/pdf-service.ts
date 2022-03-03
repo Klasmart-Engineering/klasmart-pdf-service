@@ -227,6 +227,7 @@ export async function getPDFMetadata(path: string, pdfName: string): Promise<PDF
 
         // If metadata has not been generated yet, generate it
         if (!rawMetadata) {
+            log.debug(`Metadata record for ${pdfName} not found in database, attempting to generate`);
             const url = createCMSURL(pdfName, path);
             ({ pdfMetadata: rawMetadata } = await initializeMetadata(new URL(url)));
         }

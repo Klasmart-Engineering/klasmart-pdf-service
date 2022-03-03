@@ -2,7 +2,7 @@ import request from 'supertest';
 import express from 'express';
 import { appRouter as appV2Router } from '../../src/routers/app.router.v2';
 import { errorHandler } from '../../src/util/error-handler';
-import sinon from 'sinon';
+import sinon, { SinonMock } from 'sinon';
 import * as pdfService from '../../src/pdf-service';
 import createError from 'http-errors';
 import { assert } from 'chai';
@@ -13,8 +13,8 @@ import * as jwt from 'jsonwebtoken';
 import * as initTypeorm from '../../src/init-typeorm';
 
 describe('app.router.v2', () => {
-    let sandbox;
-    let serviceStub;
+    let sandbox: sinon.SinonSandbox;
+    let serviceStub: sinon.SinonStubbedInstance<typeof pdfService>;
     let app;
     let server;
 
@@ -88,8 +88,6 @@ describe('app.router.v2', () => {
         expiredJwt: `access=${expiringJwt}`
     };
     
-
-
     describe('POST /:prefix/v2/validate', () => {
         beforeEach(() => {
             serviceStub.validatePostedPDF.resolves({ valid: true });
@@ -152,9 +150,39 @@ describe('app.router.v2', () => {
         });
     });
 
+    describe('GET /:prefix/v2/:path/:pdfName/metadata', () => {
+
+        beforeEach(() => {
+            serviceStub.getPDFMetadata.callThrough();
+        })
+
+        it('should resolve with 200 + json when targeting a valid PDF documents', async () => {
+            await request(app)
+                .get('/pdf/v2/assets/valid.pdf/metadata')
+                .set('Cookie', cookies.authorizingCookie)
+                .expect(200)
+                .expect('content-type', /application\/json/);
+        });
+
+        it('should return 404 response when the requested PDF cannot be resolved', async () => {
+            await request(app)
+                .get('/pdf/v2/empty/missing.pdf/metadata')
+                .set('Cookie', cookies.authorizingCookie)
+                .expect(404)
+        });
+
+        it('should not crash when pdf metadata includes a unicode null character', async () => {
+            await request(app)
+                .get('/pdf/v2/assets/page-indexing-error.pdf/metadata')
+                .set('Cookie', cookies.authorizingCookie)
+                .expect(200)
+                .expect('content-type', /application\/json/);
+        })
+    });
+
     describe('GET /:prefix/v2/:path/:pdfName/prerender', () => {
         it('should resolve with 202 when accepted callback is invoked', async () => {
-            serviceStub.prerenderDocument.callsFake(async (name: string, url: URL, accepted) => {
+            serviceStub.prerenderDocument.callsFake(async (prefix: string, name: string, accepted) => {
                 accepted();
             });
 

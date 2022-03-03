@@ -32,7 +32,6 @@ appRouter.get(`/:pathPrefix/:pdfName/view.html`, Authorized(AuthType.Any),
     try {
         const { pathPrefix, pdfName } = request.params;
         log.debug(`Handling request to render HTML document for ${pdfName}`);
-        // const pdfUrl = new URL(`/assets/${pdfName}`, process.env.CMS_BASE_URL);
         const pageCount = await pdfService.getPDFPages(pathPrefix, pdfName);
         log.debug(`Building document with ${pageCount} pages`)
         const pages = Array.from(new Array(pageCount-1)).map((x,i) => i);

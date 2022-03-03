@@ -16,7 +16,7 @@ export default {
         migrationsDir: 'migration'
     },
 
-    logging: 'all',
+    logging: process.env.TYPEORM_LOGGING || 'all',
     extra: {
       connectionLimit: 5
     }

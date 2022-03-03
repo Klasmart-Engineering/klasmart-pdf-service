@@ -58,7 +58,6 @@ export async function getAdaptedOutline(document: PDFDocumentProxy): Promise<PDF
     if (!outline) {
         return undefined;
     }
-    console.log(outline);
     
     // This process will recurse through tree and convert the shape of the object to match PDFInternalOutlineTree
     outline.forEach(tree => 

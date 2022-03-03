@@ -1,4 +1,5 @@
 # Removing Docker containers if they already exist
+echo "Shutdown test containers if they are already running"
 docker stop pdf-int-s3 || true && docker rm pdf-int-s3 || true
 docker stop pdf-int-pg || true && docker rm pdf-int-pg || true
 
@@ -31,6 +32,7 @@ export DB_PASSWORD=abcdefg
 # App Config
 export LOG_LEVEL=silly
 export LOG_STYLE=SILENT
+export TYPEORM_LOGGING=false
 export NEW_RELIC_ENABLED=false
 export DEV_JWT_SECRET=pdf-integration-test-secret
 export PORT=32892

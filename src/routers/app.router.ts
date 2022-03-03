@@ -6,7 +6,6 @@ import pug from 'pug';
 import { withLogger } from '@kl-engineering/kidsloop-nodejs-logger';
 import { Authorized, AuthType } from '../middleware/Access';
 import { AllowedContentTypes } from '../middleware/ContentTypeFilter';
-import Axios from 'axios';
 
 export const appRouter = Router();
 const log = withLogger('app.router');
@@ -125,17 +124,6 @@ appRouter.get(`/:pdfName/render-page/:page`, async (request: Request, response: 
     if (process.env.NODE_ENV !== 'development') {
         response.sendStatus(404);
     }
-
-    //! TEMP
-    let x;
-    try {
-        x = await Axios.get('http://localhost:8888');
-        console.log(x)
-    } catch (err) {
-        console.log(x);
-        console.log(err);
-    }    
-    //! END-TEMP
 
     const { pdfName, page } = request.params;
     log.debug(`Request for direct render of page ${page}`)
