@@ -14,6 +14,7 @@ pipelines:
           script: 
             - npm config set dev true 
             - npm config set npat true
+            - npm login --scope=@kl-engineering --registry=$GH_PACKAGES_PAT
             - npm i --no-progress
             - npx eslint . --ext .js,.jsx,.ts,.tsx
       - step:
@@ -28,6 +29,7 @@ pipelines:
         name: 'Fetch NPM dependencies'
         image: node:16.6
         script:
+          - npm login --scope=@kl-engineering --registry=$GH_PACKAGES_PAT
           - npm ci --only=production
           - npm audit fix --production
           - npm run build
@@ -65,6 +67,7 @@ pipelines:
         name: 'Fetch NPM dependencies'
         image: node:16.6
         script:
+          - npm login --scope=@kl-engineering --registry=$GH_PACKAGES_PAT
           - npm ci --only=production
           - npm audit fix
           - npm run build
@@ -102,6 +105,7 @@ pipelines:
         name: 'Fetch NPM dependencies'
         image: node:16.6
         script:
+          - npm login --scope=@kl-engineering --registry=$GH_PACKAGES_PAT
           - npm ci --only=production
           - npm audit fix --production
           - npm run build
