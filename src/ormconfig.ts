@@ -1,5 +1,5 @@
 import { ConnectionOptions } from 'typeorm';
-import { PDFMetadata } from './src/models/PDFMetadata';
+import { PDFMetadata } from './models/PDFMetadata';
 
 export default {
     name: 'default',

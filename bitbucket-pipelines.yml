@@ -70,9 +70,9 @@ pipelines:
         script:
           - npm set //npm.pkg.github.com/:_authToken $GH_PACKAGES_PAT
           - npm ci
-          - npm audit fix
           - npm run build
           - npm prune --production
+          - npm audit fix --production
           - export SEMVAR=$(git tag -l --contains HEAD)
           - echo $SEMVAR > semvar.txt
         caches:
@@ -109,9 +109,9 @@ pipelines:
         script:
           - npm set //npm.pkg.github.com/:_authToken $GH_PACKAGES_PAT
           - npm ci
-          - npm audit fix --production
           - npm run build
           - npm prune --production
+          - npm audit fix --production
           - export SEMVAR=$(git tag -l --contains HEAD)
           - echo $SEMVAR > semvar.txt
         caches:
