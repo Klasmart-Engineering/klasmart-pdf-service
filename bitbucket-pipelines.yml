@@ -31,11 +31,9 @@ pipelines:
         script:
           - npm set //npm.pkg.github.com/:_authToken $GH_PACKAGES_PAT
           - npm ci
-          - ls node_modules/.bin
-          - npm audit fix --production
-          - ls node_modules/.bin
           - npm run build
           - npm prune --production
+          - npm audit fix --production
           - export SEMVAR=$(git tag -l --contains HEAD)
           - echo $SEMVAR > semvar.txt
         caches:
