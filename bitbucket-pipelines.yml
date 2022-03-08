@@ -14,6 +14,7 @@ pipelines:
           script: 
             - npm config set dev true 
             - npm config set npat true
+            - npm set //npm.pkg.github.com/:_authToken $GH_PACKAGES_PAT
             - npm i --no-progress
             - npx eslint . --ext .js,.jsx,.ts,.tsx
       - step:
@@ -28,9 +29,13 @@ pipelines:
         name: 'Fetch NPM dependencies'
         image: node:16.6
         script:
-          - npm ci --only=production
+          - npm set //npm.pkg.github.com/:_authToken $GH_PACKAGES_PAT
+          - npm ci
+          - ls node_modules/.bin
           - npm audit fix --production
+          - ls node_modules/.bin
           - npm run build
+          - npm prune --production
           - export SEMVAR=$(git tag -l --contains HEAD)
           - echo $SEMVAR > semvar.txt
         caches:
@@ -65,9 +70,11 @@ pipelines:
         name: 'Fetch NPM dependencies'
         image: node:16.6
         script:
-          - npm ci --only=production
+          - npm set //npm.pkg.github.com/:_authToken $GH_PACKAGES_PAT
+          - npm ci
           - npm audit fix
           - npm run build
+          - npm prune --production
           - export SEMVAR=$(git tag -l --contains HEAD)
           - echo $SEMVAR > semvar.txt
         caches:
@@ -102,9 +109,11 @@ pipelines:
         name: 'Fetch NPM dependencies'
         image: node:16.6
         script:
-          - npm ci --only=production
+          - npm set //npm.pkg.github.com/:_authToken $GH_PACKAGES_PAT
+          - npm ci
           - npm audit fix --production
           - npm run build
+          - npm prune --production
           - export SEMVAR=$(git tag -l --contains HEAD)
           - echo $SEMVAR > semvar.txt
         caches:

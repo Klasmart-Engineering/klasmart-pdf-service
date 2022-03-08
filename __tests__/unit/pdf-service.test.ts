@@ -17,7 +17,6 @@ import createError from 'http-errors';
 import asyncTimeout from '../util/async-timeout';
 import { Request } from 'express';
 import { ValidationStatus } from '../../src/interfaces/validation-status';
-import { v4 } from 'uuid';
 import * as pdfOutlineBuilder from '../../src/pdf/pdf-outline-builder';
 
 chai.use(chaiAsPromised);
