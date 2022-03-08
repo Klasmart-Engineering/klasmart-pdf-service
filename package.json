@@ -48,7 +48,7 @@
     "reflect-metadata": "^0.1.13",
     "regenerator-runtime": "^0.13.7",
     "swagger-ui-express": "^4.3.0",
-    "typeorm": "^0.2.34",
+    "typeorm": "0.2.34",
     "typescript": "^4.4.0",
     "uuid": "^8.3.2",
     "web-streams-polyfill": "^3.2.0",
