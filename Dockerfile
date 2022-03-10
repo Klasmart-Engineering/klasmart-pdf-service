@@ -11,5 +11,4 @@ COPY ./package*.json ./
 COPY ./api.yaml ./api.yaml
 COPY ./dist ./dist
 COPY docker-startup.sh ./
-COPY ./migration ./migration
 ENTRYPOINT ["sh", "./docker-startup.sh"]

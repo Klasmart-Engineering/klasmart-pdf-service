@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.5.9-dev.1](https://bitbucket.org/calmisland/kidsloop-pdf-service/compare/v0.5.9-dev.0...v0.5.9-dev.1) (2022-03-10)
+
+
+### Bug Fixes
+
+* fixed issue with loading migrations in dist environment ([2085452](https://bitbucket.org/calmisland/kidsloop-pdf-service/commit/2085452ec48f251b9173d1788f31a0ead8ca992b))
+
 ### [0.5.9-dev.0](https://bitbucket.org/calmisland/kidsloop-pdf-service/compare/v0.4.4...v0.5.9-dev.0) (2022-03-08)
 
 
