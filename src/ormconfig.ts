@@ -1,6 +1,10 @@
 import { ConnectionOptions } from 'typeorm';
 import { PDFMetadata } from './models/PDFMetadata';
 
+const migrations = process.env.DIST_FLAG
+  ? [ './dist/migration/*.js' ]
+  : [ './src/migration/*.{js,ts}' ];
+
 export default {
     name: 'default',
     type: 'postgres',
@@ -11,9 +15,9 @@ export default {
     password: process.env.DB_PASSWORD,
     entities: [ PDFMetadata ],
 
-    migrations: [ 'migration/*.{js,ts}' ],
+    migrations,
     cli: {
-        migrationsDir: 'migration'
+        migrationsDir: './migration'
     },
 
     logging: process.env.TYPEORM_LOGGING || 'all',

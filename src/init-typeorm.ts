@@ -9,7 +9,9 @@ let connection: Connection | undefined;
 
 export const initialize = async (): Promise<Connection> => {
     try {
+      log.debug(`Creating database connection from ormConfig`);
       connection = await createConnection(ormConfig);
+      log.debug(`Finding migrations`);
       if (await connection.showMigrations()) {
         log.info(`Unapplied migrations found.  Applying migrations.`);
         try {
