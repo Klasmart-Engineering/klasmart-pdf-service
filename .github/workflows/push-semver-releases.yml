@@ -1,5 +1,9 @@
 name: Docker Image CI
 
+env:
+  ARGOCD_APP: uk-landingzone-pdf-service
+  ARGOCD_APP_CHART_TAG_PATH: pdfService.tag
+
 on:
   push:
     tags: [ v*.*.* ]
@@ -68,3 +72,106 @@ jobs:
         push: ${{ github.event_name != 'pull_request' }}
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
+
+  deploy-landing-zone:
+    # deploy-landing-zone - this Github Actions job will deploy images created on `main` to the Kidsloop landing zone.
+    # Landing zone URL: hub.landing-zone.kidsloop.live
+
+    # ENV required: [ARGOCD_APP, ARGOCD_APP_CHART_TAG_PATH]
+    # SECRETS required: [TOOLS_KUBECONFIG_CONTENT_B64, ARGOCD_AUTH_USERNAME, ARGOCD_AUTH_PASSWORD]
+    runs-on: ubuntu-latest
+    needs: Build
+    # Put any deploy conditions in here.
+    if: github.ref == 'refs/heads/master'
+    env:
+      # Due to a Teleport bug, we are using K8 port forwarding to connect to ArgoCD for now.
+      TOOLS_KUBECONFIG: '${{ github.workspace }}/.kube/tools-kubeconfig.yml'
+      ARGOCD_SERVER: localhost:8080
+      ARGOCD_OPTS: --grpc-web --insecure --plaintext
+    steps:
+      # Set up the kubeconfig file in GHA secrets first
+      - name: Set up kubernetes config file
+        run: |
+          mkdir -p '${{ github.workspace }}/.kube' \
+            && echo '${{ secrets.TOOLS_KUBECONFIG_CONTENT_B64 }}' | base64 -d > $TOOLS_KUBECONFIG
+
+      - name: Test kubernetes connection
+        run: 'kubectl version --kubeconfig $TOOLS_KUBECONFIG'
+
+      - name: Configure ArgoCD CLI
+        uses: clowdhaus/argo-cd-action@v1.9.0
+        with:
+          version: 2.2.5
+          command: version
+          options: --client
+
+      - name: Set up kubernetes port-forwarding connection to tools cluster
+        run: 'kubectl port-forward -n argocd svc/argocd-server 8080:80 --kubeconfig $TOOLS_KUBECONFIG &'
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v3
+        with:
+          images: ghcr.io/${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha
+      - name: Configure tags
+        run: |
+          export DEPLOY_TAG=${{ steps.meta.outputs.tags }}
+          echo "TAG    : ${{ steps.meta.outputs.tags }}"
+          echo "COMMIT : ${GITHUB_SHA::7}"
+          echo "IMAGE  : $DEPLOY_TAG"
+          echo "TAG=$TAG" >> $GITHUB_ENV
+          echo "DEPLOY_TAG=$DEPLOY_TAG" >> $GITHUB_ENV
+
+      - name: Log into ArgoCD
+        uses: clowdhaus/argo-cd-action@v1.9.0
+        with:
+          version: 2.2.5
+          command: login
+          options: >
+            '${{ env.ARGOCD_SERVER }}'
+            --username '${{ secrets.ARGOCD_AUTH_USERNAME }}'
+            --password '${{ secrets.ARGOCD_AUTH_PASSWORD }}'
+            ${{ env.ARGOCD_OPTS }}
+
+      - name: Show ArgoCD app info
+        uses: clowdhaus/argo-cd-action@v1.9.0
+        with:
+          version: 2.2.5
+          command: app
+          options: get ${{ env.ARGOCD_APP }}
+
+      - name: Set ArgoCD app tag to build output
+        uses: clowdhaus/argo-cd-action@v1.9.0
+        with:
+          version: 2.2.5
+          command: app
+          options: set ${{ env.ARGOCD_APP }} -p ${{ env.ARGOCD_APP_CHART_TAG_PATH }}=${{ env.DEPLOY_TAG }}
+
+      - name: Sync the app now
+        uses: clowdhaus/argo-cd-action@v1.9.0
+        with:
+          version: 2.2.5
+          command: app
+          options: sync ${{ env.ARGOCD_APP }} --timeout 300
+
+      - name: Status - ArgoCD url
+        if: always()
+        uses: ouzi-dev/commit-status-updater@v1.1.0
+        with:
+          status: '${{ job.status }}'
+          url: https://argocd.kidsloop.teleport.sh/applications/${{ env.ARGOCD_APP }}
+          description: 'Click to view the app in ArgoCD'
+          name: 'ArgoCD'
+
+      - name: Status - target url
+        if: always()
+        uses: ouzi-dev/commit-status-updater@v1.1.0
+        with:
+          status: '${{ job.status }}'
+          url: https://hub.landing-zone.kidsloop.live
+          description: "Click to test in the 'Landing Zone' environment"
+          name: 'Landing Zone'

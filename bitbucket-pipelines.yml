@@ -63,6 +63,60 @@ pipelines:
         caches:
           - docker
         size: 2x
+
+    # This step will deploy an image to the new "landing zone" environment via ArgoCD.
+    # See here for the equivalent Github Actions pipeline: https://github.com/KL-Engineering/user-service/pull/27
+    - step: &step-deploy-landing-zone
+        name: "Deploy built image to the Kidsloop landing zone"
+        image: argoproj/argocd:v2.3.1
+        script:
+          # What are we deploying?
+          - export BRANCH_TAG=$([[ ! -z "$BITBUCKET_BRANCH" ]] && echo "$BITBUCKET_BRANCH" | sed -E 's/([^0-9a-zA-Z]+)/-/g' | awk '{print tolower($0)}' || echo "master")
+          - export COMMIT_TAG=$(echo $BITBUCKET_COMMIT | cut -c1-7)
+          - export SEMVAR=$(cat semvar.txt)
+          - export DEPLOY_TAG=$(if [[ ! -z "$SEMVAR" ]]; then echo $SEMVAR; else echo "$BRANCH_TAG-$COMMIT_TAG"; fi)
+          - echo "Tag to deploy - $DEPLOY_TAG"
+
+          # Set up port forwarding
+          - echo $TOOLS_KUBECONFIG_CONTENT_B64 | base64 -d > $BITBUCKET_CLONE_DIR/kubeconfig.yml
+          - >
+            PORTFORWARD_CONTAINER=$(
+            docker run
+            --volume $BITBUCKET_CLONE_DIR/kubeconfig.yml:/mnt/kubeconfig.yml
+            --env KUBECONFIG=/mnt/kubeconfig.yml
+            --publish 8080:8080
+            --hostname kubeproxy
+            --detach bitnami/kubectl:1.21
+            port-forward -n argocd svc/argocd-server
+            --address 0.0.0.0 8080:80
+            )
+          - sleep 5
+
+          # Deploy tag to environment with ArgoCD
+          - >
+            export
+            ARGOCD_SERVER=localhost:8080
+            ARGOCD_APP=uk-landingzone-pdf-service
+            ARGOCD_APP_CHART_TAG_PATH=pdfService.tag
+            ARGOCD_OPTS='--grpc-web --insecure --plaintext'
+          - >
+            argocd login $ARGOCD_SERVER
+            --username $ARGOCD_AUTH_USERNAME
+            --password $ARGOCD_AUTH_PASSWORD
+            $ARGOCD_OPTS
+          - argocd app get $ARGOCD_APP
+          - argocd app set $ARGOCD_APP -p $ARGOCD_APP_CHART_TAG_PATH=$DEPLOY_TAG
+          - argocd app sync $ARGOCD_APP --timeout 300
+
+          # Clean up tasks
+          - docker logs $PORTFORWARD_CONTAINER
+          - docker kill $PORTFORWARD_CONTAINER
+          - docker rm $PORTFORWARD_CONTAINER
+        services:
+          - docker
+        caches:
+          - docker
+
     production:
     - step: 
         name: 'Fetch NPM dependencies'
@@ -102,6 +156,7 @@ pipelines:
         services:
           - docker
         size: 2x
+    - step: *step-deploy-landing-zone
     dev:
     - step: 
         name: 'Fetch NPM dependencies'
@@ -139,6 +194,7 @@ pipelines:
         caches:
           - docker
         size: 2x
+    - step: *step-deploy-landing-zone
 
 definitions:
   caches:
