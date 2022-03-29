@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.5.9-dev.3](https://bitbucket.org/calmisland/kidsloop-pdf-service/compare/v0.5.9-dev.2...v0.5.9-dev.3) (2022-03-29)
+
+
+### Bug Fixes
+
+* add pug template that accepts and utilizes v2 resolution format ([cf68cb6](https://bitbucket.org/calmisland/kidsloop-pdf-service/commit/cf68cb60934c3881742fa011286cd78b3d40b738))
+
 ### [0.5.9-dev.2](https://bitbucket.org/calmisland/kidsloop-pdf-service/compare/v0.5.9-dev.1...v0.5.9-dev.2) (2022-03-21)
 
 ### [0.5.9-dev.1](https://bitbucket.org/calmisland/kidsloop-pdf-service/compare/v0.5.9-dev.0...v0.5.9-dev.1) (2022-03-10)
