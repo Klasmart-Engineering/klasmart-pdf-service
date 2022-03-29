@@ -1,0 +1,15 @@
+doctype html 
+html(lang="en")
+    head
+        title="PDF Viewer"
+        style
+            include css/styles.css
+    body
+        div(id="viewerContainer")
+            img(src='/pdf/v2/'+pathPrefix+'/'+pdfName+'/page/'+1, data-page-num=1, class='pdf-page-img', id='pdf-page-1')
+            each page, k in pages
+                img(data-src='/pdf/v2/'+pathPrefix+'/'+pdfName+'/page/'+(k+2), data-page-num=k+2, class='pdf-page-img', id='pdf-page-'+(k+2))
+        script
+            include js/image-size-adjuster.js
+        script(class='.rr-ignore')
+            include js/pdf-lazy-loader.js

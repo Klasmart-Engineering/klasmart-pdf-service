@@ -36,7 +36,7 @@ appRouter.get(`/:pathPrefix/:pdfName/view.html`, Authorized(AuthType.Any),
         log.debug(`Building document with ${pageCount} pages`)
         const pages = Array.from(new Array(pageCount-1)).map((x,i) => i);
         
-        const output = pug.renderFile(__dirname + '/../static/pdf.pug', { pages, pdfName });
+        const output = pug.renderFile(__dirname + '/../static/pdf.v2.pug', { pathPrefix, pages, pdfName });
         response
             .contentType('text/html')
             .send(output);
