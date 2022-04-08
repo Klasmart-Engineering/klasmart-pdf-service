@@ -74,10 +74,9 @@ jobs:
         push: ${{ github.event_name != 'pull_request' }}
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
-  deploy-ecr:
-    name: Deploy To ECR
+  push-to-ecr:
+    name: Push To ECR
     runs-on: ubuntu-latest
-    environment: production
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -98,8 +97,8 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
-          aws-access-key-id: ${{ secrets.ECS_AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.ECS_AWS_SECRET_ACCESS_KEY }}
+          aws-access-key-id: ${{ secrets.ECR_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.ECR_AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
       - name: Login to Amazon ECR
         id: login-ecr
@@ -108,16 +107,16 @@ jobs:
         id: build-image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          IMAGE_VERSION_TAG: ${ GITHUB_REF_NAME }
-          IMAGE_HASH_TAG: ${ GITHUB_SHA }
         run: |
-        # Build a docker container and
-        # push it to ECR so that it can
-        # be deployed to ECS.
-        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_VERSION_TAG .
-        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_VERSION_TAG
-        docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_VERSION_TAG $ECR_REGISTRY/$ECR_REPOSTIORY:$IMAGE_HASH_TAG
-        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_HASH_TAG
+          # Build a docker container and
+          # push it to ECR so that it can
+          # be deployed to ECS.
+          export COMMIT_TAG_NAME=$(echo "${GITHUB_REF_NAME}" | sed -E 's/([^0-9a-zA-Z.]+)/-/g' | awk '{print tolower($0)}')
+          export COMMIT_SHA_NAME=$(echo ${GITHUB_SHA} | head -c 8)
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$GITHUB_REF_NAME .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$GITHUB_REF_NAME
+          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$GITHUB_REF_NAME $ECR_REGISTRY/$ECR_REPOSITORY:$COMMIT_SHA_NAME
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$COMMIT_SHA_NAME
   deploy-landing-zone:
     # deploy-landing-zone - this Github Actions job will deploy images created on `main` to the Kidsloop landing zone.
     # Landing zone URL: hub.landing-zone.kidsloop.live
