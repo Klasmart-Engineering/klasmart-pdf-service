@@ -3,6 +3,8 @@ name: Docker Image CI
 env:
   ARGOCD_APP: uk-landingzone-pdf-service
   ARGOCD_APP_CHART_TAG_PATH: pdfService.tag
+  AWS_REGION: eu-west-2
+  ECR_REPOSITORY: kidsloop-pdf-service
 
 on:
   push:
@@ -72,7 +74,50 @@ jobs:
         push: ${{ github.event_name != 'pull_request' }}
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
-
+  deploy-ecr:
+    name: Deploy To ECR
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Configure Node 
+        uses: actions/setup-node@v2
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.KL_PACKAGES_PAT }}
+        with:
+          node-version: '16.6'
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@kl-engineering'
+      - name: Install Dependencies
+        run: npm ci 
+      - name: Build
+        run: npm run build
+      - name: Remove development dependencies
+        run: npm prune --production
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.ECS_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.ECS_AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+      - name: Build, tag, and push image to Amazon ECR
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_VERSION_TAG: ${ GITHUB_REF_NAME }
+          IMAGE_HASH_TAG: ${ GITHUB_SHA }
+        run: |
+        # Build a docker container and
+        # push it to ECR so that it can
+        # be deployed to ECS.
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_VERSION_TAG .
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_VERSION_TAG
+        docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_VERSION_TAG $ECR_REGISTRY/$ECR_REPOSTIORY:$IMAGE_HASH_TAG
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_HASH_TAG
   deploy-landing-zone:
     # deploy-landing-zone - this Github Actions job will deploy images created on `main` to the Kidsloop landing zone.
     # Landing zone URL: hub.landing-zone.kidsloop.live
