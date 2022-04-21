@@ -1,6 +1,6 @@
 {
   "name": "@kl-engineering/kidsloop-pdf-service",
-  "version": "0.5.9-dev.4",
+  "version": "0.5.9-rc.0",
   "description": "Service which stores and provides access to PDF content by converting pages into images and serving those images.",
   "repository": "https://bitbucket.org/calmisland/kidsloop-pdf-service",
   "main": "app.ts",
