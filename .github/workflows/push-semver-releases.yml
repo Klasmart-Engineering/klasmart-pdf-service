@@ -126,7 +126,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: Build
     # Put any deploy conditions in here.
-    if: github.ref == 'refs/heads/master'
+    # if:
     env:
       # Due to a Teleport bug, we are using K8 port forwarding to connect to ArgoCD for now.
       TOOLS_KUBECONFIG: '${{ github.workspace }}/.kube/tools-kubeconfig.yml'
