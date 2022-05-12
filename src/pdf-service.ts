@@ -440,7 +440,7 @@ async function initializeMetadata(pdfURL: URL) {
         log.debug(`PDF metadata initialization complete for PDF at ${pdfURL}`);
         return { pdfMetadata, document };
     } catch (err) {
-        log.error(`Error initializing page metadata for PDF at ${pdfURL}: ${err.message}`, err);
+        log.error(`Error initializing page metadata for PDF at ${pdfURL}. Caused by ${err.stack}`);
         log.debug(`Erroring payload: ${JSON.stringify(pdfMetadata)}`)
         if (err instanceof HttpError) throw err;
         throw createHttpError(500, err);

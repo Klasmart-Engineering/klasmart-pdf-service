@@ -26,8 +26,8 @@ import { hookWebsocketHandler } from './ws/initialize-ws';
 
 const log = withLogger('app');
 
-log.info(`Starting in node environment: ${process.env.NODE_ENV}`)
-log.info(`Running pdf-service v${version} on Node ${process.version}`)
+log.info(`Starting in node environment: ${process.env.NODE_ENV}`);
+log.info(`Running pdf-service v${version} on Node ${process.version}`);
 
 const app = express();
 app.disable('x-powered-by');
