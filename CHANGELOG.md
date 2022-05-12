@@ -2,6 +2,8 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.5.11-dev.0](https://bitbucket.org/calmisland/kidsloop-pdf-service/compare/v0.5.10...v0.5.11-dev.0) (2022-05-12)
+
 ### [0.5.10](https://bitbucket.org/calmisland/kidsloop-pdf-service/compare/v0.5.9...v0.5.10) (2022-04-27)
 
 ### [0.5.9](https://bitbucket.org/calmisland/kidsloop-pdf-service/compare/v0.5.9-dev.4...v0.5.9) (2022-04-21)
