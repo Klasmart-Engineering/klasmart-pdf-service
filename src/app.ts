@@ -20,6 +20,7 @@ import { correlationMiddleware, withLogger } from '@kl-engineering/kidsloop-node
 import { corsMiddleware } from './middleware/cors-middleware';
 import { Server } from 'http';
 import { hookWebsocketHandler } from './ws/initialize-ws';
+import helmet from 'helmet';
 
 // IIFE
 (async () => {
@@ -36,7 +37,6 @@ const port = process.env.PORT || 32891;
 
 const routePrefix = process.env.ROUTE_PREFIX || '/pdf';
 
-
 /* #region Initialization */
 await Promise.all([
     typeormConfig.initialize(),
@@ -46,6 +46,8 @@ pdfService.initialize();
 /* #endregion Initialization */
 
 /* #region middleware */
+
+app.use(helmet());
 
 // ! Note: This endpoint is used for ECS healthchecks. If it is removed, AWS will kill the app after a few minutes!
 app.get(`/.well-known/express/server-health`, (_, response: Response) => {
