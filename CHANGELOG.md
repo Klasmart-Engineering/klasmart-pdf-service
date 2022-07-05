@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.5.10](https://bitbucket.org/calmisland/kidsloop-pdf-service/compare/v0.5.9...v0.5.10) (2022-07-05)
+
+
+### Features
+
+* **KLL-3627:** add helmet middleware security integration ([2bf9b73](https://bitbucket.org/calmisland/kidsloop-pdf-service/commit/2bf9b73f820fcb829995f9d429aa0f3a42a9fe7d))
+
 ### [0.5.9](https://bitbucket.org/calmisland/kidsloop-pdf-service/compare/v0.5.9-dev.4...v0.5.9) (2022-04-21)
 
 ### [0.5.9-rc.0](https://bitbucket.org/calmisland/kidsloop-pdf-service/compare/v0.5.9-dev.4...v0.5.9-rc.0) (2022-04-21)
